@@ -1,0 +1,20 @@
+{% extends "main/index.html" %}
+
+{% block content %}
+  <div class="container">
+    <div class="row">
+      <center>
+        <br><br><br><br><br>
+        <h5>{{message}}</h5>
+        <br>
+        <a href="/" id="backhome-button" class="btn-large waves-effect waves-light teal lighten-1">Back Home</a>
+      </center>
+    </div>
+  </div>
+<br><br><br><br><br><br><br><br>
+
+{% endblock %} 
+
+{% block footer %}
+  {% include "main/includes/footer_small.html" %}
+{% endblock %}

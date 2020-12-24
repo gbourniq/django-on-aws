@@ -1,0 +1,26 @@
+# Ignore builds
+*bin/
+
+# default ignore
+__pycache__/
+.pytest_cache/
+.idea/
+.vscode/
+node_modules/
+*/frontend/build/
+.coverage*
+htmlcov/
+*.code-workspace
+*.ipynb
+*.swp
+*.egg-info
+.DS_Store
+
+# python packaging
+eigenctl.egg-info
+dist/
+
+# Generated documentation
+
+# Logs
+*.log

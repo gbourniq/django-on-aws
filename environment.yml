@@ -1,0 +1,6 @@
+name: django-on-aws
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python==3.8.0               # PSF

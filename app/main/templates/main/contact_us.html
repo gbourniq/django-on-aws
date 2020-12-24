@@ -1,0 +1,33 @@
+{% extends "main/index.html" %}
+
+{% block content %}
+  <div class="container">
+    <div class="section">
+      <div class="row">
+
+        <div class="icon-block">
+          <h3 class="header center grey-text text-darken-3">Contact <i class="material-icons">chat</i></h3>
+        </div>
+        <form method="POST">
+          {% csrf_token %}
+          {% load materializecss %}
+          {{ form|materializecss }}
+          <br><br>
+          <div class="form-actions">
+            <button class="btn waves-effect waves-light" style="background-color:gray; color:white" type="submit" name="action">
+              Send<i class="material-icons right">send</i>
+            </button>
+          </div>
+        </form>
+        
+      </div>
+    </div>
+  </div>
+
+  <br><br><br>
+
+{% endblock %} 
+
+{% block footer %}
+  {% include "main/includes/footer_small.html" %}
+{% endblock %}

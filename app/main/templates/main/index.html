@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+
+	<!--
+	palette:
+	dark blue: #003F72
+	yellow: #FFD166
+	salmon: #EF476F
+	offwhite: #e7d7d7
+	Light Blue: #118AB2
+	Light green: #7DDF64
+	-->
+
+	<!-- Global site tag (gtag.js) - Google Analytics -->
+	<script async src="https://www.googletagmanager.com/gtag/js?id=G-KGHMSNB4ND"></script>
+	<script>
+	window.dataLayer = window.dataLayer || [];
+	function gtag(){dataLayer.push(arguments);}
+	gtag('js', new Date());
+	gtag('config', 'G-KGHMSNB4ND');
+	</script>
+
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+	<meta name="viewport" content="width=device-width, initial-scale=1"/>
+	<meta name="description" content="Personal portfolio Template">
+	<meta name="author" content="Guillaume Bournique">
+	<title>Portfolio App Demo</title>
+
+	{% load static %}
+	<!-- Loading css from tinyMCE app -->
+	<link href="{% static 'tinymce/css/prism.css' %}" rel="stylesheet">
+	<!-- Minified customised CSS, compiled Materialize SSAS using Koala -->
+	<link href="{% static 'css/materialize.css' %}" type="text/css" rel="stylesheet" media="screen,projection"/>
+	<!-- Additional CSS files -->
+	<link href="{% static 'css/googleapis.css' %}" type="text/css" rel="stylesheet">
+	<link href="{% static 'css/style.css' %}" type="text/css" rel="stylesheet" media="screen,projection"/>
+	<link rel="shortcut icon" href="{% static 'favicon.ico' type='image/x-icon' %}">
+
+	<!-- Load JS files in head for MaterializeCSS Toasts -->
+	<script src="{% static 'js/jquery-2.1.1.min.js' %}"></script>
+	<script src="{% static 'js/materialize.js' %}"></script>
+	<script src="{% static 'js/init.js' %}"></script>
+
+</head>
+
+<body>
+
+	<header>
+		{% include "main/includes/navbar.html" %}
+		{% block header %}
+		{% endblock %}
+	</header>
+
+	<main>
+		{% include "main/includes/messages.html" %}
+		{% block content %}
+		{% endblock %}
+	</main>
+
+	<footer>
+		{% block footer %}
+		{% endblock %}
+	</footer>
+
+</body>
+
+<!-- Compiled and minified JavaScript -->
+<script src="{% static 'tinymce/js/prism.js' %}"></script>
+<script>M.AutoInit();</script>
+
+</html>

@@ -1,0 +1,63 @@
+[tool.poetry]
+name = "django-on-aws"
+version = "1.0.0"
+description = "Personal Portfolio Project running on Django deployed to AWS"
+authors = ["Guillaume Bournique <gbournique@gmail.com>"]
+repository = "https://github.com/gbourniq/django-on-aws"
+readme = "README.md"
+keywords = ["portfolio"]
+
+[tool.poetry.dependencies]
+boto3 = "^1.12.39"                                  # Apache 2.0
+django = "^3"                                       # BSD
+django-filter = "^2.3.0"                            # MIT
+django-materializecss-form = "1.1.10"               # MIT
+djangorestframework = "^3.11.0"                     # MIT
+django-storages = "^1.9.1"                          # BSD 3
+django-tinymce4-lite = "1.7.5"                      # MIT
+gunicorn = "^19.9"                                  # MIT
+pillow = "^7.0.0"                                   # HPND
+psycopg2 = "^2.8.4"                                 # GNU
+python = "3.8.0"                                    # PSF
+requests = "^2.22"                                  # Apache 2.0
+
+[tool.poetry.dev-dependencies]
+autoflake = "^1.4"                                  # MIT
+awscli = "^1.18.197"                                # Apache 2.0
+black = "19.10b0"                                   # MIT
+cfn-lint = "^0.43.0"                                # MIT
+chevron = "^0.13.1"                                 # MIT
+coverage-badge = "^1.0.1"                           # MIT
+isort = "4.3.4"                                     # MIT
+pylint = "^2.6.0"                                   # GPL
+pytest = "6.0.0"                                    # MIT
+pytest-cov = "^2.10.1"                              # MIT
+pytest-django = "^3.9.0"                            # MIT
+pytest-env = "^0.6.2"                               # MIT
+pre-commit = "^2.8.2"                               # MIT
+wrapt = "^1.12.1"                                   # MIT
+
+[tool.pytest.ini_options]
+testpaths = "tests"
+filterwarnings = '''
+    error
+    ignore::UserWarning
+'''
+python_files = ["tests.py", "test_*", "*_tests.py"]
+# Ignore python packages in sam-application/bin/ 
+addopts = '''
+  --ignore=integration_tests/run_api_tests.py
+  --strict
+  --tb=short
+  --cov=.
+  --cov-branch
+  --cov-report=term-missing
+  --cov-report=html
+  --no-cov-on-fail
+  --cov-fail-under=50
+'''
+env = ["SECRET_KEY=secret"]
+
+[build-system]
+requires = ["wheel", "tomlkit", "poetry>=1.1.3"] # PEP 518
+build-backend = "poetry.masonry.api"

@@ -1,0 +1,38 @@
+{% load static %}
+
+<div class="navbar-fixed">
+  <nav style="background-color:white">
+
+    <div class="nav-wrapper container">
+      <a id="logo-container" href="/" class="brand-logo">
+        <img class="img-responsive" style="width:60px; height:50px; margin-top:4px" src="{% static 'Logo.png' %}">
+      </a>
+
+      <a href="#" data-target="nav-mobile" class="sidenav-trigger"><i class="material-icons">menu</i></a>
+
+      <ul class="right hide-on-med-and-down">
+        {% if user.is_authenticated %}
+        <li><a href="/logout">Log out</a></li>
+        <li><a href="#">{{user.username|title}}</a></li>
+        {% else %}
+        <li><a href="/login">Log in</a></li>
+        <li><a href="/register">Sign up</a></li>
+        {% endif %}
+        <li><a href="/contact">Contact</a></li>
+      </ul>
+      
+    </div>
+  </nav>
+
+</div>
+
+<ul id="nav-mobile" class="sidenav">
+  {% if user.is_authenticated %}
+  <li><a href="/logout"><i class="material-icons">cancel</i>Log out</a></li>
+  <li><a href="#"><i class="material-icons">person_pin</i>{{user.username|title}}</a></li>
+  {% else %}
+  <li><a href="/login"><i class="material-icons">check_circle</i>Log in</a></li>
+  <li><a href="/register"><i class="material-icons">person_pin</i>Sign up</a></li>
+  {% endif %}
+  <li><a href="/contact"><i class="material-icons">chat</i>Contact</a></li>
+</ul>

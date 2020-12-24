@@ -1,0 +1,36 @@
+{% load static %}  
+
+<div class="container" style="max-width:1500px; min-height:100%">
+
+  <div class="row"> 
+    <br>
+    <div class="col l8 m12 s12">
+      <div class="container-fluid" align="left" >
+      <h4 style="text-align:center">{{item.item_name}}</h4>
+      {% comment %} <p style="font-size:70%">Published {{item.date_published}}</p> {% endcomment %}
+      {{item.content|safe}}
+      </div>
+    </div>
+    
+    <br>
+    <div class="col l4 m12 s12">
+      <ul class="collapsible popout" data-collapsible="accordion" style='font-size:85%; padding-left:30px'>
+        {% for item in sidebar %}
+          {% if forloop.counter0 == this_item_idx %}
+            <li class="active">
+              <div class="collapsible-header"><i class="material-icons">visibility</i>{{item.item_name}}</div>
+            </li>
+          {% else %}
+            <li>
+              <div class="collapsible-header"><i class="material-icons">keyboard_arrow_right</i>{{item.item_name}}</div>
+              <div class="collapsible-body">
+                <p><a href="/items/{{category.category_slug}}/{{item.item_slug}}"><button class="btn waves-effect waves-light right-align" style="background-color:gray; color:white">Go</button></a></p>
+              </div>
+            </li>
+          {% endif %}
+        {% endfor %}
+      </ul>
+    </div>
+
+  </div>
+</div>

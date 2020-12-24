@@ -1,0 +1,37 @@
+{% extends "main/index.html" %}
+
+{% block content %}
+  <div class="container">
+    <div class="section">
+      <div class="row">
+
+        <div class="icon-block">
+          <h3 class="header center grey-text text-darken-3">Log in</h3>
+        </div>
+        <form method="POST">
+          {% csrf_token %}
+          {% load materializecss %}
+          {{ form|materializecss }}
+          <br><br><br>
+
+          <div class="form-actions">
+            <button class="btn waves-effect waves-light" style="background-color:gray; color:white" type="submit" name="action">
+              Log in<i class="material-icons right">check_circle</i>
+            </button>
+          </div>
+
+        </form>
+        <br><br>
+        Don't have an account? <a href="/register"><strong>register here</strong></a>!
+
+      </div>
+    </div>
+  </div>
+
+  <br><br><br>
+
+{% endblock %} 
+
+{% block footer %}
+  {% include "main/includes/footer_small.html" %}
+{% endblock %}

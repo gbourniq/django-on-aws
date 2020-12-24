@@ -1,0 +1,56 @@
+repos:
+  - repo: local
+    hooks:
+      - id: autoflake
+        name: autoflake
+        stages: [commit]
+        language: system
+        entry: autoflake
+        args:
+          - '--in-place'
+          - '--remove-all-unused-imports'
+          - '--remove-unused-variables'
+          - "--ignore-init-module-imports"
+        types: [python]
+
+      - id: isort
+        name: isort
+        stages: [commit]
+        language: system
+        entry: isort
+        args: 
+          - "--line-width"
+          - "88"
+          - "--multi-line"
+          - "3"
+          - "--trailing-comma"
+          - "--use-parentheses"
+        types: [python]
+
+      - id: black
+        name: black
+        stages: [commit]
+        language: system
+        entry: black
+        types: [python]
+
+      - id: pylint
+        name: pylint
+        stages: [commit]
+        language: system
+        entry: python utils/generate_pylint_badge.py
+
+      - id: pytest
+        name: pytest
+        stages: [commit]
+        language: system
+        entry: pytest
+        args: [".", "-x", "-Wignore", "--ignore=integration_tests/run_api_tests.py"]
+        types: [python]
+
+      - id: coverage
+        name: coverage
+        stages: [commit]
+        language: system
+        entry: bash utils/generate_coverage_badge.sh
+

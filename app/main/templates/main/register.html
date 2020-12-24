@@ -1,0 +1,40 @@
+{% extends "main/index.html" %}
+
+{% block content %}
+  <div class="container">
+    <div class="section">
+      <div class="row">
+
+        <div class="icon-block">
+          <h3 class="header center grey-text text-darken-3">Sign up <i class="material-icons">person_pin</i></h3>
+        </div>
+        <br>
+        <h6 class="header center grey-text text-darken-3">By registering, you will receive updates on the latest content.</h3>
+        <br><br>
+        <form method="POST">
+          {% csrf_token %}
+          {% load materializecss %}
+          {{ form|materializecss }}
+          <br><br>
+
+          <div class="form-actions">
+            <button class="btn waves-effect waves-light" style="background-color:gray; color:white" type="submit" name="action">
+              Register<i class="material-icons right">person_pin</i>
+            </button>
+          </div>
+
+        </form>
+        <br><br>
+        If you already have an account <a href="/login"><strong>login</strong></a> instead.
+
+      </div>
+    </div>
+  </div>
+
+  <br><br><br>
+
+{% endblock %} 
+
+{% block footer %}
+  {% include "main/includes/footer_small.html" %}
+{% endblock %}
