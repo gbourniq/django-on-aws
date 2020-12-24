@@ -13,7 +13,6 @@ from django.views import View, generic
 from .forms import ContactForm, NewUserForm
 from .mixins import RequireLoginMixin
 from .models import Category, Item
-from .tasks import send_email_celery
 
 logger = logging.getLogger(__name__)
 
@@ -170,9 +169,7 @@ class ItemsView(generic.ListView):
         context["item"] = self.item
         context["category"] = self.category
         context["sidebar"] = self.ordered_items_in_category
-        context["this_item_idx"] = list(self.ordered_items_in_category).index(
-            self.item
-        )
+        context["this_item_idx"] = list(self.ordered_items_in_category).index(self.item)
         return context
 
     def dispatch(self, *args, **kwargs):
@@ -194,21 +191,21 @@ class ContactUsFormView(RequireLoginMixin, View):
         form = self.form_class(initial=self.initial)
         return render(request, self.template_name, {"form": form})
 
-    def email_data(self) -> dict:
-        """
-        Generates email data: subject, message, from_email, to_emails
-        """
-        body = (
-            f"Name: {self.form.cleaned_data['name']}\n\n"
-            f"Contact email: {self.form.cleaned_data['contact_email']}\n\n"
-            f"Message: \n{self.form.cleaned_data['message']}"
-        )
-        return {
-            "subject": self.form.cleaned_data["subject"],
-            "message": body,
-            "from_email": settings.EMAIL_HOST_USER,
-            "recipient_list": [settings.EMAIL_HOST_USER],
-        }
+    # def email_data(self) -> dict:
+    #     """
+    #     Generates email data: subject, message, from_email, to_emails
+    #     """
+    #     body = (
+    #         f"Name: {self.form.cleaned_data['name']}\n\n"
+    #         f"Contact email: {self.form.cleaned_data['contact_email']}\n\n"
+    #         f"Message: \n{self.form.cleaned_data['message']}"
+    #     )
+    #     return {
+    #         "subject": self.form.cleaned_data["subject"],
+    #         "message": body,
+    #         "from_email": settings.EMAIL_HOST_USER,
+    #         "recipient_list": [settings.EMAIL_HOST_USER],
+    #     }
 
     def post(self, request, *args, **kwargs) -> Union[render, redirect]:
         """
@@ -220,18 +217,13 @@ class ContactUsFormView(RequireLoginMixin, View):
         if form.is_valid():
 
             if not settings.EMAIL_HOST_USER:
-                logger.warning(
-                    f"User posted ContactForm but EMAIL_HOST_USER not set."
-                )
+                logger.warning(f"User posted ContactForm but EMAIL_HOST_USER not set.")
                 raise Http404("Oops.. Looks like this is not implemented yet.")
 
             self.form = form
 
             try:
-                if hasattr(settings, "BROKER_URL"):
-                    send_email_celery.delay(**self.email_data())
-                else:
-                    send_mail(**self.email_data())
+                send_mail(**self.email_data())
             except BadHeaderError:
                 raise Http404("Email function returned BadHeaderError.")
             logger.info(f"Message sent successfully: {self.email_data()}")
@@ -269,8 +261,5 @@ def handler500(request):
     return render(
         request,
         "main/go_back_home.html",
-        context={
-            "message": "Internal Server Error (500)",
-            "code_handled": 500,
-        },
+        context={"message": "Internal Server Error (500)", "code_handled": 500,},
     )

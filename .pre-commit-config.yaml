@@ -40,13 +40,13 @@ repos:
         language: system
         entry: python utils/generate_pylint_badge.py
 
-      - id: pytest
-        name: pytest
-        stages: [commit]
-        language: system
-        entry: pytest
-        args: [".", "-x", "-Wignore", "--ignore=integration_tests/run_api_tests.py"]
-        types: [python]
+      # - id: pytest
+      #   name: pytest
+      #   stages: [commit]
+      #   language: system
+      #   entry: pytest
+      #   args: ["app", "--ignore=app/tests/test_views"]
+      #   types: [python]
 
       - id: coverage
         name: coverage

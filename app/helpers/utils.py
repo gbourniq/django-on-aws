@@ -4,7 +4,7 @@ from typing import Tuple
 from django.db.models.fields.files import ImageFieldFile
 from PIL import Image
 
-from app.static_settings import MEDIA_URL
+from app.config import MEDIA_URL
 
 
 def create_dummy_png_image(

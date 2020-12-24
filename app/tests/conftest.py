@@ -33,9 +33,7 @@ def mock_default_category() -> Category:
 
 
 @pytest.fixture
-def load_default_category(
-    mock_default_category: Category, monkeypatch
-) -> Category:
+def load_default_category(mock_default_category: Category, monkeypatch) -> Category:
     """Saves a default category object, and return the object"""
     if mock_default_category not in Category.objects.all():
         save_mock_category(monkeypatch, mock_default_category)
@@ -81,9 +79,7 @@ def load_default_item(mock_default_item: Item) -> Item:
 @pytest.fixture
 def mock_default_items(load_default_category) -> List[Item]:
     """Return a list of default item objects (unsaved)"""
-    return MockItem.default_items(
-        items_count=5, parent_category=load_default_category
-    )
+    return MockItem.default_items(items_count=5, parent_category=load_default_category)
 
 
 @pytest.fixture
@@ -126,12 +122,12 @@ def load_default_items_and_categories(
 ##########################
 
 
-@pytest.fixture
-def mock_email_host_user(monkeypatch) -> ContactForm:
-    mock_email_host_user = Mock(return_value="dummy@email.com")
-    monkeypatch.setattr(
-        "django.conf.settings.EMAIL_HOST_USER", mock_email_host_user
-    )
+# @pytest.fixture
+# def mock_email_host_user(monkeypatch) -> ContactForm:
+#     mock_email_host_user = Mock(return_value="dummy@email.com")
+#     monkeypatch.setattr(
+#         "django.conf.settings.EMAIL_HOST_USER", mock_email_host_user
+#     )
 
 
 @pytest.fixture

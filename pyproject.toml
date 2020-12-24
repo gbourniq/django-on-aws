@@ -20,6 +20,7 @@ pillow = "^7.0.0"                                   # HPND
 psycopg2 = "^2.8.4"                                 # GNU
 python = "3.8.0"                                    # PSF
 requests = "^2.22"                                  # Apache 2.0
+starlette = "^0.14.1"                               # BSD 3
 
 [tool.poetry.dev-dependencies]
 autoflake = "^1.4"                                  # MIT
@@ -43,10 +44,13 @@ filterwarnings = '''
     error
     ignore::UserWarning
 '''
+markers = '''
+    integration
+'''
 python_files = ["tests.py", "test_*", "*_tests.py"]
 # Ignore python packages in sam-application/bin/ 
 addopts = '''
-  --ignore=integration_tests/run_api_tests.py
+  --ignore=tests/test_views
   --strict
   --tb=short
   --cov=.
@@ -54,7 +58,7 @@ addopts = '''
   --cov-report=term-missing
   --cov-report=html
   --no-cov-on-fail
-  --cov-fail-under=50
+  --cov-fail-under=20
 '''
 env = ["SECRET_KEY=secret"]
 

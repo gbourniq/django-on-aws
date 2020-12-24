@@ -63,11 +63,11 @@ class Category(models.Model, BaseModelMixin, JSONifyMixin):
         self.image = self.resizeImage(self.image)
         self.__append_to_category_list()
         super(Category, self).save(*args, **kwargs)
-        if settings.EMAIL_HOST_USER:
-            self.send_email_notification_to_users(
-                subject=f"[Portfolio App Demo] New Category added!",
-                message=f"A new category '{self.category_name}' has been added! Check it out here... https://www.gbournique.com/items/{self.category_slug}",
-            )
+        # if settings.EMAIL_HOST_USER:
+        #     self.send_email_notification_to_users(
+        #         subject=f"[Portfolio App Demo] New Category added!",
+        #         message=f"A new category '{self.category_name}' has been added! Check it out here... https://www.gbournique.com/items/{self.category_slug}",
+        #     )
 
     def __str__(self):
         """
@@ -93,15 +93,10 @@ class Item(models.Model, BaseModelMixin, JSONifyMixin):
     item_name = models.CharField(max_length=200, unique=True)
     summary = models.CharField(max_length=200)
     content = models.TextField()
-    date_published = models.DateTimeField(
-        "date published", default=timezone.now
-    )
+    date_published = models.DateTimeField("date published", default=timezone.now)
     item_slug = models.CharField(max_length=200, unique=True)
     category_name = models.ForeignKey(
-        Category,
-        default=1,
-        verbose_name="Category",
-        on_delete=models.SET_DEFAULT,
+        Category, default=1, verbose_name="Category", on_delete=models.SET_DEFAULT,
     )
     views = models.IntegerField(default=0)
 
@@ -159,12 +154,12 @@ class Item(models.Model, BaseModelMixin, JSONifyMixin):
         Overrides the save method to notify all registered users
         that a new item has been added
         """
-        if self not in Item.objects.all() and settings.EMAIL_HOST_USER:
-            # Send notification for newly created item
-            self.send_email_notification_to_users(
-                subject="[Portfolio App Demo] New Item added!",
-                message=f"A new item '{self.item_name}' has been added! Check it out here... https://www.gbournique.com/items/{self.category_name.category_slug}/{self.item_slug}",
-            )
+        # if self not in Item.objects.all() and settings.EMAIL_HOST_USER:
+        #     # Send notification for newly created item
+        #     self.send_email_notification_to_users(
+        #         subject="[Portfolio App Demo] New Item added!",
+        #         message=f"A new item '{self.item_name}' has been added! Check it out here... https://www.gbournique.com/items/{self.category_name.category_slug}/{self.item_slug}",
+        #     )
         super(Item, self).save(*args, **kwargs)
         if self not in Item.get_item_list():
             self.__append_to_item_list()
@@ -181,7 +176,9 @@ class Item(models.Model, BaseModelMixin, JSONifyMixin):
         Override magic method to return a developer-friendly string
         representation of the object on repr(item_object)
         """
-        return f"Item=(id={self.id},item_name={self.item_name},item_slug={self.item_slug})"
+        return (
+            f"Item=(id={self.id},item_name={self.item_name},item_slug={self.item_slug})"
+        )
 
     def __ge__(self, value):
         """

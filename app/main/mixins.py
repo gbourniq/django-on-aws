@@ -8,7 +8,6 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.auth.views import redirect_to_login
 from django.core.files.uploadedfile import InMemoryUploadedFile
-from django.core.mail import BadHeaderError, send_mail
 from django.db.models.fields.files import ImageFieldFile
 from PIL import Image
 
@@ -19,13 +18,8 @@ class RequireLoginMixin:
     """
 
     def dispatch(self, request, *args, **kwargs):
-        if (
-            settings.ENABLE_LOGIN_REQUIRED_MIXIN
-            and not request.user.is_authenticated
-        ):
-            return redirect_to_login(
-                next=request.get_full_path(), login_url="/login"
-            )
+        if settings.ENABLE_LOGIN_REQUIRED_MIXIN and not request.user.is_authenticated:
+            return redirect_to_login(next=request.get_full_path(), login_url="/login")
         return super(RequireLoginMixin, self).dispatch(request, *args, **kwargs)
 
 
@@ -90,31 +84,31 @@ class BaseModelMixin:
             return registered_email_addresses
         return None
 
-    def send_email_notification_to_users(
-        self,
-        subject: str,
-        message: str,
-        from_email: str = settings.EMAIL_HOST_USER,
-    ) -> None:
-        """
-        Send an email notification to registered users.
-        """
+    # def send_email_notification_to_users(
+    #     self,
+    #     subject: str,
+    #     message: str,
+    #     from_email: str = settings.EMAIL_HOST_USER,
+    # ) -> None:
+    #     """
+    #     Send an email notification to registered users.
+    #     """
 
-        registered_emails = self.get_registered_emails()
+    #     registered_emails = self.get_registered_emails()
 
-        if not registered_emails:
-            self.logger.warning(f"No registered emails found")
-            return None
+    #     if not registered_emails:
+    #         self.logger.warning(f"No registered emails found")
+    #         return None
 
-        try:
-            [
-                send_mail(subject, message, from_email, [to_email])
-                for to_email in registered_emails
-            ]
-            self.logger.info(
-                f"Email notification sent successfully to {registered_emails}"
-            )
-        except BadHeaderError:
-            self.logger.warning(
-                f"Email function {send_mail} returned BadHeaderError"
-            )
+    #     try:
+    #         [
+    #             send_mail(subject, message, from_email, [to_email])
+    #             for to_email in registered_emails
+    #         ]
+    #         self.logger.info(
+    #             f"Email notification sent successfully to {registered_emails}"
+    #         )
+    #     except BadHeaderError:
+    #         self.logger.warning(
+    #             f"Email function {send_mail} returned BadHeaderError"
+    #         )

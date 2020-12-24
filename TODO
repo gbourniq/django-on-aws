@@ -1,3 +1,5 @@
 - Simplify as per readme
 - redefine deployment commands and CI/CD pipeline
 - Keep AWS deployment and external services integrations for later 
+- use starlette config
+- fix tests and pre-commit

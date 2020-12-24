@@ -1,5 +1,4 @@
 from typing import List
-from unittest.mock import Mock
 
 import pytest
 
@@ -28,8 +27,7 @@ class TestItems:
         }
 
         assert all(
-            cat_attr == dummy_var
-            for cat_attr, dummy_var in attr_mapping.items()
+            cat_attr == dummy_var for cat_attr, dummy_var in attr_mapping.items()
         )
 
     def test_attr_types(self, mock_default_item: Item):
@@ -50,8 +48,7 @@ class TestItems:
         }
 
         assert all(
-            isinstance(attr, attr_type)
-            for attr, attr_type in type_mapping.items()
+            isinstance(attr, attr_type) for attr, attr_type in type_mapping.items()
         )
 
     def test_item_str_cast(self, mock_default_item: Item):
@@ -112,26 +109,26 @@ class TestItems:
         """
         assert Item.get_item_list() == load_default_items
 
-    def test_send_notification_is_called_on_first_save(
-        self, monkeypatch, mock_default_item: Item, mock_email_host_user: str
-    ):
-        """
-        Tests the send_email_notification_to_users function is called when saving an item
-        Tests that the email notification is only sent when the item is first saved. Modifying
-        an existing item and calling .save() should not trigger the email_notification function.
-        """
+    # def test_send_notification_is_called_on_first_save(
+    #     self, monkeypatch, mock_default_item: Item, mock_email_host_user: str
+    # ):
+    #     """
+    #     Tests the send_email_notification_to_users function is called when saving an item
+    #     Tests that the email notification is only sent when the item is first saved. Modifying
+    #     an existing item and calling .save() should not trigger the email_notification function.
+    #     """
 
-        mock_send_email_notification = Mock()
-        monkeypatch.setattr(
-            Item,
-            "send_email_notification_to_users",
-            mock_send_email_notification,
-        )
+    #     mock_send_email_notification = Mock()
+    #     monkeypatch.setattr(
+    #         Item,
+    #         "send_email_notification_to_users",
+    #         mock_send_email_notification,
+    #     )
 
-        mock_default_item.save()
+    #     mock_default_item.save()
 
-        mock_send_email_notification.assert_called_once()
+    #     mock_send_email_notification.assert_called_once()
 
-        mock_default_item.item_name = "updated name"
-        mock_default_item.save()
-        mock_send_email_notification.assert_called_once()
+    #     mock_default_item.item_name = "updated name"
+    #     mock_default_item.save()
+    #     mock_send_email_notification.assert_called_once()

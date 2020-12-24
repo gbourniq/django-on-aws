@@ -5,7 +5,7 @@ from pathlib import Path
 from pylint.lint import Run
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
-DIRECTORY_TO_LINT = (ROOT_DIR / "sam-application").name
+DIRECTORY_TO_LINT = (ROOT_DIR / "app").name
 
 # pylint: disable=too-many-return-statements
 def get_color(score: float) -> str:

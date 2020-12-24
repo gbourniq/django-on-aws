@@ -32,19 +32,19 @@ pre-commit:
 
 
 ### Testing ###
-.PHONY: unit-tests get-cov-report start-fastapi-server start-api test-api-local
+.PHONY: start-django-server
 
 # For quick manual testing during development
 start-django-server:
-	@ source .env && uvicorn lambda_restapi.main:app --host 0.0.0.0 --port 8080 --reload
+	@ python app/manage.py runserver 0.0.0.0:8080
 
-tests:
-	@ ${INFO} "Running tests using the FastAPI Test client"
-	@ pytest .
-	@ ${INFO} "Run 'make open-cov-report' to view coverage details"
+# tests:
+# 	@ ${INFO} "Running tests using the FastAPI Test client"
+# 	@ pytest .
+# 	@ ${INFO} "Run 'make open-cov-report' to view coverage details"
 
-open-cov-report:
-	@ open htmlcov/index.html
+# open-cov-report:
+# 	@ open htmlcov/index.html
 
 
 ### Deployment ###

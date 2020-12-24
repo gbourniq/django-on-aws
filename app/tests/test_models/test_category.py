@@ -7,13 +7,13 @@ import pytest
 from django.db.models.fields.files import ImageFieldFile
 from PIL import UnidentifiedImageError
 
-from app.static_settings import MEDIA_URL
-from app.tests.mocks import MockCategory
-from app.tests.utils import (
+from app.config import MEDIA_URL
+from app.helpers.utils import (
     check_image_attributes,
     create_dummy_file,
     create_dummy_png_image,
 )
+from app.tests.mocks import MockCategory
 from main.mixins import BaseModelMixin
 from main.models import Category
 
@@ -35,8 +35,7 @@ class TestCategory:
         }
 
         assert all(
-            cat_attr == dummy_var
-            for cat_attr, dummy_var in attr_mapping.items()
+            cat_attr == dummy_var for cat_attr, dummy_var in attr_mapping.items()
         )
 
     def test_attr_types(self, mock_default_category: Category):
@@ -52,8 +51,7 @@ class TestCategory:
         }
 
         assert all(
-            isinstance(attr, attr_type)
-            for attr, attr_type in type_mapping.items()
+            isinstance(attr, attr_type) for attr, attr_type in type_mapping.items()
         )
 
     def test_category_str_cast(self, mock_default_category: Category):
@@ -91,9 +89,7 @@ class TestCategory:
         """
         assert Category.get_category_list() == load_default_categories
 
-    def test_image_resize_called(
-        self, monkeypatch, mock_default_category: Category
-    ):
+    def test_image_resize_called(self, monkeypatch, mock_default_category: Category):
         """
         Ensures the resizeImage function is called when saving a category
         """
@@ -177,26 +173,26 @@ class TestCategory:
 
         assert Category.objects.all().count() == len(load_default_categories)
 
-    def test_send_notification_is_called_on_save(
-        self,
-        monkeypatch,
-        mock_default_category: Category,
-        mock_email_host_user: str,
-    ):
-        """
-        Ensures the send_email_notification_to_users function is called when saving a category
-        """
+    # def test_send_notification_is_called_on_save(
+    #     self,
+    #     monkeypatch,
+    #     mock_default_category: Category,
+    #     mock_email_host_user: str,
+    # ):
+    #     """
+    #     Ensures the send_email_notification_to_users function is called when saving a category
+    #     """
 
-        mock_resize_image = Mock(return_value=mock_default_category.image)
-        monkeypatch.setattr(Category, "resizeImage", mock_resize_image)
+    #     mock_resize_image = Mock(return_value=mock_default_category.image)
+    #     monkeypatch.setattr(Category, "resizeImage", mock_resize_image)
 
-        mock_send_email_notification = Mock()
-        monkeypatch.setattr(
-            Category,
-            "send_email_notification_to_users",
-            mock_send_email_notification,
-        )
+    #     mock_send_email_notification = Mock()
+    #     monkeypatch.setattr(
+    #         Category,
+    #         "send_email_notification_to_users",
+    #         mock_send_email_notification,
+    #     )
 
-        mock_default_category.save()
+    #     mock_default_category.save()
 
-        mock_send_email_notification.assert_called_once()
+    #     mock_send_email_notification.assert_called_once()

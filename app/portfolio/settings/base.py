@@ -12,14 +12,14 @@ https://docs.djangoproject.com/en/3.0/ref/settings/
 
 import os
 
-from app import static_settings
+from app import config
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 PORTFOLIO_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BASE_DIR = os.path.dirname(PORTFOLIO_DIR)
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = static_settings.SECRET_KEY
+SECRET_KEY = config.SECRET_KEY
 
 # SECURITY WARNING: don't run with debug turned on in production!
 # Overriden by dev/prod settings files
@@ -64,7 +64,6 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "django_celery_results",
     "main",
     "tinymce",
     "materializecssform",
@@ -111,12 +110,8 @@ AUTH_PASSWORD_VALIDATORS = [
         "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
     },
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
-    {
-        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
-    },
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",},
 ]
 
 
@@ -153,27 +148,22 @@ STATICFILES_DIRS = None
 
 
 # Configuration which writes all logging from the django logger to a local file
-if static_settings.LOGGING_ENABLED:
-    LOGGING = {
-        "version": 1,
-        "disable_existing_loggers": False,
-        "formatters": {
-            "standard": {
-                "format": "%(asctime)s %(levelname)s %(name)s %(message)s"
-            },
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "standard": {"format": "%(asctime)s %(levelname)s %(name)s %(message)s"},
+    },
+    "handlers": {
+        "file": {
+            "level": "INFO",
+            "class": "logging.FileHandler",
+            "filename": "info.log",
+            "formatter": "standard",
         },
-        "handlers": {
-            "file": {
-                "level": "INFO",
-                "class": "logging.FileHandler",
-                "filename": "info.log",
-                "formatter": "standard",
-            },
-        },
-        "loggers": {
-            "": {"handlers": ["file"], "level": "INFO", "propagate": True},
-        },
-    }
+    },
+    "loggers": {"": {"handlers": ["file"], "level": "INFO", "propagate": True},},
+}
 
 REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [

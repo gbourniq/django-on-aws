@@ -696,6 +696,17 @@ python-versions = ">=3.5"
 version = "0.4.1"
 
 [[package]]
+category = "main"
+description = "The little ASGI library that shines."
+name = "starlette"
+optional = false
+python-versions = ">=3.6"
+version = "0.14.1"
+
+[package.extras]
+full = ["aiofiles", "graphene", "itsdangerous", "jinja2", "python-multipart", "pyyaml", "requests"]
+
+[[package]]
 category = "dev"
 description = "Python Library for Tom's Obvious, Minimal Language"
 name = "toml"
@@ -751,7 +762,7 @@ python-versions = "*"
 version = "1.12.1"
 
 [metadata]
-content-hash = "9b317dc91a7559741e4c7ddaff2d9d293ac271160f61ab4d0bd3d169c8815c0c"
+content-hash = "90ca1b3b46399f0f37e040fb2c4a0adfcef010160436ff69c1c982a5dfebb870"
 lock-version = "1.1"
 python-versions = "3.8.0"                                    # PSF
 
@@ -1181,6 +1192,10 @@ six = [
 sqlparse = [
     {file = "sqlparse-0.4.1-py3-none-any.whl", hash = "sha256:017cde379adbd6a1f15a61873f43e8274179378e95ef3fede90b5aa64d304ed0"},
     {file = "sqlparse-0.4.1.tar.gz", hash = "sha256:0f91fd2e829c44362cbcfab3e9ae12e22badaa8a29ad5ff599f9ec109f0454e8"},
+]
+starlette = [
+    {file = "starlette-0.14.1-py3-none-any.whl", hash = "sha256:d2f55fb835378442b812637ed3e3fcef3d3e22d292fcb8400fa48d2473202411"},
+    {file = "starlette-0.14.1.tar.gz", hash = "sha256:5268ef5d4904ec69582d5fd207b869a5aa0cd59529848ba4cf429b06e3ced99a"},
 ]
 toml = [
     {file = "toml-0.10.2-py2.py3-none-any.whl", hash = "sha256:806143ae5bfb6a3c6e736a764057db0e6a0e05e338b5630894a5f779cabb4f9b"},
