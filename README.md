@@ -1,6 +1,6 @@
 [![Build Status](https://travis-ci.com/gbourniq/django-on-aws.svg?branch=main)](https://travis-ci.com/gbourniq/django-on-aws)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
-![Pylint](.github/sam.svg)
+![Pylint](.github/app.svg)
 ![Coverage](.github/coverage.svg)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/gbourniq/django-on-aws/blob/master/LICENSE)

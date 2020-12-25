@@ -1,6 +1,10 @@
 services:
   - docker
 
+env:
+  global:
+    - DOCKER_COMPOSE_VERSION=1.23.2
+
 install:
   # Install docker-compose
   - sudo rm /usr/local/bin/docker-compose
