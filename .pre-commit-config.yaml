@@ -40,6 +40,13 @@ repos:
         language: system
         entry: python utils/generate_pylint_badge.py
 
+      - id: pytest
+        name: pytest
+        stages: [commit]
+        language: system
+        entry: make tests
+        types: [python]
+
       # - id: pytest
       #   name: pytest
       #   stages: [commit]

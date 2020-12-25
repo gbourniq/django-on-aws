@@ -3,3 +3,6 @@
 - Keep AWS deployment and external services integrations for later 
 - use starlette config
 - fix tests and pre-commit
+- review all tests, adops the # Given, When Then, and use of tmp_path
+- fix tests manipulating images (path issue)
+- look for all comments # and remove/address them

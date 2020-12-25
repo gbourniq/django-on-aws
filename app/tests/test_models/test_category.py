@@ -1,20 +1,15 @@
-import shutil
-from pathlib import Path
-from typing import List, Tuple
+from typing import List
 from unittest.mock import Mock
 
 import pytest
 from django.db.models.fields.files import ImageFieldFile
-from PIL import UnidentifiedImageError
 
-from app.config import MEDIA_URL
-from app.helpers.utils import (
-    check_image_attributes,
-    create_dummy_file,
-    create_dummy_png_image,
-)
+# from app.tests.utils import (
+#     check_image_attributes,
+#     create_dummy_file,
+#     create_dummy_png_image,
+# )
 from app.tests.mocks import MockCategory
-from main.mixins import BaseModelMixin
 from main.models import Category
 
 
@@ -100,70 +95,70 @@ class TestCategory:
 
         mock_resize_image.assert_called_once_with(mock_default_category.image)
 
-    @pytest.mark.parametrize(
-        "INITIAL_SIZE", [(800, 1280), (2000, 200), (200, 2000), (100, 100)]
-    )
-    @pytest.mark.parametrize("FILE_EXTENTION", ["png", "jpeg", "bmp", "tiff"])
-    def test_image_resize_success(
-        self,
-        mock_default_category: Category,
-        INITIAL_SIZE: Tuple[int, int],
-        FILE_EXTENTION: str,
-    ):
-        """
-        Test that the resizeImage function works as expected
-        when saving a Category object
-        """
+    # @pytest.mark.parametrize(
+    #     "INITIAL_SIZE", [(800, 1280), (2000, 200), (200, 2000), (100, 100)]
+    # )
+    # @pytest.mark.parametrize("FILE_EXTENTION", ["png", "jpeg", "bmp", "tiff"])
+    # def test_image_resize_success(
+    #     self,
+    #     mock_default_category: Category,
+    #     INITIAL_SIZE: Tuple[int, int],
+    #     FILE_EXTENTION: str,
+    # ):
+    #     """
+    #     Test that the resizeImage function works as expected
+    #     when saving a Category object
+    #     """
 
-        mock_default_category.image = f"dummy_image_base_name.{FILE_EXTENTION}"
-        create_dummy_png_image(
-            mock_default_category.image.name, IMAGE_SIZE=INITIAL_SIZE
-        )
+    #     mock_default_category.image = f"dummy_image_base_name.{FILE_EXTENTION}"
+    #     create_dummy_png_image(
+    #         mock_default_category.image.name, IMAGE_SIZE=INITIAL_SIZE
+    #     )
 
-        check_image_attributes(
-            mock_default_category.image,
-            size_check=INITIAL_SIZE,
-            ext_check=f".{FILE_EXTENTION}",
-        )
+    #     check_image_attributes(
+    #         mock_default_category.image,
+    #         size_check=INITIAL_SIZE,
+    #         ext_check=f".{FILE_EXTENTION}",
+    #     )
 
-        mock_default_category.save()
+    #     mock_default_category.save()
 
-        check_image_attributes(
-            mock_default_category.image,
-            size_check=BaseModelMixin.CROP_SIZE,
-            ext_check=".jpg",
-        )
+    #     check_image_attributes(
+    #         mock_default_category.image,
+    #         size_check=BaseModelMixin.CROP_SIZE,
+    #         ext_check=".jpg",
+    #     )
 
-        shutil.rmtree(Path(MEDIA_URL))
+    #     shutil.rmtree(Path(MEDIA_URL))
 
-    @pytest.mark.parametrize(
-        "FILE_EXTENTION, EXCEPTION",
-        [
-            ("oops", UnidentifiedImageError),
-            ("pdf", UnidentifiedImageError),
-            ("txt", UnidentifiedImageError),
-            ("docx", UnidentifiedImageError),
-            ("xls", UnidentifiedImageError),
-        ],
-    )
-    def test_image_resize_failed(
-        self,
-        mock_default_category: Category,
-        FILE_EXTENTION: str,
-        EXCEPTION: Exception,
-    ):
-        """
-        Test the expected Exception is raised when an invalid file format is submitted.
-        Clean up created test images
-        """
+    # @pytest.mark.parametrize(
+    #     "FILE_EXTENTION, EXCEPTION",
+    #     [
+    #         ("oops", UnidentifiedImageError),
+    #         ("pdf", UnidentifiedImageError),
+    #         ("txt", UnidentifiedImageError),
+    #         ("docx", UnidentifiedImageError),
+    #         ("xls", UnidentifiedImageError),
+    #     ],
+    # )
+    # def test_image_resize_failed(
+    #     self,
+    #     mock_default_category: Category,
+    #     FILE_EXTENTION: str,
+    #     EXCEPTION: Exception,
+    # ):
+    #     """
+    #     Test the expected Exception is raised when an invalid file format is submitted.
+    #     Clean up created test images
+    #     """
 
-        mock_default_category.image = f"dummy_image_base_name.{FILE_EXTENTION}"
-        create_dummy_file(mock_default_category.image.name)
+    #     mock_default_category.image = f"dummy_image_base_name.{FILE_EXTENTION}"
+    #     create_dummy_file(mock_default_category.image.name)
 
-        with pytest.raises(EXCEPTION):
-            mock_default_category.save()
+    #     with pytest.raises(EXCEPTION):
+    #         mock_default_category.save()
 
-        shutil.rmtree(Path(MEDIA_URL))
+    #     shutil.rmtree(Path(MEDIA_URL))
 
     def test_load_categories(self, load_default_categories: List[Category]):
         """

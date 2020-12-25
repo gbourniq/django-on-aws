@@ -38,10 +38,10 @@ pre-commit:
 start-django-server:
 	@ python app/manage.py runserver 0.0.0.0:8080
 
-# tests:
-# 	@ ${INFO} "Running tests using the FastAPI Test client"
-# 	@ pytest .
-# 	@ ${INFO} "Run 'make open-cov-report' to view coverage details"
+tests:
+	@ ${INFO} "Running tests using the FastAPI Test client"
+	@ pytest app
+	@ ${INFO} "Run 'make open-cov-report' to view coverage details"
 
 # open-cov-report:
 # 	@ open htmlcov/index.html
