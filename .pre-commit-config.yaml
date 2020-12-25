@@ -47,14 +47,6 @@ repos:
         entry: make tests
         types: [python]
 
-      # - id: pytest
-      #   name: pytest
-      #   stages: [commit]
-      #   language: system
-      #   entry: pytest
-      #   args: ["app", "--ignore=app/tests/test_views"]
-      #   types: [python]
-
       - id: coverage
         name: coverage
         stages: [commit]

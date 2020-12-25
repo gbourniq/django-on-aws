@@ -1,8 +1,8 @@
 - Simplify as per readme
 - redefine deployment commands and CI/CD pipeline
-- Keep AWS deployment and external services integrations for later 
-- use starlette config
-- fix tests and pre-commit
-- review all tests, adops the # Given, When Then, and use of tmp_path
-- fix tests manipulating images (path issue)
+- fix all tests (images with path issue, email notifications functions + general improvements)
+    - review all tests, adops the # Given, When Then, and use of tmp_path
 - look for all comments # and remove/address them
+- Keep AWS deployment and external services integrations for later 
+- unit tests requires postgres to run -> handles this for CI pipeline.. still needs a docker compose file after all?
+- fix all imports to be absolute

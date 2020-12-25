@@ -4,8 +4,11 @@ SHELL=/bin/bash -e -o pipefail
 ### Environment variables ###
 CONDA_ENV_NAME=django-on-aws
 CONDA_ACTIVATE=source $$(conda info --base)/etc/profile.d/conda.sh ; conda activate
-# S3_BUCKET_NAME=gbournique-s3-sam-builds
-VERSION=$(shell poetry version | awk '{print $$NF}')
+
+# Docker
+DOCKER_USER=gbournique
+IMAGE_REPOSITORY=${DOCKER_USER}/django-on-aws
+TAG=$(shell poetry version | awk '{print $$NF}')
 
 
 ### Environment and pre-commit hooks ###
@@ -28,35 +31,49 @@ pre-commit:
 	@ ${SUCCESS} "pre-commit set up"
 
 
-### Build dependencies ###
+### Development and Testing ###
+.PHONY: runserver tests open-cov-report
 
-
-### Testing ###
-.PHONY: start-django-server
-
-# For quick manual testing during development
-start-django-server:
+runserver:
+	@ docker-compose up -d postgres || true
 	@ python app/manage.py runserver 0.0.0.0:8080
 
 tests:
-	@ ${INFO} "Running tests using the FastAPI Test client"
+	@ ${INFO} "Running Django tests with PostgreSQL running on Docker"
+	@ docker-compose up -d postgres
 	@ pytest app
+	@ docker-compose down || true
 	@ ${INFO} "Run 'make open-cov-report' to view coverage details"
 
-# open-cov-report:
-# 	@ open htmlcov/index.html
+open-cov-report:
+	@ open htmlcov/index.html
 
 
 ### Deployment ###
+.PHONY: image up down publish
+image:
+	rm -rf dist
+	poetry build
+	docker build -t ${IMAGE_REPOSITORY}:$(TAG) .
 
+up:
+	@ ${INFO} "Running Django tests with PostgreSQL running on Docker"
+	@docker-compose down || true
+	docker-compose up -d
 
-### Clean up ###
+healthcheck:
+	@ ${INFO} "Checking Django application health"
+	@ ./utils/healthcheck.sh
+
+down:
+	@docker-compose down || true
+
+publish:
+	@echo "${DOCKER_PASSWORD}" | docker login --username "${DOCKER_USER}" --password-stdin 2>&1
+	@docker push ${IMAGE_REPOSITORY}:$(TAG)
 
 
 ### Helpers ###
-
-
-### Fancy colours ###
 RED := "\e[1;31m"
 YELLOW := "\e[1;33m"
 GREEN := "\033[32m"

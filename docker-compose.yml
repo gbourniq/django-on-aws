@@ -1,0 +1,57 @@
+version: "3.5"
+
+services:
+
+  app:
+    image: gbournique/django-on-aws:1.0.0
+    container_name: app
+    restart: "on-failure"
+    environment:
+      DJANGO_SETTINGS_MODULE: portfolio.settings.settings
+      POSTGRES_HOST: postgres
+      PYTHONPATH: /home/portfoliouser/portfolio
+    volumes:
+      - ./deployment/app/startup_server.sh:/home/portfoliouser/startup_server.sh
+    healthcheck:
+      test: curl -f -s -S http://localhost:8080 || exit 1
+      interval: 30s
+      timeout: 120s
+      retries: 10
+    ports:
+      - "8080:8080"
+    networks:
+      - backend
+    entrypoint: ["./startup_server.sh"]
+    depends_on:
+      - postgres
+  postgres:
+    image: postgres:12-alpine
+    container_name: postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: portfoliodb
+      POSTGRES_INITDB_ARGS: "--encoding='UTF-8'"
+    volumes:
+      - ./deployment/postgres/config/postgres.conf:/etc/postgres/postgres.conf:ro
+      - ./deployment/postgres/docker-entrypoint-initdb.d/:/docker-entrypoint-initdb.d/
+      - pgdata:/var/lib/postgresql/data/ 
+      - pglogs:/var/lib/postgresql/pglogs/
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    ports:
+      - "5432:5432"
+    networks:
+      - backend
+
+volumes:
+  pgdata:
+  pglogs:
+
+networks:
+  backend:
+    driver: bridge

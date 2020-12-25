@@ -1,24 +1,31 @@
-# install:
-#   # Install conda
-#   - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
-#   - bash miniconda.sh -b -p $HOME/miniconda
-#   - source "$HOME/miniconda/etc/profile.d/conda.sh"
-#   - hash -r
-#   - conda config --set always_yes yes --set changeps1 no
-#   - conda update -q conda
-#   - conda info -a
-#   # Install poetry
-#   - pip install poetry
-# script:
-#   # CI
-#   - make env
-#   - conda activate django-on-aws
-#   - make test
-#   # CD
-#   - make build
-#   - make package
-#   - make start-api &
-#   - make test-local-api
-#   - make deploy
-#   - make check-api-is-secured
-#   - make check-healthcheck-endpoint
+services:
+  - docker
+
+install:
+  # Install docker-compose
+  - sudo rm /usr/local/bin/docker-compose
+  - curl -L https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-`uname -s`-`uname -m` > docker-compose
+  - chmod +x docker-compose
+  - sudo mv docker-compose /usr/local/bin
+  # Install conda
+  - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+  - bash miniconda.sh -b -p $HOME/miniconda
+  - source "$HOME/miniconda/etc/profile.d/conda.sh"
+  - hash -r
+  - conda config --set always_yes yes --set changeps1 no
+  - conda update -q conda
+  - conda info -a
+  # Install poetry
+  - pip install poetry
+
+script:
+  # CI
+  - make env
+  - conda activate django-on-aws
+  - make test
+  # CD
+  - make image
+  - make up
+  - make healthcheck
+  - make down
+  - make publish
