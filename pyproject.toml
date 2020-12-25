@@ -59,7 +59,7 @@ addopts = '''
   --cov-report=term-missing
   --cov-report=html
   --no-cov-on-fail
-  --cov-fail-under=20
+  --cov-fail-under=80
 '''
 env = ["DJANGO_SETTINGS_MODULE=portfolio.settings.settings", "MEDIA_URL=mock_media_dir"]
 

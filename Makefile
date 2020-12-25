@@ -58,15 +58,15 @@ image:
 
 up:
 	@ ${INFO} "Running Django tests with PostgreSQL running on Docker"
-	@docker-compose down || true
-	docker-compose up -d
+	@ docker-compose down
+	@ docker-compose up -d
 
 healthcheck:
 	@ ${INFO} "Checking Django application health"
 	@ ./utils/healthcheck.sh
 
 down:
-	@docker-compose down || true
+	@ docker-compose down
 
 publish:
 	@echo "${DOCKER_PASSWORD}" | docker login --username "${DOCKER_USER}" --password-stdin 2>&1
