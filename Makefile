@@ -38,12 +38,13 @@ rundb:
 	@ docker-compose up -d postgres || true
 
 runserver: rundb
+	@ python app/manage.py migrate --run-syncdb
 	@ python app/manage.py runserver 0.0.0.0:8080
 
 tests:
 	@ ${INFO} "Running Django tests with PostgreSQL running on Docker"
 	@ docker-compose up -d postgres
-	@ pytest app
+	@ pytest . -x
 	@ docker-compose down || true
 	@ ${INFO} "Run 'make open-cov-report' to view coverage details"
 
