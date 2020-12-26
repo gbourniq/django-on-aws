@@ -39,12 +39,14 @@ repos:
         stages: [commit]
         language: system
         entry: python utils/generate_pylint_badge.py
+        types: [python]
 
       - id: postgres-up
         name: postgres-up
         stages: [commit]
         language: system
         entry: make rundb
+        types: [python]
 
       - id: pytest
         name: pytest
@@ -59,4 +61,5 @@ repos:
         stages: [commit]
         language: system
         entry: bash utils/generate_coverage_badge.sh
+        types: [python]
 
