@@ -1,8 +1,10 @@
 - Simplify as per readme
-- redefine deployment commands and CI/CD pipeline
 - fix all tests (images with path issue, email notifications functions + general improvements)
     - review all tests, adops the # Given, When Then, and use of tmp_path
+    - remove monkeypatch using absolute paths
 - look for all comments # and remove/address them
 - Keep AWS deployment and external services integrations for later 
-- unit tests requires postgres to run -> handles this for CI pipeline.. still needs a docker compose file after all?
-- fix all imports to be absolute
+
+1. optimise all non-test code: constants etc OK
+2. increase coverage where possible
+3. review all test code

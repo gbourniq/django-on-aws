@@ -33,9 +33,7 @@ class TestViewRegister:
         }
 
         mock_authenticate = Mock(return_value=mock_user)
-        monkeypatch.setattr(
-            "django.contrib.auth.authenticate", mock_authenticate
-        )
+        monkeypatch.setattr("django.contrib.auth.authenticate", mock_authenticate)
         mock_login = Mock()
         monkeypatch.setattr("main.views.login", mock_login)
 
@@ -88,9 +86,7 @@ class TestViewRegister:
         mock_save_form = Mock(return_value=mock_user)
         monkeypatch.setattr(NewUserForm, "save", mock_save_form)
 
-        response = client.post(
-            reverse("register"), data=mock_user_form_invalid_data
-        )
+        response = client.post(reverse("register"), data=mock_user_form_invalid_data)
 
         mock_save_form.assert_not_called()
         mock_login.assert_not_called()
@@ -120,9 +116,7 @@ class TestViewRegister:
         mock_save_form = Mock(return_value=mock_user)
         monkeypatch.setattr(NewUserForm, "save", mock_save_form)
 
-        response = client.post(
-            reverse("register"), data=mock_user_form_valid_data
-        )
+        response = client.post(reverse("register"), data=mock_user_form_valid_data)
 
         mock_save_form.assert_not_called()
         mock_login.assert_not_called()

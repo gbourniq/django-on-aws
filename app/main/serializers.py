@@ -52,9 +52,7 @@ class CategorySerializer(serializers.ModelSerializer):
 
 
 class ItemSerializer(serializers.ModelSerializer):
-    """
-    Class to serialize Item model
-    """
+    """Class to serialize Item model"""
 
     item_name = serializers.CharField(
         min_length=0,
@@ -68,10 +66,7 @@ class ItemSerializer(serializers.ModelSerializer):
     )
     content = serializers.CharField(
         min_length=10,
-        style={
-            "input_type": "text",
-            "placeholder": "Write item content here...",
-        },
+        style={"input_type": "text", "placeholder": "Write item content here...",},
         help_text="To insert formatted text, please use the django administration site.",
     )
     date_published = serializers.DateTimeField(
@@ -99,8 +94,6 @@ class ItemSerializer(serializers.ModelSerializer):
 
 
 class StatSerializer(serializers.Serializer):
-    """
-    Class to serialize CategoryStats
-    """
+    """Class to serialize CategoryStats"""
 
     stats = serializers.DictField(child=serializers.IntegerField())

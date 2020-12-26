@@ -64,26 +64,6 @@ class TestCategory:
             == f"Category=(id={mock_default_category.id},category_name={mock_default_category.category_name},category_slug={mock_default_category.category_slug})"
         )
 
-    def test_category_json_cast(self, mock_default_category: Category):
-        """
-        Test category .json() method
-        """
-        expected_dict = {
-            "category_name": mock_default_category.category_name,
-            "summary": mock_default_category.summary,
-            "image": mock_default_category.image,
-            "category_slug": mock_default_category.category_slug,
-        }
-        assert mock_default_category.to_json() == expected_dict
-
-    def test_category_list_class_property(
-        self, load_default_categories: List[Category]
-    ):
-        """
-        Tests __category_list contains a list of saved categories
-        """
-        assert Category.get_category_list() == load_default_categories
-
     def test_image_resize_called(self, monkeypatch, mock_default_category: Category):
         """
         Ensures the resizeImage function is called when saving a category
@@ -167,27 +147,3 @@ class TestCategory:
         """
 
         assert Category.objects.all().count() == len(load_default_categories)
-
-    # def test_send_notification_is_called_on_save(
-    #     self,
-    #     monkeypatch,
-    #     mock_default_category: Category,
-    #     mock_email_host_user: str,
-    # ):
-    #     """
-    #     Ensures the send_email_notification_to_users function is called when saving a category
-    #     """
-
-    #     mock_resize_image = Mock(return_value=mock_default_category.image)
-    #     monkeypatch.setattr(Category, "resizeImage", mock_resize_image)
-
-    #     mock_send_email_notification = Mock()
-    #     monkeypatch.setattr(
-    #         Category,
-    #         "send_email_notification_to_users",
-    #         mock_send_email_notification,
-    #     )
-
-    #     mock_default_category.save()
-
-    #     mock_send_email_notification.assert_called_once()

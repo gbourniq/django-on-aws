@@ -1,5 +1,6 @@
 """
-WSGI config for portfolio project.
+WSGI config for portfolio project which is used when starting a production
+server with gunicorn.
 
 It exposes the WSGI callable as a module-level variable named ``application``.
 

@@ -117,9 +117,7 @@ class CategoryStats(GenericAPIView):
         category = self.get_object()
         items_in_category = Item.objects.filter(category_name=category)
         all_views_count = sum([item.views for item in items_in_category])
-        serializer = StatSerializer(
-            {"stats": {"all_items_views": all_views_count}}
-        )
+        serializer = StatSerializer({"stats": {"all_items_views": all_views_count}})
         return Response(serializer.data)
 
 

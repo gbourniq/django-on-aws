@@ -18,7 +18,7 @@ persistent=yes
 # List of plugins (as comma separated values of python modules names) to load,
 # usually to register additional checkers.
 # NB: McCabe is a cyclomatic (branch) complexity checker
-load-plugins=
+load-plugins=pylint_django
 
 # Use multiple processes to speed up Pylint.
 jobs=1
@@ -231,7 +231,7 @@ docstring-quote=double
 # Logging modules to check that the string format arguments are in logging
 # function parameter format
 logging-modules=logging
-
+logging-format-style=new
 
 [MISCELLANEOUS]
 

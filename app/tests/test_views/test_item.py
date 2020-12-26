@@ -64,10 +64,7 @@ class TestViewItem:
         response = client.get(
             reverse(
                 "item_view",
-                kwargs={
-                    "category_slug": "cat-slug-1",
-                    "item_slug": "item-slug-1-1",
-                },
+                kwargs={"category_slug": "cat-slug-1", "item_slug": "item-slug-1-1",},
             )
         )
 
@@ -80,11 +77,7 @@ class TestViewItem:
         "category_slug, item_slug", [("cat-slug-1", "item-slug-1-1"),],
     )
     def test_view_item_valid_url_single_item(
-        self,
-        client,
-        category_slug: str,
-        item_slug: str,
-        load_default_item: Item,
+        self, client, category_slug: str, item_slug: str, load_default_item: Item,
     ):
         """
         Test the view Item page is rendered with a valid /<category>/<first_item>/ endpoint
@@ -94,17 +87,11 @@ class TestViewItem:
         response = client.get(
             reverse(
                 "item_view",
-                kwargs={
-                    "category_slug": category_slug,
-                    "item_slug": item_slug,
-                },
+                kwargs={"category_slug": category_slug, "item_slug": item_slug,},
             )
         )
 
-        assert (
-            response.request["PATH_INFO"]
-            == f"/items/{category_slug}/{item_slug}/"
-        )
+        assert response.request["PATH_INFO"] == f"/items/{category_slug}/{item_slug}/"
         assert response.status_code == 200
         assert "main/items.html" in (t.name for t in response.templates)
         assert isinstance(response.context["item"], Item)
@@ -128,16 +115,11 @@ class TestViewItem:
         response = client.get(
             reverse(
                 "item_view",
-                kwargs={
-                    "category_slug": "cat-slug-1",
-                    "item_slug": "item-slug-1-1",
-                },
+                kwargs={"category_slug": "cat-slug-1", "item_slug": "item-slug-1-1",},
             )
         )
 
-        assert (
-            response.request["PATH_INFO"] == f"/items/cat-slug-1/item-slug-1-1/"
-        )
+        assert response.request["PATH_INFO"] == f"/items/cat-slug-1/item-slug-1-1/"
         assert response.status_code == 200
         assert "main/items.html" in (t.name for t in response.templates)
         assert response.context["item"].views == initial_view_count + 1
@@ -152,11 +134,7 @@ class TestViewItem:
         ],
     )
     def test_view_item_invalid_url_single_item(
-        self,
-        client,
-        category_slug: str,
-        item_slug: str,
-        load_default_item: Item,
+        self, client, category_slug: str, item_slug: str, load_default_item: Item,
     ):
         """
         Test 404 in handled with invalid /<category>/<first_item>/ endpoints
@@ -166,10 +144,7 @@ class TestViewItem:
         response = client.get(
             reverse(
                 "item_view",
-                kwargs={
-                    "category_slug": category_slug,
-                    "item_slug": item_slug,
-                },
+                kwargs={"category_slug": category_slug, "item_slug": item_slug,},
             )
         )
 
@@ -197,17 +172,11 @@ class TestViewItem:
         response = client.get(
             reverse(
                 "item_view",
-                kwargs={
-                    "category_slug": category_slug,
-                    "item_slug": item_slug,
-                },
+                kwargs={"category_slug": category_slug, "item_slug": item_slug,},
             )
         )
 
-        assert (
-            response.request["PATH_INFO"]
-            == f"/items/{category_slug}/{item_slug}/"
-        )
+        assert response.request["PATH_INFO"] == f"/items/{category_slug}/{item_slug}/"
         assert response.status_code == 200
         assert "main/items.html" in (t.name for t in response.templates)
         assert isinstance(response.context["item"], Item)
@@ -241,10 +210,7 @@ class TestViewItem:
         response = client.get(
             reverse(
                 "item_view",
-                kwargs={
-                    "category_slug": category_slug,
-                    "item_slug": item_slug,
-                },
+                kwargs={"category_slug": category_slug, "item_slug": item_slug,},
             )
         )
 
@@ -278,17 +244,11 @@ class TestViewItem:
         response = client.get(
             reverse(
                 "item_view",
-                kwargs={
-                    "category_slug": category_slug,
-                    "item_slug": item_slug,
-                },
+                kwargs={"category_slug": category_slug, "item_slug": item_slug,},
             )
         )
 
-        assert (
-            response.request["PATH_INFO"]
-            == f"/items/{category_slug}/{item_slug}/"
-        )
+        assert response.request["PATH_INFO"] == f"/items/{category_slug}/{item_slug}/"
         assert response.status_code == 200
         assert "main/items.html" in (t.name for t in response.templates)
         assert isinstance(response.context["item"], Item)
@@ -322,10 +282,7 @@ class TestViewItem:
         response = client.get(
             reverse(
                 "item_view",
-                kwargs={
-                    "category_slug": category_slug,
-                    "item_slug": item_slug,
-                },
+                kwargs={"category_slug": category_slug, "item_slug": item_slug,},
             )
         )
 

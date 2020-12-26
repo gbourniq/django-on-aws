@@ -46,9 +46,7 @@ class MockCategory:
             "category_name": kwargs.get(
                 "category_name", f"{MockCategory.DEFAULT_CATEGORY_NAME}{_id}"
             ),
-            "summary": kwargs.get(
-                "summary", f"{MockCategory.DEFAULT_SUMMARY}{_id}"
-            ),
+            "summary": kwargs.get("summary", f"{MockCategory.DEFAULT_SUMMARY}{_id}"),
             "image": kwargs.get(
                 "image",
                 f"{MockCategory.DEFAULT_IMAGE_NAME}{_id}.{MockCategory.DEFAULT_IMAGE_EXTENSION}",
@@ -77,9 +75,7 @@ class MockCategory:
         )
         """
 
-        category_ids = [
-            MockCategory.DEFAULT_ID + i for i in range(categories_count)
-        ]
+        category_ids = [MockCategory.DEFAULT_ID + i for i in range(categories_count)]
         default_categories = [
             MockCategory.default_category(_id, **kwargs)
             for _id in category_ids
@@ -133,21 +129,11 @@ class MockItem:
         _id = f"{parent_category.id}-{item_id}"
 
         item_data = {
-            "item_name": kwargs.get(
-                "item_name", f"{MockItem.DEFAULT_ITEM_NAME}{_id}"
-            ),
-            "summary": kwargs.get(
-                "summary", f"{MockItem.DEFAULT_SUMMARY}{_id}"
-            ),
-            "content": kwargs.get(
-                "content", f"{MockItem.DEFAULT_CONTENT}{_id}"
-            ),
-            "date_published": kwargs.get(
-                "date_published", f"{MockItem.DEFAULT_DATE}",
-            ),
-            "item_slug": kwargs.get(
-                "item_slug", f"{MockItem.DEFAULT_ITEM_SLUG}{_id}"
-            ),
+            "item_name": kwargs.get("item_name", f"{MockItem.DEFAULT_ITEM_NAME}{_id}"),
+            "summary": kwargs.get("summary", f"{MockItem.DEFAULT_SUMMARY}{_id}"),
+            "content": kwargs.get("content", f"{MockItem.DEFAULT_CONTENT}{_id}"),
+            "date_published": kwargs.get("date_published", f"{MockItem.DEFAULT_DATE}",),
+            "item_slug": kwargs.get("item_slug", f"{MockItem.DEFAULT_ITEM_SLUG}{_id}"),
             "category_name": parent_category,
         }
 
@@ -166,9 +152,7 @@ class MockItem:
         item_ids = [MockItem.DEFAULT_ID + i for i in range(items_count)]
         default_items = list(
             map(
-                lambda _id: MockItem.default_item(
-                    parent_category, _id, **kwargs
-                ),
+                lambda _id: MockItem.default_item(parent_category, _id, **kwargs),
                 item_ids,
             )
         )

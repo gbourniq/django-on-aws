@@ -122,14 +122,6 @@ def load_default_items_and_categories(
 ##########################
 
 
-# @pytest.fixture
-# def mock_email_host_user(monkeypatch) -> ContactForm:
-#     mock_email_host_user = Mock(return_value="dummy@email.com")
-#     monkeypatch.setattr(
-#         "django.conf.settings.EMAIL_HOST_USER", mock_email_host_user
-#     )
-
-
 @pytest.fixture
 def mock_contact_form() -> ContactForm:
     """Fixture for a valid ContactForm"""

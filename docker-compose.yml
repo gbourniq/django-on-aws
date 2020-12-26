@@ -7,9 +7,9 @@ services:
     container_name: app
     restart: "on-failure"
     environment:
-      DJANGO_SETTINGS_MODULE: portfolio.settings.settings
+      DJANGO_SETTINGS_MODULE: portfolio.settings
       POSTGRES_HOST: postgres
-      PYTHONPATH: /home/portfoliouser/portfolio
+      PYTHONPATH: /home/portfoliouser/portfolio/app
     volumes:
       - ./deployment/app/startup_server.sh:/home/portfoliouser/startup_server.sh
     healthcheck:

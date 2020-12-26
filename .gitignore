@@ -20,6 +20,9 @@ htmlcov/
 eigenctl.egg-info
 dist/
 
+# Django static files
+*staticfiles/
+
 # Generated documentation
 
 # Logs

@@ -7,8 +7,8 @@ from .models import Category, Item
 
 class ItemAdmin(admin.ModelAdmin):
     """
-    Class to add an Item from the Django admin page.
-    Features the TinyMCE plugin to provide text formatting options
+    Class to add an Item from the Django admin page with the TinyMCE
+    plugin which provides text formatting options
     """
 
     fieldsets = [
@@ -24,9 +24,7 @@ class ItemAdmin(admin.ModelAdmin):
 
 
 class CategoryAdmin(admin.ModelAdmin):
-    """
-    Class to add an Item from the Django admin page.
-    """
+    """Class to add an Item from the Django admin page."""
 
     fieldsets = [
         (

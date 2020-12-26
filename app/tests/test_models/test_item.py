@@ -66,20 +66,6 @@ class TestItems:
             == f"Item=(id={mock_default_item.id},item_name={mock_default_item.item_name},item_slug={mock_default_item.item_slug})"
         )
 
-    def test_item_json_cast(self, mock_default_item: Item):
-        """
-        Tests item .json() method
-        """
-        expected_dict = {
-            "item_name": mock_default_item.item_name,
-            "summary": mock_default_item.summary,
-            "content": mock_default_item.content,
-            "date_published": mock_default_item.date_published,
-            "item_slug": mock_default_item.item_slug,
-            "category_name": mock_default_item.category_name,
-        }
-        assert mock_default_item.to_json() == expected_dict
-
     @pytest.mark.parametrize(
         "view_count_0, view_count_1", [(3, 3), (3, 4), (4, 3),],
     )
@@ -102,33 +88,3 @@ class TestItems:
             assert mock_default_items[0].views >= mock_default_items[1].views
         else:
             pass
-
-    def test_item_list_class_property(self, load_default_items: List[Item]):
-        """
-        Tests __item_list contains a list of saved items
-        """
-        assert Item.get_item_list() == load_default_items
-
-    # def test_send_notification_is_called_on_first_save(
-    #     self, monkeypatch, mock_default_item: Item, mock_email_host_user: str
-    # ):
-    #     """
-    #     Tests the send_email_notification_to_users function is called when saving an item
-    #     Tests that the email notification is only sent when the item is first saved. Modifying
-    #     an existing item and calling .save() should not trigger the email_notification function.
-    #     """
-
-    #     mock_send_email_notification = Mock()
-    #     monkeypatch.setattr(
-    #         Item,
-    #         "send_email_notification_to_users",
-    #         mock_send_email_notification,
-    #     )
-
-    #     mock_default_item.save()
-
-    #     mock_send_email_notification.assert_called_once()
-
-    #     mock_default_item.item_name = "updated name"
-    #     mock_default_item.save()
-    #     mock_send_email_notification.assert_called_once()

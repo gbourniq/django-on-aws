@@ -30,14 +30,6 @@ POSTGRES_DB: str = config("POSTGRES_DB")
 POSTGRES_USER: str = config("POSTGRES_USER")
 POSTGRES_PASSWORD: Secret = config("POSTGRES_PASSWORD", cast=Secret)
 
-# Optional - Message Broker for Celery workers
-# REDIS_HOST = os.getenv("REDIS_HOST")
-# REDIS_PORT = os.getenv("REDIS_PORT", 6379)
-
-# Email details for contact us page
-# EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
-# EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
-
 # ==================== AWS ======================
 # AWS_STORAGE_BUCKET_NAME: str = config("AWS_STORAGE_BUCKET_NAME")
 # AWS_DEFAULT_REGION: str = config("AWS_DEFAULT_REGION")

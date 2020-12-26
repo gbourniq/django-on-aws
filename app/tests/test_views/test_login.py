@@ -32,9 +32,7 @@ class TestViewLogin:
         }
 
         mock_authenticate = Mock(return_value=mock_user)
-        monkeypatch.setattr(
-            "django.contrib.auth.authenticate", mock_authenticate
-        )
+        monkeypatch.setattr("django.contrib.auth.authenticate", mock_authenticate)
         mock_login = Mock()
         monkeypatch.setattr("main.views.login", mock_login)
 
@@ -47,9 +45,7 @@ class TestViewLogin:
         assert response.status_code == 200
 
     @pytest.mark.integration
-    def test_login_valid_user(
-        self, monkeypatch, client, mock_user, mock_user_data
-    ):
+    def test_login_valid_user(self, monkeypatch, client, mock_user, mock_user_data):
         """
         Tests that authenticate and login functions are called
         Tests the redirection to the home page
