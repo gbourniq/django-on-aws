@@ -1,3 +1,5 @@
+"""This module defines all the Django views"""
+
 import logging
 from typing import Union
 
@@ -34,11 +36,15 @@ class SignUpFormView(View):
     initial = {}
     template_name = TemplateNames.REGISTER.value
 
+    # pylint: disable=unused-argument
     def get(self, request, *args, **kwargs) -> render:
+        """Logic for GET method. Renders the signup form template"""
         form = self.form_class(initial=self.initial)
         return render(request, self.template_name, {"form": form})
 
+    # pylint: disable=unused-argument
     def post(self, request, *args, **kwargs) -> Union[render, redirect]:
+        """Logic for POST method. Attempts to register and log in user"""
         form = self.form_class(request.POST)
         if form.is_valid():
             user = form.save()
@@ -66,14 +72,18 @@ class LoginFormView(View):
     initial = {}
     template_name = TemplateNames.LOGIN.value
 
+    # pylint: disable=unused-argument
     def get(self, request, *args, **kwargs) -> render:
+        """Logic for GET method. Renders the login page"""
         form = self.form_class(initial=self.initial)
         return render(request, self.template_name, {"form": form})
 
+    # pylint: disable=unused-argument
     def post(self, request, *args, **kwargs) -> Union[render, redirect]:
+        """Logic for POST method. Attempts to log in user"""
         form = self.form_class(request=request, data=request.POST)
         if not form.is_valid():
-            # User DOES NOT exists
+            # User DOES NOT exist
             messages.error(request, strings.INVALID_LOGIN)
             return render(request, self.template_name, {"form": form})
 
@@ -92,6 +102,7 @@ class LoginFormView(View):
         return redirect("/")
 
 
+# pylint: disable=too-many-ancestors
 class CategoriesView(generic.ListView):
     """View to display category cards"""
 
@@ -115,6 +126,7 @@ class RedirectToItemView(generic.base.RedirectView):
     permanent = False
 
     def get_redirect_url(self, *args, **kwargs):
+        """Logic for GET method"""
         category = get_object_or_404(
             Category, category_slug=self.kwargs["category_slug"]
         )
@@ -162,6 +174,10 @@ class ItemsView(generic.ListView):
         return context
 
     def dispatch(self, *args, **kwargs):
+        """
+        Overrides the dispatch method, to increment the views field
+        before returning the HTTP response.
+        """
         self.get_queryset().increment_views()
         return super().dispatch(*args, **kwargs)
 
@@ -173,10 +189,13 @@ class ContactUsFormView(RequireLoginMixin, View):
     initial = {}
     template_name = TemplateNames.CONTACT_US.value
 
+    # pylint: disable=unused-argument
     def get(self, request, *args, **kwargs) -> render:
+        """Logic for GET method"""
         form = self.form_class(initial=self.initial)
         return render(request, self.template_name, {"form": form})
 
+    # pylint: disable=unused-argument
     def post(self, request, *args, **kwargs) -> Union[render, redirect]:
         """
         Overrides the HTTP POST method to send an email if the form

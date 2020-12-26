@@ -1,3 +1,5 @@
+"""This module defines tests for the items page"""
+
 from typing import List
 
 import pytest
@@ -9,7 +11,10 @@ from main.models import Category, Item
 
 @pytest.mark.django_db(transaction=True)
 class TestViewItems:
+    """Tests for the items page"""
+
     @pytest.mark.integration
+    # pylint: disable=no-self-use
     def test_view_items_no_data(self, client):
         """
         Test that 404 is handled when no Category object exist in the database
@@ -24,6 +29,8 @@ class TestViewItems:
         assert response.context["code_handled"] == 404
 
     @pytest.mark.integration
+    # pylint: disable=unused-argument
+    # pylint: disable=no-self-use
     def test_view_items_valid_url(self, client, load_default_item: Item):
         """
         Test that requests to /<category>/ are redirected to /<category>/<first_item>/
@@ -38,6 +45,8 @@ class TestViewItems:
         assert len(response.templates) == 0
 
     @pytest.mark.integration
+    # pylint: disable=unused-argument
+    # pylint: disable=no-self-use
     def test_view_items_invalid_url(self, client, load_default_item: Item):
         """
         Test that 404 is handled when category_slug does not correspond to any Category
@@ -54,7 +63,10 @@ class TestViewItems:
 
 @pytest.mark.django_db(transaction=True)
 class TestViewItem:
+    """Tests for the item detail page"""
+
     @pytest.mark.integration
+    # pylint: disable=no-self-use
     def test_view_item_no_data(self, client):
         """
         Test that 404 is handled when no Item object exists in the database
@@ -77,10 +89,17 @@ class TestViewItem:
         "category_slug, item_slug", [("cat-slug-1", "item-slug-1-1"),],
     )
     def test_view_item_valid_url_single_item(
-        self, client, category_slug: str, item_slug: str, load_default_item: Item,
+        # pylint: disable=unused-argument
+        # pylint: disable=no-self-use
+        self,
+        client,
+        category_slug: str,
+        item_slug: str,
+        load_default_item: Item,
     ):
         """
-        Test the view Item page is rendered with a valid /<category>/<first_item>/ endpoint
+        Test the view Item page is rendered with a valid
+        /<category>/<first_item>/ endpoint
         Valid endpoints are: `/cat-slug-1/item-slug-1-1/`
         """
 
@@ -103,6 +122,7 @@ class TestViewItem:
     @pytest.mark.parametrize(
         "initial_view_count", [0, 2, 5, 10, 100, 1000],
     )
+    # pylint: disable=no-self-use
     def test_views_incremented(
         self, client, initial_view_count: int, mock_default_item: Item,
     ):
@@ -110,6 +130,7 @@ class TestViewItem:
         Test the views field is incremented when a valid item url is visited.
         """
         mock_default_item.views = initial_view_count
+
         mock_default_item.save()
 
         response = client.get(
@@ -119,7 +140,7 @@ class TestViewItem:
             )
         )
 
-        assert response.request["PATH_INFO"] == f"/items/cat-slug-1/item-slug-1-1/"
+        assert response.request["PATH_INFO"] == "/items/cat-slug-1/item-slug-1-1/"
         assert response.status_code == 200
         assert "main/items.html" in [t.name for t in response.templates]
         assert response.context["item"].views == initial_view_count + 1
@@ -133,6 +154,8 @@ class TestViewItem:
             ("cat-slug-2", "item-slug-1-1"),
         ],
     )
+    # pylint: disable=unused-argument
+    # pylint: disable=no-self-use
     def test_view_item_invalid_url_single_item(
         self, client, category_slug: str, item_slug: str, load_default_item: Item,
     ):
@@ -157,15 +180,18 @@ class TestViewItem:
         "category_slug, item_slug",
         [("cat-slug-1", "item-slug-1-2"), ("cat-slug-1", "item-slug-1-3"),],
     )
+    # pylint: disable=no-self-use
     def test_view_item_valid_url_multiple_items(
         self,
         client,
         category_slug: str,
         item_slug: str,
+        # pylint: disable=unused-argument
         load_default_items: List[Item],
     ):
         """
-        Test the view Item page is rendered with valid /<category>/<first_item>/ endpoints
+        Test the view Item page is rendered with valid
+        /<category>/<first_item>/ endpoints
         Valid endpoints are: `/cat-slug-<1>/item-slug-<1>-<1:5>/`
         """
 
@@ -195,11 +221,13 @@ class TestViewItem:
             ("cat-slug-9", "item-slug-1-1"),
         ],
     )
+    # pylint: disable=no-self-use
     def test_view_item_invalid_url_multiple_items(
         self,
         client,
         category_slug: str,
         item_slug: str,
+        # pylint: disable=unused-argument
         load_default_items: List[Item],
     ):
         """
@@ -229,15 +257,18 @@ class TestViewItem:
             ("cat-slug-5", "item-slug-5-2"),
         ],
     )
+    # pylint: disable=no-self-use
     def test_view_item_valid_url_multiple_categories(
         self,
         client,
         category_slug: str,
         item_slug: str,
-        load_default_items_and_categories: List[Item],
+        # pylint: disable=unused-argument
+        load_default_items_and_cats: List[Item],
     ):
         """
-        Test the view Item page is rendered with valid /<category>/<first_item>/ endpoints
+        Test the view Item page is rendered with valid
+        /<category>/<first_item>/ endpoints
         Valid endpoints are: `/cat-slug-<1:5>/item-slug-<1:5>-<1:5>/`
         """
 
@@ -267,12 +298,14 @@ class TestViewItem:
             ("cat-slug-8", "item-slug-8-1"),
         ],
     )
+    # pylint: disable=no-self-use
     def test_view_item_invalid_url_multiple_categories(
         self,
         client,
         category_slug: str,
         item_slug: str,
-        load_default_items_and_categories: List[Item],
+        # pylint: disable=unused-argument
+        load_default_items_and_cats: List[Item],
     ):
         """
         Test 404 in handled with invalid /<category>/<first_item>/ endpoints

@@ -1,3 +1,5 @@
+"""This module defines the Django models Item and Category to manage blog posts"""
+
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
@@ -6,6 +8,8 @@ from .mixins import BaseModelMixin
 
 
 class Category(models.Model, BaseModelMixin):
+    """Django model to manage blog post categories"""
+
     id = models.AutoField(primary_key=True)
     category_name = models.CharField(max_length=200, unique=True)
     summary = models.TextField()
@@ -24,7 +28,7 @@ class Category(models.Model, BaseModelMixin):
     def save(self, *args, **kwargs):
         """Resize the image on category.save()"""
         self.image = self.resize_image(self.image)
-        super(Category, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         """User-friendly string representation of the object"""
@@ -43,6 +47,8 @@ class Category(models.Model, BaseModelMixin):
 
 
 class Item(models.Model, BaseModelMixin):
+    """Django model to manage blog post items"""
+
     id = models.AutoField(primary_key=True)
     item_name = models.CharField(max_length=200, unique=True)
     summary = models.CharField(max_length=200)

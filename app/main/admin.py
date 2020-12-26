@@ -1,3 +1,7 @@
+"""
+This module defines Admin models to map our Category and Item models so that
+they can be managed via the Django admin page /admin
+"""
 from django.contrib import admin
 from django.db import models
 from tinymce.widgets import TinyMCE
@@ -24,7 +28,7 @@ class ItemAdmin(admin.ModelAdmin):
 
 
 class CategoryAdmin(admin.ModelAdmin):
-    """Class to add an Item from the Django admin page."""
+    """Class to add a Category from the Django admin page."""
 
     fieldsets = [
         (

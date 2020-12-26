@@ -1,3 +1,4 @@
+"""This module defines tests manipulating category objects from main.views"""
 import pytest
 from django.db.models.query import QuerySet
 from django.urls import reverse
@@ -5,7 +6,10 @@ from django.urls import reverse
 
 @pytest.mark.django_db(transaction=True)
 class TestViewCategory:
+    """Tests for the category page"""
+
     @pytest.mark.integration
+    # pylint: disable=no-self-use
     def test_404_no_category_in_db(self, client):
         """
         Test that 404 is handled when no category exist
@@ -18,6 +22,8 @@ class TestViewCategory:
         assert response.context["code_handled"] == 404
 
     @pytest.mark.integration
+    # pylint: disable=unused-argument
+    # pylint: disable=no-self-use
     def test_view_category(self, client, load_default_category):
         """
         Test the view Category page when database contains one category object

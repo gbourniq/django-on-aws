@@ -1,3 +1,5 @@
+"""This module defines tests for the logout page"""
+
 from unittest.mock import Mock
 
 import pytest
@@ -6,7 +8,10 @@ from django.urls import reverse
 
 @pytest.mark.django_db(transaction=True)
 class TestViewLogout:
+    """Tests for the logout page"""
+
     @pytest.mark.integration
+    # pylint: disable=no-self-use
     def test_click_logout_button(self, monkeypatch, client):
         """
         Tests that logout function is called,

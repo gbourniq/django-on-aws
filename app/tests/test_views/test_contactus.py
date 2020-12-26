@@ -1,3 +1,5 @@
+"""This module defines tests for the contact us page"""
+
 import pytest
 from django.conf import settings
 from django.urls import reverse
@@ -7,8 +9,11 @@ from main.forms import ContactForm
 
 @pytest.mark.django_db(transaction=True)
 class TestViewContactUs:
+    """Tests for the contact us page"""
+
     @pytest.mark.integration
     @pytest.mark.parametrize("login_required", [True, False])
+    # pylint: disable=no-self-use
     def test_view_contact_us_page(self, client, monkeypatch, login_required):
         """
         Test the view Category us page is rendered with the Contact Form
@@ -31,6 +36,7 @@ class TestViewContactUs:
             assert isinstance(response.context["form"], ContactForm)
 
     @pytest.mark.integration
+    # pylint: disable=no-self-use
     def test_post_valid_form(self, client, mock_contact_form: ContactForm):
         """
         Test the `Go Back Home` page is rendered when user submit valid form
@@ -42,6 +48,7 @@ class TestViewContactUs:
         assert response.status_code == 200
 
     @pytest.mark.integration
+    # pylint: disable=no-self-use
     def test_post_empty_form(self, client):
         """
         Ensure that, when a user submits an empty form:
@@ -64,6 +71,8 @@ class TestViewContactUs:
             ("valid name", "valid@email.com", "valid subject", ""),
         ],
     )
+    # pylint: disable=no-self-use
+    # pylint: disable=too-many-arguments
     def test_post_invalid_form(
         self, client, name: str, contact_email: str, subject: str, message: str,
     ):

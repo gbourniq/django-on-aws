@@ -1,30 +1,58 @@
-from typing import List
+"""
+This module defines classes to build mock category
+and item objects for unit-tests
+"""
+
+from typing import Dict, List
 
 from main.models import Category, Item
 
 
+class MockUser:
+    """Class to create Mock User data and objects"""
+
+    @staticmethod
+    def mock_user_data() -> Dict:
+        """Mock user data"""
+        return dict(
+            username="mock_user_data", email="mydummy@mail.com", password="dummypass",
+        )
+
+    @staticmethod
+    def mock_invalid_user_data() -> Dict:
+        """Mock user form data"""
+        return dict(username="unknown_user", password="unknown_pass")
+
+    @staticmethod
+    def mock_user_form_data() -> Dict:
+        """Mock user form data"""
+        return dict(
+            username="mock_user_form_data",
+            email="mydummy@mail.com",
+            password1="dummypass",
+            password2="dummypass",
+        )
+
+
 class MockCategory:
-    """
-    Class to create Mock Category objects for testing
-    """
+    """Class to create Mock Category objects for testing"""
 
     DEFAULT_ID = 1
     DEFAULT_CATEGORY_NAME = "Category "
     DEFAULT_SUMMARY = "summary for category "
-    DEFAULT_IMAGE_NAME = "img-url"
-    DEFAULT_IMAGE_EXTENSION = "png"
+    DEFAULT_IMG_NAME = "img-url"
+    DEFAULT_IMG_EXT = "png"
     DEFAULT_CATEGORY_SLUG = "cat-slug-"
 
     @staticmethod
     def default_category(_id: int = DEFAULT_ID, **kwargs) -> Category:
         """
-        Generates a default mock Category object when
-        calling MockCategory.default_category().
-        
+        Generates a default mock Category object
+
         Distincts Category objects can be created:
         - By providing unique `_id` values.
         - And/or by providing a number of custom kwargs.
-        
+
         Eg.
         custom_category=MockCategory.default_category(
             _id=235,
@@ -48,7 +76,7 @@ class MockCategory:
             "summary": kwargs.get("summary", f"{MockCategory.DEFAULT_SUMMARY}{_id}"),
             "image": kwargs.get(
                 "image",
-                f"{MockCategory.DEFAULT_IMAGE_NAME}{_id}.{MockCategory.DEFAULT_IMAGE_EXTENSION}",
+                f"{MockCategory.DEFAULT_IMG_NAME}{_id}.{MockCategory.DEFAULT_IMG_EXT}",
             ),
             "category_slug": kwargs.get(
                 "category_slug", f"{MockCategory.DEFAULT_CATEGORY_SLUG}{_id}"
@@ -63,9 +91,9 @@ class MockCategory:
     def default_categories(categories_count: int, **kwargs) -> List[Category]:
         """
         Generates a list of default mock Category objects.
-        
+
         In the same way as MockCategory.default_category(),
-        the default Category attribute can be overriden.        
+        the default Category attribute can be overriden.
         Eg.
         custom_categories=MockCategory.default_categories(
             categories_count=5
@@ -84,9 +112,7 @@ class MockCategory:
 
 
 class MockItem:
-    """
-    Class to create Mock Item objects for testing
-    """
+    """Class to create Mock Item objects for testing"""
 
     DEFAULT_ID = 1
     DEFAULT_ITEM_NAME = "Item "
@@ -101,19 +127,14 @@ class MockItem:
         parent_category: Category, item_id: int = DEFAULT_ID, **kwargs
     ) -> Item:
         """
-        Generates a default mock Item object when
-        calling MockItem.default_item().
-        
-        In a similar way as the Category class,
-        distincts Item objects can be created:
+        Generates a default mock Item object
+
+        Distinct Item objects can be created:
         - By providing unique `_id` values.
         - And/or by providing a number of custom kwargs.
-        
+
         One thing to note is the `parent_category` argument,
         which is the Category object the Item "belong to".
-        
-        If the given category object does not exist in the database,
-        then the item creation fails with an error message.
         """
         assert (
             Category.objects.filter(category_name=parent_category.category_name)
@@ -139,9 +160,7 @@ class MockItem:
     def default_items(
         items_count: int, parent_category: Category, **kwargs
     ) -> List[Item]:
-        """
-        Generates a list of default items
-        """
+        """Generates a list of default items"""
 
         item_ids = [MockItem.DEFAULT_ID + i for i in range(items_count)]
         default_items = list(

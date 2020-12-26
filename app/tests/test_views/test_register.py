@@ -1,3 +1,5 @@
+"""This module defines tests for the register page"""
+
 from unittest.mock import Mock
 
 import pytest
@@ -8,7 +10,10 @@ from main.forms import NewUserForm
 
 @pytest.mark.django_db(transaction=True)
 class TestViewRegister:
+    """Tests for the register page"""
+
     @pytest.mark.integration
+    # pylint: disable=no-self-use
     def test_view_register_page(self, client):
         """
         Test the Sign up page is rendered with the NewUserForm form (GET)
@@ -21,23 +26,21 @@ class TestViewRegister:
         assert isinstance(response.context["form"], NewUserForm)
 
     @pytest.mark.integration
-    def test_post_invalid_user(self, monkeypatch, client, mock_user):
+    # pylint: disable=no-self-use
+    def test_post_invalid_user(
+        self, monkeypatch, client, mock_user, mock_invalid_user_dict
+    ):
         """
         Tests that authenticate and login functions are not called
         Tests it renders the same login.html page
         """
-
-        mock_invalid_user = {
-            "username": "unknown_user",
-            "password": "unknown_pass",
-        }
 
         mock_authenticate = Mock(return_value=mock_user)
         monkeypatch.setattr("django.contrib.auth.authenticate", mock_authenticate)
         mock_login = Mock()
         monkeypatch.setattr("main.views.login", mock_login)
 
-        response = client.post(reverse("login"), data=mock_invalid_user)
+        response = client.post(reverse("login"), data=mock_invalid_user_dict)
 
         mock_authenticate.assert_not_called()
         mock_login.assert_not_called()
@@ -46,7 +49,8 @@ class TestViewRegister:
         assert response.status_code == 200
 
     @pytest.mark.integration
-    def test_register_with_valid_form(self, monkeypatch, client, mock_user_form_data):
+    # pylint: disable=no-self-use
+    def test_register_with_valid_form(self, monkeypatch, client, mock_user_form_dict):
         """
         Tests that authenticate and login functions are called
         Tests the redirection to the home page
@@ -55,7 +59,7 @@ class TestViewRegister:
         mock_login = Mock()
         monkeypatch.setattr("main.views.login", mock_login)
 
-        response = client.post(reverse("register"), data=mock_user_form_data)
+        response = client.post(reverse("register"), data=mock_user_form_dict)
 
         mock_login.assert_called()
 
@@ -63,6 +67,7 @@ class TestViewRegister:
         assert response.status_code == 302
 
     @pytest.mark.integration
+    # pylint: disable=no-self-use
     def test_register_with_invalid_form(self, monkeypatch, client, mock_user):
         """
         Tests that authenticate and login functions are not called
@@ -90,8 +95,9 @@ class TestViewRegister:
         assert response.status_code == 200
 
     @pytest.mark.integration
+    # pylint: disable=no-self-use
     def test_register_with_existing_user_conflict(
-        self, monkeypatch, client, mock_user, mock_user_data
+        self, monkeypatch, client, mock_user, mock_user_dict
     ):
         """
         Tests that authenticate and login functions are not called
@@ -100,7 +106,7 @@ class TestViewRegister:
 
         # username conflicting with existing mock_user
         mock_user_form_valid_data = {
-            "username": mock_user_data.get("username"),
+            "username": mock_user_dict.get("username"),
             "email": "mydummy@mail.com",
             "password1": "dummypass",
             "password2": "dummypass",

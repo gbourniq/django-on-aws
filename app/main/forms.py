@@ -1,3 +1,8 @@
+"""
+This module defines Django forms for user to register
+and for the `contact us` page
+"""
+
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
@@ -31,12 +36,12 @@ class NewUserForm(UserCreationForm):
 
     def __init__(self, *args, **kwargs):
         """Removes ugly fields hints (help_text)"""
-        super(NewUserForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         for fieldname in ("username", "password1", "password2"):
             self.fields[fieldname].help_text = None
 
-    def save(self):
-        user = super(NewUserForm, self).save(commit=False)
+    def save(self, commit=True):
+        user = super().save(commit=False)
         user.email = self.cleaned_data["email"]
         user.save()
         return user

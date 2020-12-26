@@ -1,3 +1,5 @@
+"""This module defines error handlers"""
+
 import logging
 
 from django.http import Http404

@@ -1,5 +1,10 @@
+"""
+This module defines common functionalities across Django models and Views
+"""
+
 import logging
 import sys
+from abc import ABC, abstractmethod
 from io import BytesIO
 
 from django.conf import settings
@@ -15,26 +20,31 @@ class RequireLoginMixin:
     """Add this Mixin in django class views to enforce user to log in"""
 
     def dispatch(self, request, *args, **kwargs):
+        """
+        Overrides the dispatch method, to check if user is logged in
+        before returning the HTTP response.
+        """
         if settings.ENABLE_LOGIN_REQUIRED_MIXIN and not request.user.is_authenticated:
             return redirect_to_login(next=request.get_full_path(), login_url="/login")
-        return super(RequireLoginMixin, self).dispatch(request, *args, **kwargs)
+        return super().dispatch(request, *args, **kwargs)
 
 
-class BaseModelMixin:
+class BaseModelMixin(ABC):
     """
     Base Class providing helper functions for Django Models
     """
 
     logger = logging.getLogger(__name__)
 
-    def resize_image(self, uploadedImage: ImageFieldFile) -> ImageFieldFile:
+    @abstractmethod
+    def resize_image(self, uploaded_image: ImageFieldFile) -> ImageFieldFile:
         """
         Performs the following operation on a given image:
         - Thumbmail: returns an image that fits inside of a given size
         - Crop: Cut image borders to fit a given size
         """
 
-        img_temp = Image.open(uploadedImage)
+        img_temp = Image.open(uploaded_image)
         output_io_stream = BytesIO()
 
         img_temp.thumbnail(THUMBNAIL_SIZE)
@@ -49,12 +59,12 @@ class BaseModelMixin:
 
         img_temp.save(output_io_stream, format="JPEG", quality=90)
         output_io_stream.seek(0)
-        uploadedImage = InMemoryUploadedFile(
+        uploaded_image = InMemoryUploadedFile(
             output_io_stream,
             "ImageField",
-            "%s.jpg" % uploadedImage.name.split(".")[0],
+            "%s.jpg" % uploaded_image.name.split(".")[0],
             "image/jpeg",
             sys.getsizeof(output_io_stream),
             None,
         )
-        return uploadedImage
+        return uploaded_image

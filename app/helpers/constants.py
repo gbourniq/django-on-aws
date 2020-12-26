@@ -1,3 +1,5 @@
+"""This module defines constants to be used across the app code base"""
+
 from collections import namedtuple
 from enum import Enum
 

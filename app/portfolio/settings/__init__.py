@@ -1,12 +1,13 @@
-from .base import *
-
 """
-Lightweight configuration:
+This module defines configurations on top on app/portfolio/settings/base.py.
+Here we define a basic application with
 - No Email backend configuration
 - No cache settings (redis)
 - No celery settings
 - Local storage for django files (media/static)
 """
+
+from .base import *
 
 print("Loading Django settings")
 

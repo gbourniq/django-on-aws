@@ -1,11 +1,5 @@
 - Simplify as per readme
-- fix all tests (images with path issue, email notifications functions + general improvements)
-    - review all tests, adops the # Given, When Then, and use of tmp_path
-    - remove monkeypatch using absolute paths
-- look for all comments # and remove/address them
-- Keep AWS deployment and external services integrations for later 
-
-1. optimise all non-test code: constants etc OK
-test images to be tmppath
-2. increase coverage where possible
-3. review all test code
+1. optimise all code: constants, http status, etc.
+2. optimise tests : images to be tmppath, given/when/then
+3. look for all comments # and remove/address them
+4. pylint 10

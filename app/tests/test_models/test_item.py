@@ -1,3 +1,5 @@
+"""This module defines tests for the Category django model"""
+
 import pytest
 
 from app.tests.mocks import MockItem
@@ -6,6 +8,9 @@ from main.models import Category, Item
 
 @pytest.mark.django_db(transaction=True)
 class TestItems:
+    """Tests for the Item django model"""
+
+    # pylint: disable=no-self-use
     def test_create_item(
         self, mock_default_category: Category, mock_default_item: Item
     ):
@@ -28,12 +33,11 @@ class TestItems:
             cat_attr == dummy_var for cat_attr, dummy_var in attr_mapping.items()
         )
 
+    # pylint: disable=no-self-use
     def test_attr_types(self, mock_default_item: Item):
         """
         Tests item created with the expected attributes types
         """
-
-        MockItem.DEFAULT_ID
 
         type_mapping = {
             mock_default_item.item_name: str,
@@ -49,17 +53,20 @@ class TestItems:
             isinstance(attr, attr_type) for attr, attr_type in type_mapping.items()
         )
 
+    # pylint: disable=no-self-use
     def test_item_str_cast(self, mock_default_item: Item):
         """
         Tests Item str() method is overridden
         """
         assert str(mock_default_item) == mock_default_item.item_name
 
+    # pylint: disable=no-self-use
     def test_item_repr_cast(self, mock_default_item: Item):
         """
         Tests Item repr() method is overridden
         """
-        assert (
-            repr(mock_default_item)
-            == f"Item=(id={mock_default_item.id},item_name={mock_default_item.item_name},item_slug={mock_default_item.item_slug})"
+        assert repr(mock_default_item) == (
+            f"Item=(id={mock_default_item.id},item_name="
+            f"{mock_default_item.item_name},"
+            f"item_slug={mock_default_item.item_slug})"
         )

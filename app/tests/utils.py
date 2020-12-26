@@ -1,3 +1,4 @@
+"""This module defines helper functions for unit tests"""
 import shutil
 from pathlib import Path
 from typing import Tuple
@@ -12,11 +13,11 @@ IMAGE_DIR = APP_DIR / MEDIA_URL
 
 
 def create_dummy_png_image(
-    image_name: str, IMAGE_SIZE: Tuple[int, int] = (300, 300)
+    image_name: str, image_size: Tuple[int, int] = (300, 300)
 ) -> None:
     """Creates a test PNG images"""
     Path(IMAGE_DIR).mkdir(parents=True, exist_ok=True)
-    Image.new("RGB", IMAGE_SIZE, (255, 255, 255)).save(
+    Image.new("RGB", image_size, (255, 255, 255)).save(
         f"{IMAGE_DIR}/{image_name}", "png"
     )
 

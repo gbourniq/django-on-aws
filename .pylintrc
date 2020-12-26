@@ -68,6 +68,7 @@ disable=
     bad-continuation,
     cyclic-import,
     unsubscriptable-object,
+    not-callable
 
 [REPORTS]
 

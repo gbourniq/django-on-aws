@@ -1,3 +1,5 @@
+"""This module defines tests for when invalid url paths are hit"""
+
 import pytest
 from django.urls import reverse
 
@@ -5,7 +7,10 @@ from helpers import strings
 
 
 class TestInvalidUrl:
+    """Tests for unmatched url paths"""
+
     @pytest.mark.integration
+    # pylint: disable=no-self-use
     def test_invalid_url(self, client):
         """Tests that invalid url paths are handled"""
 

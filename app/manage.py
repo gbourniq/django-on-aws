@@ -1,12 +1,19 @@
 #!/usr/bin/env python
 """Django's command-line utility for administrative tasks."""
+
 import os
 import sys
 
 
 def main():
+    """
+    File to manage django administrative tasks.
+    manage.py also sets the DJANGO_SETTINGS_MODULE environment variable
+    so that it points to your project’s settings.py file.
+    """
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "portfolio.settings")
     try:
+        # pylint: disable=import-outside-toplevel
         from django.core.management import execute_from_command_line
     except ImportError as exc:
         raise ImportError(

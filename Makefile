@@ -44,7 +44,7 @@ runserver: rundb
 tests:
 	@ ${INFO} "Running Django tests with PostgreSQL running on Docker"
 	@ docker-compose up -d postgres
-	@ pytest app
+	@ pytest app -x
 	@ docker-compose down || true
 	@ ${INFO} "Run 'make open-cov-report' to view coverage details"
 

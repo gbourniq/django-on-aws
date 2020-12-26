@@ -1,5 +1,8 @@
+"""This module defines general helpers to process Django objects"""
+
 from typing import List, Union
 
+# pylint: disable=imported-auth-user
 from django.contrib.auth.models import User
 
 
