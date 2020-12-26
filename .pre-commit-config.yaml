@@ -34,14 +34,30 @@ repos:
         entry: black
         types: [python]
 
-      - id: pylint
-        name: pylint
+      # - id: pylint
+      #   name: pylint
+      #   stages: [commit]
+      #   language: system
+      #   entry: python utils/generate_pylint_badge.py
+
+      - id: pytest
+        name: pytest
         stages: [commit]
         language: system
-        entry: python utils/generate_pylint_badge.py
+        entry: pytest
+        args: [".", "-x", "-Wignore"]
+        types: [python]
 
-      - id: test-coverage
-        name: test-coverage
+      # - id: pytest
+      #   name: pytest
+      #   stages: [commit]
+      #   language: system
+      #   entry: pytest
+      #   args: ["app", "--ignore=app/tests/test_views"]
+      #   types: [python]
+
+      - id: coverage
+        name: coverage
         stages: [commit]
         language: system
         entry: bash utils/generate_coverage_badge.sh
