@@ -4,7 +4,6 @@ This module defines common functionalities across Django models and Views
 
 import logging
 import sys
-from abc import ABC, abstractmethod
 from io import BytesIO
 
 from django.conf import settings
@@ -29,14 +28,13 @@ class RequireLoginMixin:
         return super().dispatch(request, *args, **kwargs)
 
 
-class BaseModelMixin(ABC):
+class BaseModelMixin:
     """
     Base Class providing helper functions for Django Models
     """
 
     logger = logging.getLogger(__name__)
 
-    @abstractmethod
     def resize_image(self, uploaded_image: ImageFieldFile) -> ImageFieldFile:
         """
         Performs the following operation on a given image:
