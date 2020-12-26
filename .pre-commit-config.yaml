@@ -34,8 +34,8 @@ repos:
         entry: black
         types: [python]
 
-      - id: pylint
-        name: pylint
+      - id: pylint-badge
+        name: pylint-badge
         stages: [commit]
         language: system
         entry: python utils/generate_pylint_badge.py
@@ -56,8 +56,8 @@ repos:
         args: [".", "-x", "-Wignore"]
         types: [python]
 
-      - id: coverage
-        name: coverage
+      - id: coverage-badge
+        name: coverage-badge
         stages: [commit]
         language: system
         entry: bash utils/generate_coverage_badge.sh
