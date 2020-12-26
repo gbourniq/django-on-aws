@@ -34,11 +34,11 @@ repos:
         entry: black
         types: [python]
 
-      # - id: pylint
-      #   name: pylint
-      #   stages: [commit]
-      #   language: system
-      #   entry: python utils/generate_pylint_badge.py
+      - id: pylint
+        name: pylint
+        stages: [commit]
+        language: system
+        entry: python utils/generate_pylint_badge.py
 
       - id: test-coverage
         name: test-coverage
