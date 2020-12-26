@@ -5,16 +5,16 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path, re_path
 
-from main.api_views import (
-    CategoryCreate,
-    CategoryList,
-    CategoryRetrieveUpdateDestroyAPIView,
-    CategoryStats,
-    ItemCreate,
-    ItemList,
-    ItemRetrieveUpdateDestroyAPIView,
-)
-from main.errors import error_404
+# from main.api_views import (
+#     CategoryCreate,
+#     CategoryList,
+#     CategoryRetrieveUpdateDestroyAPIView,
+#     CategoryStats,
+#     ItemCreate,
+#     ItemList,
+#     ItemRetrieveUpdateDestroyAPIView,
+# )
+from main.errors import url_error
 from main.views import (
     CategoriesView,
     ContactUsFormView,
@@ -33,13 +33,13 @@ ITEMS_PREFIX = "api/v1/items"
 
 urlpatterns = [
     # Django rest framework
-    path(f"{CAT_PREFIX}/", CategoryList.as_view()),
-    path(f"{CAT_PREFIX}/new", CategoryCreate.as_view()),
-    path(f"{CAT_PREFIX}/<int:id>/", CategoryRetrieveUpdateDestroyAPIView.as_view(),),
-    path(f"{CAT_PREFIX}/<int:id>/stats/", CategoryStats.as_view(),),
-    path(f"{ITEMS_PREFIX}/", ItemList.as_view()),
-    path(f"{ITEMS_PREFIX}/new", ItemCreate.as_view()),
-    path(f"{ITEMS_PREFIX}/<int:id>/", ItemRetrieveUpdateDestroyAPIView.as_view()),
+    # path(f"{CAT_PREFIX}/", CategoryList.as_view()),
+    # path(f"{CAT_PREFIX}/new", CategoryCreate.as_view()),
+    # path(f"{CAT_PREFIX}/<int:id>/", CategoryRetrieveUpdateDestroyAPIView.as_view(),),
+    # path(f"{CAT_PREFIX}/<int:id>/stats/", CategoryStats.as_view(),),
+    # path(f"{ITEMS_PREFIX}/", ItemList.as_view()),
+    # path(f"{ITEMS_PREFIX}/new", ItemCreate.as_view()),
+    # path(f"{ITEMS_PREFIX}/<int:id>/", ItemRetrieveUpdateDestroyAPIView.as_view()),
     # User management
     path("register/", SignUpFormView.as_view(), name="register"),
     path("login/", LoginFormView.as_view(), name="login"),
@@ -54,7 +54,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("tinymce/", include("tinymce.urls")),
     # No url matched
-    re_path(r"^.*/$", error_404, name="error404"),
+    re_path(r"^.*/$", url_error, name="error404"),
 ]
 
 urlpatterns = (
@@ -65,4 +65,3 @@ urlpatterns = (
 
 # Custom views for 404 and 500
 handler404 = "main.errors.handler404"
-handler500 = "main.errors.handler500"

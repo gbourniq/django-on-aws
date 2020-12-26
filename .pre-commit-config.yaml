@@ -41,21 +41,6 @@ repos:
         entry: python utils/generate_pylint_badge.py
         types: [python]
 
-      - id: postgres-up
-        name: postgres-up
-        stages: [commit]
-        language: system
-        entry: make rundb
-        types: [python]
-
-      - id: pytest
-        name: pytest
-        stages: [commit]
-        language: system
-        entry: pytest
-        args: [".", "-x", "-Wignore"]
-        types: [python]
-
       - id: coverage-badge
         name: coverage-badge
         stages: [commit]

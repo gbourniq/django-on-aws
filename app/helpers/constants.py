@@ -1,6 +1,12 @@
+from collections import namedtuple
 from enum import Enum
 
 TEMPLATE_DIR = "main"
+
+DIMS = namedtuple("DIMS", "width height")
+CROP_SIZE = DIMS(300, 300)
+THUMBNAIL_SIZE = DIMS(500, 500)
+IMG_EXT = ".jpg"
 
 
 class TemplateNames(Enum):

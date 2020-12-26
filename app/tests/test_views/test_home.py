@@ -12,5 +12,5 @@ class TestViewHome:
 
         response = client.get(reverse("home"))
 
-        assert "main/home.html" in (t.name for t in response.templates)
+        assert "main/home.html" in [t.name for t in response.templates]
         assert response.status_code == 200

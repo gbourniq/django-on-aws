@@ -1,4 +1,5 @@
 import pytest
+from django.conf import settings
 from django.urls import reverse
 
 from main.forms import ContactForm
@@ -7,16 +8,27 @@ from main.forms import ContactForm
 @pytest.mark.django_db(transaction=True)
 class TestViewContactUs:
     @pytest.mark.integration
-    def test_view_contact_us_page(self, client):
+    @pytest.mark.parametrize("login_required", [True, False])
+    def test_view_contact_us_page(self, client, monkeypatch, login_required):
         """
         Test the view Category us page is rendered with the Contact Form
+        only if ENABLE_LOGIN_REQUIRED_MIXIN set to False, or user is logged in
         """
+        monkeypatch.setattr(
+            settings,
+            "ENABLE_LOGIN_REQUIRED_MIXIN",
+            mock_login_required := login_required,
+        )
 
         response = client.get(reverse("contact_us"))
 
-        assert "main/contact_us.html" in (t.name for t in response.templates)
-        assert response.status_code == 200
-        assert isinstance(response.context["form"], ContactForm)
+        if mock_login_required:
+            assert not [t.name for t in response.templates]
+            assert response.status_code == 302
+        else:
+            assert "main/contact_us.html" in [t.name for t in response.templates]
+            assert response.status_code == 200
+            assert isinstance(response.context["form"], ContactForm)
 
     @pytest.mark.integration
     def test_post_valid_form(self, client, mock_contact_form: ContactForm):
@@ -26,7 +38,7 @@ class TestViewContactUs:
 
         response = client.post(reverse("contact_us"), data=mock_contact_form.json())
 
-        assert "main/go_back_home.html" in (t.name for t in response.templates)
+        assert "main/go_back_home.html" in [t.name for t in response.templates]
         assert response.status_code == 200
 
     @pytest.mark.integration
@@ -38,7 +50,7 @@ class TestViewContactUs:
         contact_us_url = reverse("contact_us")
         response = client.post(contact_us_url, data={}, HTTP_REFERER=contact_us_url)
 
-        assert "main/contact_us.html" in (t.name for t in response.templates)
+        assert "main/contact_us.html" in [t.name for t in response.templates]
         assert response.status_code == 200
 
     @pytest.mark.integration
@@ -70,5 +82,5 @@ class TestViewContactUs:
             contact_us_url, data=invalid_form.json(), HTTP_REFERER=contact_us_url,
         )
 
-        assert "main/contact_us.html" in (t.name for t in response.templates)
+        assert "main/contact_us.html" in [t.name for t in response.templates]
         assert response.status_code == 200

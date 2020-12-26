@@ -1,4 +1,3 @@
-import sys
 from typing import List
 
 from main.models import Category, Item
@@ -116,15 +115,10 @@ class MockItem:
         If the given category object does not exist in the database,
         then the item creation fails with an error message.
         """
-
-        if parent_category.category_name not in [
-            cat.category_name for cat in Category.objects.all()
-        ]:
-            print(
-                f"""Parent category {parent_category} does not exist in the databse.\n
-                  Please creating it prior to running this function."""
-            )
-            sys.exit()
+        assert (
+            Category.objects.filter(category_name=parent_category.category_name)
+            is not None
+        ), f"Parent category {parent_category} does not exist in the databse."
 
         _id = f"{parent_category.id}-{item_id}"
 

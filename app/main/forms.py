@@ -35,11 +35,10 @@ class NewUserForm(UserCreationForm):
         for fieldname in ("username", "password1", "password2"):
             self.fields[fieldname].help_text = None
 
-    def save(self, commit=True):
+    def save(self):
         user = super(NewUserForm, self).save(commit=False)
         user.email = self.cleaned_data["email"]
-        if commit:
-            user.save()
+        user.save()
         return user
 
     class Meta:

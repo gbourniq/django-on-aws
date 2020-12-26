@@ -1,6 +1,5 @@
 import logging
 import sys
-from collections import namedtuple
 from io import BytesIO
 
 from django.conf import settings
@@ -9,7 +8,7 @@ from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.db.models.fields.files import ImageFieldFile
 from PIL import Image
 
-DIMS = namedtuple("DIMS", "width height")
+from helpers.constants import CROP_SIZE, THUMBNAIL_SIZE
 
 
 class RequireLoginMixin:
@@ -28,25 +27,23 @@ class BaseModelMixin:
 
     logger = logging.getLogger(__name__)
 
-    def resizeImage(self, uploadedImage: ImageFieldFile) -> ImageFieldFile:
+    def resize_image(self, uploadedImage: ImageFieldFile) -> ImageFieldFile:
         """
         Performs the following operation on a given image:
         - Thumbmail: returns an image that fits inside of a given size
         - Crop: Cut image borders to fit a given size
         """
-        thumbnail_size = DIMS(500, 500)
-        crop_size = DIMS(300, 300)
 
         img_temp = Image.open(uploadedImage)
         output_io_stream = BytesIO()
 
-        img_temp.thumbnail(thumbnail_size)
+        img_temp.thumbnail(THUMBNAIL_SIZE)
         width, height = img_temp.size
 
-        left = (width - crop_size.width) / 2
-        top = (height - crop_size.height) / 2
-        right = (width + crop_size.width) / 2
-        bottom = (height + crop_size.height) / 2
+        left = (width - CROP_SIZE.width) / 2
+        top = (height - CROP_SIZE.height) / 2
+        right = (width + CROP_SIZE.width) / 2
+        bottom = (height + CROP_SIZE.height) / 2
 
         img_temp = img_temp.crop((left, top, right, bottom))
 

@@ -6,5 +6,6 @@
 - Keep AWS deployment and external services integrations for later 
 
 1. optimise all non-test code: constants etc OK
+test images to be tmppath
 2. increase coverage where possible
 3. review all test code

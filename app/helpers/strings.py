@@ -3,6 +3,7 @@
 SIGNUP_MSG = "New account created: %s"
 LOGOUT = "Logged out successfully!"
 LOGIN = "You are now logged in as %s"
+REDIRECT_AFTER_LOGIN = "Redirecting user back to %s"
 INVALID_LOGIN = "Invalid username or password."
 
 NO_ITEM_IN_CATEGORY = "Oops.. Category %s does not contain any item!"

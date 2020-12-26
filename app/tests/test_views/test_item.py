@@ -19,7 +19,7 @@ class TestViewItems:
             reverse("items_view", kwargs={"category_slug": "cat-slug-1"},)
         )
 
-        assert "main/go_back_home.html" in (t.name for t in response.templates)
+        assert "main/go_back_home.html" in [t.name for t in response.templates]
         assert response.status_code == 200
         assert response.context["code_handled"] == 404
 
@@ -49,7 +49,7 @@ class TestViewItems:
 
         assert response.status_code == 200
         assert response.context["code_handled"] == 404
-        assert "main/go_back_home.html" in (t.name for t in response.templates)
+        assert "main/go_back_home.html" in [t.name for t in response.templates]
 
 
 @pytest.mark.django_db(transaction=True)
@@ -68,7 +68,7 @@ class TestViewItem:
             )
         )
 
-        assert "main/go_back_home.html" in (t.name for t in response.templates)
+        assert "main/go_back_home.html" in [t.name for t in response.templates]
         assert response.status_code == 200
         assert response.context["code_handled"] == 404
 
@@ -93,7 +93,7 @@ class TestViewItem:
 
         assert response.request["PATH_INFO"] == f"/items/{category_slug}/{item_slug}/"
         assert response.status_code == 200
-        assert "main/items.html" in (t.name for t in response.templates)
+        assert "main/items.html" in [t.name for t in response.templates]
         assert isinstance(response.context["item"], Item)
         assert isinstance(response.context["sidebar"], QuerySet)
         assert isinstance(response.context["this_item_idx"], int)
@@ -121,7 +121,7 @@ class TestViewItem:
 
         assert response.request["PATH_INFO"] == f"/items/cat-slug-1/item-slug-1-1/"
         assert response.status_code == 200
-        assert "main/items.html" in (t.name for t in response.templates)
+        assert "main/items.html" in [t.name for t in response.templates]
         assert response.context["item"].views == initial_view_count + 1
 
     @pytest.mark.integration
@@ -150,7 +150,7 @@ class TestViewItem:
 
         assert response.status_code == 200
         assert response.context["code_handled"] == 404
-        assert "main/go_back_home.html" in (t.name for t in response.templates)
+        assert "main/go_back_home.html" in [t.name for t in response.templates]
 
     @pytest.mark.integration
     @pytest.mark.parametrize(
@@ -178,7 +178,7 @@ class TestViewItem:
 
         assert response.request["PATH_INFO"] == f"/items/{category_slug}/{item_slug}/"
         assert response.status_code == 200
-        assert "main/items.html" in (t.name for t in response.templates)
+        assert "main/items.html" in [t.name for t in response.templates]
         assert isinstance(response.context["item"], Item)
         assert isinstance(response.context["sidebar"], QuerySet)
         assert isinstance(response.context["this_item_idx"], int)
@@ -216,7 +216,7 @@ class TestViewItem:
 
         assert response.status_code == 200
         assert response.context["code_handled"] == 404
-        assert "main/go_back_home.html" in (t.name for t in response.templates)
+        assert "main/go_back_home.html" in [t.name for t in response.templates]
 
     @pytest.mark.integration
     @pytest.mark.parametrize(
@@ -250,7 +250,7 @@ class TestViewItem:
 
         assert response.request["PATH_INFO"] == f"/items/{category_slug}/{item_slug}/"
         assert response.status_code == 200
-        assert "main/items.html" in (t.name for t in response.templates)
+        assert "main/items.html" in [t.name for t in response.templates]
         assert isinstance(response.context["item"], Item)
         assert isinstance(response.context["sidebar"], QuerySet)
         assert isinstance(response.context["this_item_idx"], int)
@@ -288,4 +288,4 @@ class TestViewItem:
 
         assert response.status_code == 200
         assert response.context["code_handled"] == 404
-        assert "main/go_back_home.html" in (t.name for t in response.templates)
+        assert "main/go_back_home.html" in [t.name for t in response.templates]

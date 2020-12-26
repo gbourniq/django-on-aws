@@ -23,7 +23,7 @@ class Category(models.Model, BaseModelMixin):
     # pylint: disable=signature-differs
     def save(self, *args, **kwargs):
         """Resize the image on category.save()"""
-        self.image = self.resizeImage(self.image)
+        self.image = self.resize_image(self.image)
         super(Category, self).save(*args, **kwargs)
 
     def __str__(self):

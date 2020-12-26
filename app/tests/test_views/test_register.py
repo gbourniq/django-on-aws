@@ -16,7 +16,7 @@ class TestViewRegister:
 
         response = client.get(reverse("register"))
 
-        assert "main/register.html" in (t.name for t in response.templates)
+        assert "main/register.html" in [t.name for t in response.templates]
         assert response.status_code == 200
         assert isinstance(response.context["form"], NewUserForm)
 
@@ -42,13 +42,11 @@ class TestViewRegister:
         mock_authenticate.assert_not_called()
         mock_login.assert_not_called()
 
-        assert "main/login.html" in (t.name for t in response.templates)
+        assert "main/login.html" in [t.name for t in response.templates]
         assert response.status_code == 200
 
     @pytest.mark.integration
-    def test_register_with_valid_form(
-        self, monkeypatch, client, mock_user_form_data, mock_user
-    ):
+    def test_register_with_valid_form(self, monkeypatch, client, mock_user_form_data):
         """
         Tests that authenticate and login functions are called
         Tests the redirection to the home page
@@ -56,12 +54,9 @@ class TestViewRegister:
 
         mock_login = Mock()
         monkeypatch.setattr("main.views.login", mock_login)
-        mock_save_form = Mock(return_value=mock_user)
-        monkeypatch.setattr(NewUserForm, "save", mock_save_form)
 
         response = client.post(reverse("register"), data=mock_user_form_data)
 
-        mock_save_form.assert_called()
         mock_login.assert_called()
 
         assert len(response.templates) == 0
@@ -91,7 +86,7 @@ class TestViewRegister:
         mock_save_form.assert_not_called()
         mock_login.assert_not_called()
 
-        assert "main/register.html" in (t.name for t in response.templates)
+        assert "main/register.html" in [t.name for t in response.templates]
         assert response.status_code == 200
 
     @pytest.mark.integration
@@ -121,5 +116,5 @@ class TestViewRegister:
         mock_save_form.assert_not_called()
         mock_login.assert_not_called()
 
-        assert "main/register.html" in (t.name for t in response.templates)
+        assert "main/register.html" in [t.name for t in response.templates]
         assert response.status_code == 200

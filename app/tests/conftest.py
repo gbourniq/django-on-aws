@@ -12,11 +12,11 @@ from main.models import Category, Item
 
 def save_mock_category(monkeypatch, category: Category) -> None:
     """
-    Mock the resizeImage() function to prevent the need of creating and 
+    Mock the resize_image() function to prevent the need of creating and 
     processing dummy images when saving Category objects.
     """
     mock_resize_image = Mock(return_value=category.image)
-    monkeypatch.setattr(Category, "resizeImage", mock_resize_image)
+    monkeypatch.setattr(Category, "resize_image", mock_resize_image)
     category.save()
     mock_resize_image.assert_called_once_with(category.image)
 
@@ -35,8 +35,7 @@ def mock_default_category() -> Category:
 @pytest.fixture
 def load_default_category(mock_default_category: Category, monkeypatch) -> Category:
     """Saves a default category object, and return the object"""
-    if mock_default_category not in Category.objects.all():
-        save_mock_category(monkeypatch, mock_default_category)
+    save_mock_category(monkeypatch, mock_default_category)
     return mock_default_category
 
 
@@ -52,8 +51,7 @@ def load_default_categories(
 ) -> List[Category]:
     """Saves default category objects, and return objects"""
     for mock_default_category in mock_default_categories:
-        if mock_default_category not in Category.objects.all():
-            save_mock_category(monkeypatch, mock_default_category)
+        save_mock_category(monkeypatch, mock_default_category)
     return mock_default_categories
 
 
@@ -71,8 +69,7 @@ def mock_default_item(load_default_category) -> Item:
 @pytest.fixture
 def load_default_item(mock_default_item: Item) -> Item:
     """Save a default item object, and return the object"""
-    if mock_default_item not in Item.objects.all():
-        mock_default_item.save()
+    mock_default_item.save()
     return mock_default_item
 
 

@@ -1,5 +1,3 @@
-from typing import List
-
 import pytest
 
 from app.tests.mocks import MockItem
@@ -65,26 +63,3 @@ class TestItems:
             repr(mock_default_item)
             == f"Item=(id={mock_default_item.id},item_name={mock_default_item.item_name},item_slug={mock_default_item.item_slug})"
         )
-
-    @pytest.mark.parametrize(
-        "view_count_0, view_count_1", [(3, 3), (3, 4), (4, 3),],
-    )
-    def test_items_comparison(
-        self, view_count_0, view_count_1, mock_default_items: List[Item]
-    ):
-        """
-        Tests Item __ge__() and __lt__() methods
-        """
-        mock_default_items[0].views = view_count_0
-        mock_default_items[1].views = view_count_1
-
-        if view_count_0 > view_count_1:
-            assert mock_default_items[0].views >= mock_default_items[1].views
-            assert mock_default_items[1].views < mock_default_items[0].views
-        elif view_count_0 < view_count_1:
-            assert mock_default_items[1].views >= mock_default_items[0].views
-            assert mock_default_items[0].views < mock_default_items[1].views
-        elif view_count_0 == view_count_1:
-            assert mock_default_items[0].views >= mock_default_items[1].views
-        else:
-            pass

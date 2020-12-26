@@ -72,20 +72,24 @@ class LoginFormView(View):
 
     def post(self, request, *args, **kwargs) -> Union[render, redirect]:
         form = self.form_class(request=request, data=request.POST)
-        if form.is_valid():
-            username = form.cleaned_data.get("username")
-            password = form.cleaned_data.get("password")
-            user = authenticate(username=username, password=password)
-            if user is not None:
-                login(request, user)
-                messages.info(request, strings.LOGIN.format(username))
-                logger.info(strings.LOGIN, username)
-                if request.GET.get("next"):
-                    return redirect(request.GET.get("next"))
-                else:
-                    return redirect("/")
-        messages.error(request, strings.INVALID_LOGIN)
-        return render(request, self.template_name, {"form": form})
+        if not form.is_valid():
+            # User DOES NOT exists
+            messages.error(request, strings.INVALID_LOGIN)
+            return render(request, self.template_name, {"form": form})
+
+        username = form.cleaned_data.get("username")
+        password = form.cleaned_data.get("password")
+        user = authenticate(username=username, password=password)
+        login(request, user)
+
+        messages.info(request, strings.LOGIN.format(username))
+        logger.info(strings.LOGIN, username)
+
+        if secure_page := request.GET.get("next"):
+            # Redirect to the restricted page
+            logger.info(strings.REDIRECT_AFTER_LOGIN, secure_page)
+            return redirect(secure_page)
+        return redirect("/")
 
 
 class CategoriesView(generic.ListView):
@@ -114,11 +118,10 @@ class RedirectToItemView(generic.base.RedirectView):
         category = get_object_or_404(
             Category, category_slug=self.kwargs["category_slug"]
         )
-        items_in_category = Item.objects.filter(category_name=category)
-        if items_in_category:
-            first_item = items_in_category.order_by("item_name").first()
-            return f"/items/{category.category_slug}/{first_item.item_slug}/"
-        raise Http404(strings.NO_ITEM_IN_CATEGORY.format(category))
+        first_item = (
+            Item.objects.filter(category_name=category).order_by("item_name").first()
+        )
+        return f"/items/{category.category_slug}/{first_item.item_slug}/"
 
 
 class ItemsView(generic.ListView):

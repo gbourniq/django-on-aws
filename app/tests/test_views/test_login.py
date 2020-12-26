@@ -15,7 +15,7 @@ class TestViewLogin:
 
         response = client.get(reverse("login"))
 
-        assert "main/login.html" in (t.name for t in response.templates)
+        assert "main/login.html" in [t.name for t in response.templates]
         assert response.status_code == 200
         assert isinstance(response.context["form"], AuthenticationForm)
 
@@ -41,7 +41,7 @@ class TestViewLogin:
         mock_authenticate.assert_not_called()
         mock_login.assert_not_called()
 
-        assert "main/login.html" in (t.name for t in response.templates)
+        assert "main/login.html" in [t.name for t in response.templates]
         assert response.status_code == 200
 
     @pytest.mark.integration
