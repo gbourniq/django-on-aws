@@ -34,11 +34,17 @@ repos:
         entry: black
         types: [python]
 
-      # - id: pylint
-      #   name: pylint
-      #   stages: [commit]
-      #   language: system
-      #   entry: python utils/generate_pylint_badge.py
+      - id: pylint
+        name: pylint
+        stages: [commit]
+        language: system
+        entry: python utils/generate_pylint_badge.py
+
+      - id: postgres-up
+        name: postgres-up
+        stages: [commit]
+        language: system
+        entry: make rundb
 
       - id: pytest
         name: pytest
@@ -47,14 +53,6 @@ repos:
         entry: pytest
         args: [".", "-x", "-Wignore"]
         types: [python]
-
-      # - id: pytest
-      #   name: pytest
-      #   stages: [commit]
-      #   language: system
-      #   entry: pytest
-      #   args: ["app", "--ignore=app/tests/test_views"]
-      #   types: [python]
 
       - id: coverage
         name: coverage

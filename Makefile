@@ -34,8 +34,10 @@ pre-commit:
 ### Development and Testing ###
 .PHONY: runserver tests open-cov-report
 
-runserver:
+rundb:
 	@ docker-compose up -d postgres || true
+
+runserver: rundb
 	@ python app/manage.py runserver 0.0.0.0:8080
 
 tests:
