@@ -16,7 +16,7 @@ from helpers.constants import CROP_SIZE, THUMBNAIL_SIZE
 
 
 class RequireLoginMixin:
-    """Add this Mixin in django class views to enforce user to log in"""
+    """Add this Mixin in django class views to enforce logging in"""
 
     def dispatch(self, request, *args, **kwargs):
         """
@@ -29,12 +29,11 @@ class RequireLoginMixin:
 
 
 class BaseModelMixin:
-    """
-    Base Class providing helper functions for Django Models
-    """
+    """Base Class providing helper functions for Django Models"""
 
     logger = logging.getLogger(__name__)
 
+    # pylint: disable=no-self-use
     def resize_image(self, uploaded_image: ImageFieldFile) -> ImageFieldFile:
         """
         Performs the following operation on a given image:
@@ -43,7 +42,6 @@ class BaseModelMixin:
         """
 
         img_temp = Image.open(uploaded_image)
-        output_io_stream = BytesIO()
 
         img_temp.thumbnail(THUMBNAIL_SIZE)
         width, height = img_temp.size
@@ -55,7 +53,7 @@ class BaseModelMixin:
 
         img_temp = img_temp.crop((left, top, right, bottom))
 
-        img_temp.save(output_io_stream, format="JPEG", quality=90)
+        img_temp.save(output_io_stream := BytesIO(), format="JPEG", quality=90)
         output_io_stream.seek(0)
         uploaded_image = InMemoryUploadedFile(
             output_io_stream,

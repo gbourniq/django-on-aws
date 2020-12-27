@@ -5,6 +5,8 @@ and item objects for unit-tests
 
 from typing import Dict, List
 
+from django.contrib.auth.models import User
+
 from main.models import Category, Item
 
 
@@ -17,6 +19,11 @@ class MockUser:
         return dict(
             username="mock_user_data", email="mydummy@mail.com", password="dummypass",
         )
+
+    @staticmethod
+    def mock_user_object() -> User:
+        """Mock User Object"""
+        return User.objects.create_user(**MockUser.mock_user_data())
 
     @staticmethod
     def mock_invalid_user_data() -> Dict:

@@ -22,7 +22,7 @@ BASE_DIR = os.path.dirname(PORTFOLIO_DIR)
 SECRET_KEY = config.SECRET_KEY
 
 # SECURITY WARNING: don't run with debug turned on in production!
-# Overriden by dev/prod settings files
+# To be set in child settings files
 DEBUG = None
 
 ALLOWED_HOSTS = []
@@ -124,17 +124,15 @@ USE_L10N = True
 USE_TZ = True
 
 
-# Cache configuration - set in dev/prod settings
+# Cache configuration - To be set in child settings files
 CACHE_TTL = None
 
-# Database
-# https://docs.djangoproject.com/en/2.2/ref/settings/#databases
-# To be set in dev/prod settings
+# Database - To be set in child settings files
+# https://docs.djangoproject.com/en/3.0/ref/settings/#databases
 DATABASES = {}
 
 
-# FILE STORAGE
-# To be set in dev/prod settings
+# File storage - To be set in child settings files
 UPLOADS_FOLDER_PATH = "images/"
 STATIC_URL = None
 STATIC_ROOT = None
@@ -143,11 +141,10 @@ MEDIA_ROOT = None
 STATICFILES_DIRS = None
 
 
-# Email parameters
-# Defined in dev/prod settings
+# Email parameters - To be set in child settings files
 
 
-# Configuration which writes all logging from the django logger to a local file
+# Write logging from the django logger to a local file
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,

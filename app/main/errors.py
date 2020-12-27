@@ -1,11 +1,13 @@
 """This module defines error handlers"""
 
 import logging
+from http import HTTPStatus
 
 from django.http import Http404
 from django.shortcuts import redirect, render
 
 from helpers import strings
+from helpers.constants import TemplateNames
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +22,9 @@ def handler404(request, exception) -> render:
     logger.error(f"{str(exception)}")
     return render(
         request,
-        "main/go_back_home.html",
-        context={"message": f"{str(exception)}", "code_handled": 404},
+        TemplateNames.GO_BACK_HOME.value,
+        context={
+            "message": f"{str(exception)}",
+            "code_handled": HTTPStatus.NOT_FOUND.value,
+        },
     )

@@ -148,18 +148,14 @@ def mock_user_dict() -> Dict:
 
 
 @pytest.fixture
-def mock_user() -> Dict:
+def mock_user() -> User:
     """Fixture to create the default user"""
-    user = User.objects.create_user(**MockUser.mock_user_data())
-    return user
+    return MockUser.mock_user_object()
 
 
 @pytest.fixture
 def mock_invalid_user_dict() -> Dict:
-    """
-    Fixture to return user credentials which are not
-    saved in the database
-    """
+    """User credentials which are notsaved in the database"""
     return MockUser.mock_invalid_user_data()
 
 

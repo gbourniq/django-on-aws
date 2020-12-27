@@ -1,5 +1,3 @@
 - Simplify as per readme
-1. optimise all code: constants, http status, etc.
-2. optimise tests : images to be tmppath, given/when/then
-3. look for all comments # and remove/address them
-4. pylint 10
+1. optimise all code: constants, http status, etc, optimise tests : images to be tmppath, given/when/then
+2. look for all comments # and remove/address them

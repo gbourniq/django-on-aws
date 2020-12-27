@@ -11,12 +11,6 @@ ENV_PATH = APP_DIR / ".env"
 print(f"Loading configs from {ENV_PATH}")
 config = Config(env_file=ENV_PATH)
 
-"""
-This file collects environment variables across the repo and store them into global
-variables. This allows to easily update the code base if in the future a variable
-is renamed or removed.
-"""
-
 # ======================= SETTINGS.PY =========================
 
 # General settings

@@ -12,7 +12,7 @@ IMG_EXT = ".jpg"
 
 
 class TemplateNames(Enum):
-    """Enum to contain template name"""
+    """Enum to gather template name"""
 
     HOME = f"{TEMPLATE_DIR}/home.html"
     REGISTER = f"{TEMPLATE_DIR}/register.html"

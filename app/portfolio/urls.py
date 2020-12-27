@@ -63,5 +63,5 @@ urlpatterns = (
     + urlpatterns
 )
 
-# Custom views for 404 and 500
+# Custom views for errors
 handler404 = "main.errors.handler404"

@@ -1,10 +1,14 @@
 """This module defines tests for the register page"""
 
+from http import HTTPStatus
+from typing import Dict
 from unittest.mock import Mock
 
 import pytest
+from django.contrib.auth.models import User
 from django.urls import reverse
 
+from helpers.constants import TemplateNames
 from main.forms import NewUserForm
 
 
@@ -14,113 +18,71 @@ class TestViewRegister:
 
     @pytest.mark.integration
     # pylint: disable=no-self-use
-    def test_view_register_page(self, client):
-        """
-        Test the Sign up page is rendered with the NewUserForm form (GET)
-        """
-
+    def test_get_register_page(self, client):
+        """Test for when a user attempts to register"""
+        # When: GET request on the register page
         response = client.get(reverse("register"))
-
-        assert "main/register.html" in [t.name for t in response.templates]
-        assert response.status_code == 200
+        # Then: the register template is rendered with the NewUserForm form
+        assert TemplateNames.REGISTER.value in [t.name for t in response.templates]
+        assert response.status_code == HTTPStatus.OK.value
         assert isinstance(response.context["form"], NewUserForm)
 
     @pytest.mark.integration
     # pylint: disable=no-self-use
-    def test_post_invalid_user(
-        self, monkeypatch, client, mock_user, mock_invalid_user_dict
+    def test_register_with_valid_form(
+        self, monkeypatch, client, mock_user_form_dict: Dict
     ):
-        """
-        Tests that authenticate and login functions are not called
-        Tests it renders the same login.html page
-        """
-
-        mock_authenticate = Mock(return_value=mock_user)
-        monkeypatch.setattr("django.contrib.auth.authenticate", mock_authenticate)
-        mock_login = Mock()
-        monkeypatch.setattr("main.views.login", mock_login)
-
-        response = client.post(reverse("login"), data=mock_invalid_user_dict)
-
-        mock_authenticate.assert_not_called()
-        mock_login.assert_not_called()
-
-        assert "main/login.html" in [t.name for t in response.templates]
-        assert response.status_code == 200
-
-    @pytest.mark.integration
-    # pylint: disable=no-self-use
-    def test_register_with_valid_form(self, monkeypatch, client, mock_user_form_dict):
-        """
-        Tests that authenticate and login functions are called
-        Tests the redirection to the home page
-        """
-
-        mock_login = Mock()
-        monkeypatch.setattr("main.views.login", mock_login)
-
+        """Tests for when user register successfully"""
+        # Given: a mock login function
+        monkeypatch.setattr("main.views.login", mock_login := Mock())
+        # When: user register with valid data
         response = client.post(reverse("register"), data=mock_user_form_dict)
-
+        # Then: the login function is called
         mock_login.assert_called()
-
         assert len(response.templates) == 0
-        assert response.status_code == 302
+        assert response.status_code == HTTPStatus.FOUND.value
 
     @pytest.mark.integration
     # pylint: disable=no-self-use
-    def test_register_with_invalid_form(self, monkeypatch, client, mock_user):
-        """
-        Tests that authenticate and login functions are not called
-        Tests the rendering of the same register.html page
-        """
-
+    def test_register_with_invalid_form(self, monkeypatch, client, mock_user: User):
+        """Tests for when user attempts to register with invalid form data"""
+        # Given: invalid register form data
         mock_user_form_invalid_data = {
             "username": "",
             "email": "invalid_email",
             "password1": "invalidpass",
             "password2": "invalidpass_not_matching",
         }
-
-        mock_login = Mock()
-        monkeypatch.setattr("main.views.login", mock_login)
-        mock_save_form = Mock(return_value=mock_user)
-        monkeypatch.setattr(NewUserForm, "save", mock_save_form)
-
+        # Given: mock login function and some user is registered
+        monkeypatch.setattr("main.views.login", mock_login := Mock())
+        monkeypatch.setattr(
+            NewUserForm, "save", mock_save_form := Mock(return_value=mock_user)
+        )
+        # When: POST the invalid form data on the register page
         response = client.post(reverse("register"), data=mock_user_form_invalid_data)
-
+        # Then: User is not saved through the form, and login function not called
         mock_save_form.assert_not_called()
         mock_login.assert_not_called()
-
-        assert "main/register.html" in [t.name for t in response.templates]
-        assert response.status_code == 200
+        # Then: User stays on the register page
+        assert TemplateNames.REGISTER.value in [t.name for t in response.templates]
+        assert response.status_code == HTTPStatus.OK.value
 
     @pytest.mark.integration
     # pylint: disable=no-self-use
     def test_register_with_existing_user_conflict(
-        self, monkeypatch, client, mock_user, mock_user_dict
+        self, monkeypatch, client, mock_user: User, mock_user_dict: Dict
     ):
-        """
-        Tests that authenticate and login functions are not called
-        Tests the rendering of the same register.html page
-        """
-
-        # username conflicting with existing mock_user
-        mock_user_form_valid_data = {
-            "username": mock_user_dict.get("username"),
-            "email": "mydummy@mail.com",
-            "password1": "dummypass",
-            "password2": "dummypass",
-        }
-
-        mock_login = Mock()
-        monkeypatch.setattr("main.views.login", mock_login)
-        mock_save_form = Mock(return_value=mock_user)
-        monkeypatch.setattr(NewUserForm, "save", mock_save_form)
-
-        response = client.post(reverse("register"), data=mock_user_form_valid_data)
-
+        """Tests for when registering with existing user details"""
+        # Given: Form data where username conflicts with existing mock_user
+        # Given: mock login function and some user is registered
+        monkeypatch.setattr("main.views.login", mock_login := Mock())
+        monkeypatch.setattr(
+            NewUserForm, "save", mock_save_form := Mock(return_value=mock_user)
+        )
+        # When: POST user form data of a user that already exists
+        response = client.post(reverse("register"), data=mock_user_dict)
+        # Then: User is not saved through the form, and login function not called
         mock_save_form.assert_not_called()
         mock_login.assert_not_called()
-
-        assert "main/register.html" in [t.name for t in response.templates]
-        assert response.status_code == 200
+        assert TemplateNames.REGISTER.value in [t.name for t in response.templates]
+        assert response.status_code == HTTPStatus.OK.value

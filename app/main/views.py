@@ -111,8 +111,7 @@ class CategoriesView(generic.ListView):
     model = Category
 
     def get_queryset(self):
-        categories = self.model.objects.all()
-        if categories:
+        if categories := self.model.objects.all():
             return categories.order_by("category_name")
         raise Http404(strings.MSG_404)
 
@@ -197,10 +196,7 @@ class ContactUsFormView(RequireLoginMixin, View):
 
     # pylint: disable=unused-argument
     def post(self, request, *args, **kwargs) -> Union[render, redirect]:
-        """
-        Overrides the HTTP POST method to send an email if the form
-        is valid. The email task may be Asynchronous if a BROKER_URL is set.
-        """
+        """HTTP POST method to send an email if the form is valid."""
         form = self.form_class(request.POST)
 
         if not form.is_valid():

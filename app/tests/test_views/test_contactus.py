@@ -1,9 +1,12 @@
 """This module defines tests for the contact us page"""
 
+from http import HTTPStatus
+
 import pytest
 from django.conf import settings
 from django.urls import reverse
 
+from helpers.constants import TemplateNames
 from main.forms import ContactForm
 
 
@@ -14,51 +17,48 @@ class TestViewContactUs:
     @pytest.mark.integration
     @pytest.mark.parametrize("login_required", [True, False])
     # pylint: disable=no-self-use
-    def test_view_contact_us_page(self, client, monkeypatch, login_required):
+    def test_view_contact_us_page(self, client, monkeypatch, login_required: bool):
         """
         Test the view Category us page is rendered with the Contact Form
         only if ENABLE_LOGIN_REQUIRED_MIXIN set to False, or user is logged in
         """
+        # Given: ENABLE_LOGIN_REQUIRED_MIXIN set to True/False
         monkeypatch.setattr(
-            settings,
-            "ENABLE_LOGIN_REQUIRED_MIXIN",
-            mock_login_required := login_required,
+            settings, "ENABLE_LOGIN_REQUIRED_MIXIN", login_required,
         )
-
+        # When: A GET request to the contact us page
         response = client.get(reverse("contact_us"))
-
-        if mock_login_required:
-            assert not [t.name for t in response.templates]
-            assert response.status_code == 302
+        rendered_templates = [t.name for t in response.templates]
+        if login_required:
+            # Then: No templates rendered and returns 302
+            assert not rendered_templates
+            assert response.status_code == HTTPStatus.FOUND.value
         else:
-            assert "main/contact_us.html" in [t.name for t in response.templates]
-            assert response.status_code == 200
+            # Then: contact_us template is rendered with 200
+            assert TemplateNames.CONTACT_US.value in rendered_templates
+            assert response.status_code == HTTPStatus.OK.value
             assert isinstance(response.context["form"], ContactForm)
 
     @pytest.mark.integration
     # pylint: disable=no-self-use
     def test_post_valid_form(self, client, mock_contact_form: ContactForm):
-        """
-        Test the `Go Back Home` page is rendered when user submit valid form
-        """
-
+        """Test the `Go Back Home` page is rendered when user submit valid form"""
+        # When: POST request on the contact-us page
         response = client.post(reverse("contact_us"), data=mock_contact_form.json())
-
-        assert "main/go_back_home.html" in [t.name for t in response.templates]
-        assert response.status_code == 200
+        # Then: `go-back-home` template is rendered
+        assert TemplateNames.GO_BACK_HOME.value in [t.name for t in response.templates]
+        assert response.status_code == HTTPStatus.OK.value
 
     @pytest.mark.integration
     # pylint: disable=no-self-use
     def test_post_empty_form(self, client):
-        """
-        Ensure that, when a user submits an empty form:
-        - Redirect to the current page
-        """
+        """When a user submits an empty form, it will redirect to the current page"""
+        # When: POST request on the contact us page, with an empty form
         contact_us_url = reverse("contact_us")
         response = client.post(contact_us_url, data={}, HTTP_REFERER=contact_us_url)
-
-        assert "main/contact_us.html" in [t.name for t in response.templates]
-        assert response.status_code == 200
+        # Then: the rendered template is the current `contact-us` template
+        assert TemplateNames.CONTACT_US.value in [t.name for t in response.templates]
+        assert response.status_code == HTTPStatus.OK.value
 
     @pytest.mark.integration
     @pytest.mark.parametrize(
@@ -76,20 +76,18 @@ class TestViewContactUs:
     def test_post_invalid_form(
         self, client, name: str, contact_email: str, subject: str, message: str,
     ):
-        """
-        When invalid forms are submitted, ensures we have a page rediction
-        (return code 302)
-        """
+        """Ensures page rediction when invalid form is submitted"""
+        # Given: Form with invalid data
         invalid_form = ContactForm()
         invalid_form.name = name
         invalid_form.contact_email = contact_email
         invalid_form.subject = subject
         invalid_form.message = message
-
+        # When: the form is posted on the contact-us page
         contact_us_url = reverse("contact_us")
         response = client.post(
             contact_us_url, data=invalid_form.json(), HTTP_REFERER=contact_us_url,
         )
-
-        assert "main/contact_us.html" in [t.name for t in response.templates]
-        assert response.status_code == 200
+        # Then: user stays on the contact-us page
+        assert TemplateNames.CONTACT_US.value in [t.name for t in response.templates]
+        assert response.status_code == HTTPStatus.OK.value
