@@ -19,10 +19,13 @@ MEDIA_URL: str = config("MEDIA_URL", default="mediafiles")
 
 # Postgres
 POSTGRES_HOST: str = getenv("POSTGRES_HOST", config("POSTGRES_HOST"))
-POSTGRES_PORT: int = config("POSTGRES_PORT", cast=int)
+POSTGRES_PASSWORD: Secret = getenv(
+    "POSTGRES_PASSWORD", config("POSTGRES_PASSWORD", cast=Secret)
+)
 POSTGRES_DB: str = config("POSTGRES_DB")
+POSTGRES_PORT: int = config("POSTGRES_PORT", cast=int)
 POSTGRES_USER: str = config("POSTGRES_USER")
-POSTGRES_PASSWORD: Secret = config("POSTGRES_PASSWORD", cast=Secret)
+
 
 # ==================== AWS ======================
 # AWS_STORAGE_BUCKET_NAME: str = config("AWS_STORAGE_BUCKET_NAME")

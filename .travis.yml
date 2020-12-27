@@ -29,6 +29,7 @@ script:
   - make tests
   # CD
   - make image
-  - docker-compose up -d postgres && make run-app
+  - make up
   - make healthcheck
+  - make down
   - make publish

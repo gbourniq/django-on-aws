@@ -10,7 +10,6 @@ DOCKER_USER=gbournique
 IMAGE_REPOSITORY=${DOCKER_USER}/django-on-aws
 TAG=$(shell poetry version | awk '{print $$NF}')
 
-
 ### Environment and pre-commit hooks ###
 .PHONY: env env-update pre-commit
 env:
@@ -60,6 +59,7 @@ image:
 	docker build -t ${IMAGE_REPOSITORY}:$(TAG) .
 
 up:
+
 	@ ${INFO} "Running Django tests with PostgreSQL running on Docker"
 	@ docker-compose down
 	@ docker-compose up -d
@@ -77,17 +77,18 @@ publish:
 
 run-app:
 	@ ${INFO} "Running Django app as a standalone container"
+	@ ${INFO} "Postgres host: ${POSTGRES_HOST} (default: localhost)"
 	@ docker run -d \
 				-p 8080:8080 \
 				--name=myapp \
 				--restart=no \
-				--env POSTGRES_HOST=postgres \
-				--network=django-on-aws_backend \
+				--env POSTGRES_HOST=${POSTGRES_HOST} \
+				--env POSTGRES_PASSWORD=${POSTGRES_PASSWORD} \
 				${IMAGE_REPOSITORY}:$(TAG)
 
 rm-app:
 	@ ${INFO} "Removing Django app container"
-	@ docker rm -f $$(docker ps -f "ancestor=${IMAGE_REPOSITORY}:$(TAG)" -q)
+	@ docker rm --force $$(docker ps --filter "ancestor=${IMAGE_REPOSITORY}:$(TAG)" -q)
 
 
 ### Helpers ###

@@ -11,7 +11,8 @@ ARG USERNAME="portfoliouser"
 ENV PATH="/opt/venv/bin:${PATH}" \
     PYTHONPATH="/home/${USERNAME}/${APP_DIR}/" \
     DJANGO_SETTINGS_MODULE="portfolio.settings" \
-    POSTGRES_HOST="postgres"
+    POSTGRES_HOST="postgres" \
+    POSTGRES_PASSWORD="postgres"
     
 # Copy application code, startup script, and dependencies
 COPY ${APP_DIR}/ ${STARTUP_SCRIPT} /home/${USERNAME}/${APP_DIR}/
