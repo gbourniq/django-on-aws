@@ -106,6 +106,7 @@ class TestCategory:
     )
     @pytest.mark.parametrize("file_ext", ["png", "jpeg", "bmp", "tiff"])
     # pylint: disable=no-self-use
+    # pylint: disable=too-many-arguments
     def test_image_resize_success(
         self,
         monkeypatch,
@@ -148,6 +149,7 @@ class TestCategory:
             ("xls", UnidentifiedImageError),
         ],
     )
+    # pylint: disable=too-many-arguments
     # pylint: disable=no-self-use
     def test_image_resize_failed(
         self,
