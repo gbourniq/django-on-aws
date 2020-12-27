@@ -1,3 +1,0 @@
-- Simplify as per readme
-1. optimise all code: constants, http status, etc, optimise tests : images to be tmppath, given/when/then
-2. look for all comments # and remove/address them

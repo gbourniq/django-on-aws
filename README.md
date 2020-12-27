@@ -13,3 +13,4 @@ Simplified version of https://github.com/gbourniq/portfolio
 - Removed Ansible / k8s stuff (to be replaced by CloudFormation) and a single Dockerfile to be run by Make
 - Simplify environment variables and scripts
 - address all pylint warnings
+- general code improvements

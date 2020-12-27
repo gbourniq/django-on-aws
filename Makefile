@@ -72,8 +72,22 @@ down:
 	@ docker-compose down
 
 publish:
-	@echo "${DOCKER_PASSWORD}" | docker login --username "${DOCKER_USER}" --password-stdin 2>&1
-	@docker push ${IMAGE_REPOSITORY}:$(TAG)
+	@ echo "${DOCKER_PASSWORD}" | docker login --username "${DOCKER_USER}" --password-stdin 2>&1
+	@ docker push ${IMAGE_REPOSITORY}:$(TAG)
+
+run-app:
+	@ ${INFO} "Running Django app as a standalone container"
+	@ docker run -d \
+				-p 8080:8080 \
+				--name=myapp \
+				--restart=no \
+				--env POSTGRES_HOST=postgres \
+				--network=django-on-aws_backend \
+				${IMAGE_REPOSITORY}:$(TAG)
+
+rm-app:
+	@ ${INFO} "Removing Django app container"
+	@ docker rm -f $$(docker ps -f "ancestor=${IMAGE_REPOSITORY}:$(TAG)" -q)
 
 
 ### Helpers ###

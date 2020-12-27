@@ -5,13 +5,18 @@ SHELL ["/bin/bash", "-e", "-o", "pipefail", "-c"]
 
 ARG APP_WHEEL=dist/*.whl
 ARG APP_DIR=app
+ARG STARTUP_SCRIPT=deployment/app/startup_server.sh
 ARG USERNAME="portfoliouser"
-ENV PATH="/opt/venv/bin:${PATH}"
 
-# Copy application code and dependencies
+ENV PATH="/opt/venv/bin:${PATH}" \
+    PYTHONPATH="/home/${USERNAME}/${APP_DIR}/" \
+    DJANGO_SETTINGS_MODULE="portfolio.settings" \
+    POSTGRES_HOST="postgres"
+    
+# Copy application code, startup script, and dependencies
+COPY ${APP_DIR}/ ${STARTUP_SCRIPT} /home/${USERNAME}/${APP_DIR}/
 # hadolint ignore=DL3020
 ADD $APP_WHEEL /tmp
-COPY ${APP_DIR}/ /home/"${USERNAME}"/${APP_DIR}
 
 # hadolint ignore=DL3008
 RUN apt-get update && \
@@ -37,6 +42,9 @@ USER ${USERNAME}
 
 EXPOSE 8080
 
-# hadolint ignore=DL3000
-WORKDIR "/home/${USERNAME}"
+HEALTHCHECK --interval=30s --timeout=30s --retries=3 CMD curl --fail http://localhost:8080 || exit 1
 
+# hadolint ignore=DL3000
+WORKDIR "/home/${USERNAME}/${APP_DIR}/"
+
+CMD ["./startup_server.sh"]
