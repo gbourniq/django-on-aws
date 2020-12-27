@@ -31,5 +31,4 @@ script:
   - make image
   - docker-compose up -d postgres && make run-app
   - make healthcheck
-  - make down && make rm-app
   - make publish
