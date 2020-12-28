@@ -6,14 +6,12 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/gbourniq/django-on-aws/blob/master/LICENSE)
 
 ## Overview
-This repository is a simplified version of https://github.com/gbourniq/portfolio, which previously involved a monolith application defined by multiple containers deployed on a single server. This new repository attempts to implement a microservices approach by using AWS managed services, which will improve performance and maintainability.
-```
-Nginx -> AWS Application Load Balancer with SSL 
-Django server -> Same deployment on EC2, but as a standalone docker container
-Redis -> AWS ElastiCache
-Celery worker -> AWS Lambda functions & SQS Queues
-Postgres -> AWS RDS Postgres
-```
+This repository is a simplified version of https://github.com/gbourniq/portfolio, which previously involved a monolithic application defined by multiple containers deployed on a single server. This new repository attempts to implement a microservices approach by using AWS managed services, which will improve performance and maintainability.
+- `Nginx` -> `AWS Load Balancer` with SSL certificate
+- `Django server` -> `AWS ECS` (previously as docker container on EC2)
+- `Redis` -> `AWS ElastiCache` / `AWS DynamoDB`
+- `Celery` worker -> `AWS Lambda` & `SQS Queues`
+- `Postgres` -> `AWS RDS`
 
 Other key differences compared to the previous version are:
 - Keep docker-compose to only spin up Django server and postgres containers for local testing (removed all other services)
