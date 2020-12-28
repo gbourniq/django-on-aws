@@ -43,7 +43,7 @@ To make things easy, you can create the conda environment and install the depend
 make env
 conda activate django-on-aws
 ```
-> Note: the environment can then be updated using the `make env-udpate` command when poetry packages are modified.
+> The environment can later be updated with `make env-udpate`, when poetry packages are modified.
 
 A [pre-commit](https://pypi.org/project/pre-commit/) package is used to manage git-hooks. The hooks are defined in `.pre-commit-config.yaml`, and will automatically format the code with `autoflake`, `isort` and `black`, and run code analysis and testing with `pylint` and `pytest`, on each commit. To set them up, run:
 ```bash
@@ -85,6 +85,7 @@ make tests
 > * Simulate requests and insert test data from HTTP-level request handling
 > * Form validation and processing
 > * Template rendering
+
 > To view the unit-tests coverage report, run `make open-cov-report`
 
 ## Build and push docker image
