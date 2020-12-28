@@ -36,13 +36,17 @@ pre-commit:
 rundb:
 	@ docker-compose up -d postgres || true
 
+recreatedb: rundb
+	@ ${INFO} "Wiping portfoliodb table"
+	docker exec -it --user=postgres postgres dropdb portfoliodb
+	docker exec -it --user=postgres postgres createdb portfoliodb
+
 runserver: rundb
 	@ python app/manage.py migrate --run-syncdb
 	@ python app/manage.py runserver 0.0.0.0:8080
 
-tests:
+tests: rundb
 	@ ${INFO} "Running Django tests with PostgreSQL running on Docker"
-	@ docker-compose up -d postgres
 	@ pytest app -x
 	@ docker-compose down || true
 	@ ${INFO} "Run 'make open-cov-report' to view coverage details"
