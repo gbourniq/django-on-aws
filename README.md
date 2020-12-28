@@ -6,18 +6,19 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/gbourniq/django-on-aws/blob/master/LICENSE)
 
 ## Overview
-This repository is a simplified version of https://github.com/gbourniq/portfolio, which previously involved a monolithic application defined by multiple containers deployed on a single server. This new repository attempts to implement a microservices approach by using AWS managed services, which will improve performance and maintainability.
+This repository is a simplified version of https://github.com/gbourniq/portfolio, which previously involved a monolithic application defined by multiple containers deployed on a single server. This new repository implements a microservices approach by using AWS managed services, which will improve performance and maintainability.
 - `Nginx` -> `AWS Load Balancer` with SSL certificate
 - `Django server` -> `AWS ECS` (previously as docker container on EC2)
 - `Redis` -> `AWS ElastiCache` / `AWS DynamoDB`
 - `Celery` worker -> `AWS Lambda` & `SQS Queues`
 - `Postgres` -> `AWS RDS`
 
-Other key differences compared to the previous version are:
-- Keep docker-compose to only spin up Django server and postgres containers for local testing (removed all other services)
+Other improvements compared to the previous version:
 - Simplied environment variables and removed all bash scripts
 - Removed Ansible / Kubernetes files - Deployment will be managed with CloudFormation
 - Address all pylint warnings, improve test coverage and general code improvements
+
+Screenshots of the frontend can be found [here](https://github.com/gbourniq/portfolio/blob/master/README.md#portfolio-app-overview).
 
 ## Contents
 - [Prerequisites](#prerequisites)
@@ -27,7 +28,7 @@ Other key differences compared to the previous version are:
 - [Configure RDS Postgres as a database backend](#configure-rds-postgres-as-a-database-backend)
 - [Deployment to AWS](#deployment-to-aws)
 - [CI/CD](#cicd)
-- [RESTful APIs (WIP)](#restful-apis-wip)
+- [RESTful APIs](#restful-apis-wip)
 
 ## Prerequisites
 - Install [Docker](https://hub.docker.com/search/?type=edition&offering=community)
@@ -54,37 +55,36 @@ Make sure to run `source .env` to avoid import errors
 
 ## Local development and testing
 
-When running for the first time, please follow these steps:
+When running the webserver for the first time, please follow these steps:
 
-1. Run postgres docker container with `make rundb`. This will automatically create a table as defined in `deployment/postgres/docker-entrypoint-initdb.d/run_db_setup.sh`. Note the table can be easily wiped with the `make recreatedb` command.
+1. Run a postgres docker container with `make rundb`. This will automatically create a table as defined in `deployment/postgres/docker-entrypoint-initdb.d/run_db_setup.sh`.
+> The table can be easily wiped and re-created later on with the `make recreatedb` command.
 
-2. Create the django superuser required to access the `/admin` page:
+2. Create the django superuser to access the `/admin` page:
 ```bash
 python manage.py createsuperuser
 ```
 
 3. Apply Django model migrations:
 ```bash
-python manage.py makemigrations
 python manage.py makemigrations main
 python manage.py migrate
 ```
 
-Once the above is set up, the local Django server can be quickly run with the following make command:
+Once the above is set up, the local Django server can be quickly run with:
 ```bash
 make runserver
 ```
-> Note the above command will automatically starts a postgres container if it's not already up
+> Note the above command will automatically start a postgres container if it's not already up
 
-Unit-tests and integration tests are run with `pytest-django` to cover the following:
-* Simulate requests and insert test data from HTTP-level request handling
-* Form validation and processing
-* Template rendering
-They can be run with the following make command:
+Tests can be run with the following make command
 ```bash
 make tests
 ```
-> Note the above command will automatically starts a postgres container if it's not already up
+> The above command runs unit tests and integration tests with `pytest-django` to cover the following:
+> * Simulate requests and insert test data from HTTP-level request handling
+> * Form validation and processing
+> * Template rendering
 > To view the unit-tests coverage report, run `make open-cov-report`
 
 ## Build and push docker image
@@ -114,9 +114,9 @@ Push the docker image to dockerhub (the `DOCKER_PASSWORD` environment variable m
 make publish
 ```
 
-## Run the application with RDS Postgres as a database backend
+## Configure RDS Postgres as a database backend
 
-1. Launch an RDS database from the AWS console, and note the following values:
+1. Launch an RDS database from the AWS console, and take a note of the following values:
 ```
 POSTGRES_HOST
 POSTGRES_DB
@@ -125,7 +125,7 @@ POSTGRES_PORT
 POSTGRES_PASSWORD
 ```
 
-2. Create a Table using Postgres management tools such as `pgadmin` or `SQLElectron`:
+2. Create a Table using a Postgres management tools such as `pgadmin` or `SQLElectron`:
 ```bash
 CREATE USER portfoliodb PASSWORD 'portfoliodb';
 CREATE DATABASE portfoliodb;
@@ -133,7 +133,14 @@ GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO portfoliodb;
 ALTER ROLE portfoliodb IN DATABASE portfoliodb SET search_path = portfoliodb,public;
 ```
 
-3. Ensure the variables in step 1 are defined as environment variables and run the application docker container, either locally with `make run-app`, or from any server (eg. EC2 instance) with 
+3. Ensure the variables in step 1 are defined as environment variables
+
+4. Run the application docker container
+* Either locally with:
+```bash
+make run-app
+```
+* Or from any server (eg. EC2 instance):
 ```bash
 docker run -d \
 	-p 8080:8080 \
@@ -166,10 +173,6 @@ The `.travis.yml` build configuration file defines the following CI/CD pipeline:
 make env                          <-- Create conda environment and install dependencies
 conda activate django-on-aws      <-- Activate conda environment
 make tests                        <-- Run unit-tests against the built-in FastAPI Testing server
-```
-
-* Continuous Deployment
-```
 make image                        <-- Build django application as a docker image
 make up                           <-- Run a local postgres and app containers from the build image and a
 make healthcheck                  <-- Check app container health
@@ -177,12 +180,17 @@ make down                         <-- Remove postgres and app containers
 make publish                      <-- Push docker image to dockerhub
 ```
 
+* Continuous Deployment
+```
+TBD - will involve cloudformation templates
+```
+
 Note that the following secret environment variables must be set in the Travis Repository settings, so that the Travis server can push the docker image
 ```bash
 DOCKER_PASSWORD
 ```
 
-## RESTful APIs (WIP)
+## RESTful APIs
 
 Web APIs have been developed using the [Django REST framework](https://www.django-rest-framework.org).
 
