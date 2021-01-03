@@ -92,7 +92,7 @@ run-app:
 
 rm-app:
 	@ ${INFO} "Removing Django app container"
-	@ docker rm --force $$(docker ps --filter "ancestor=${IMAGE_REPOSITORY}:$(TAG)" -q)
+	@ docker rm --force $$(docker ps --filter "ancestor=${IMAGE_REPOSITORY}:$(TAG)" -qa)
 
 
 ### Helpers ###
