@@ -18,7 +18,7 @@ django-tinymce4-lite = "1.7.5"                      # MIT
 gunicorn = "^19.9"                                  # MIT
 pillow = "^7.0.0"                                   # HPND
 psycopg2 = "^2.8.4"                                 # GNU
-python = "^3.8.0"                                    # PSF
+python = "^3.8.0"                                   # PSF
 requests = "^2.22"                                  # Apache 2.0
 starlette = "^0.14.1"                               # BSD 3
 
@@ -37,7 +37,8 @@ pytest-django = "^3.9.0"                            # MIT
 pytest-env = "^0.6.2"                               # MIT
 pre-commit = "^2.8.2"                               # MIT
 wrapt = "^1.12.1"                                   # MIT
-pylint-django = "^2.3.0"
+pylint-django = "^2.3.0"                            # GPLv2
+networkx = "^2.5"                                   # BSD-new
 
 [tool.pytest.ini_options]
 testpaths = "tests"
