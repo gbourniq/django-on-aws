@@ -26,3 +26,7 @@ AutoScalingScheduledAction.yaml: implement everything from
 - optimise template: remove SSH, use SSM role to ssh from system manager
 - look at all resources config: use ALB instead of classic
 - when everything working, try with portfolio docker app
+
+
+Create free SSL certificate for ACM (valid for 3 months)
+https://itnext.io/using-letsencrypt-ssl-certificates-in-aws-certificate-manager-c2bc3c6ae10

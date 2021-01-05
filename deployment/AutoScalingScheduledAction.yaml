@@ -8,6 +8,24 @@ Description: 'AWS CloudFormation Sample Template AutoScalingScheduledAction: Cre
   Elastic Load Balancer. You will be billed for the AWS resources used if you create
   a stack from this template.'
 Parameters:
+  SubnetList:
+    Type: 'List<AWS::EC2::Subnet::Id>'
+    Default: 'subnet-103a1a79,subnet-28219264'
+  TargetGroupVpc:
+    Description: VpcId of your existing Virtual Private Cloud (VPC)
+    Type: 'AWS::EC2::VPC::Id'
+    Default: 'vpc-e82c7280'
+  HostedZoneName:
+    Description: The route53 HostedZoneName. For example, "mydomain.com."  Don't forget the period at the end.
+    Type: String
+    Default: 'bournique.fr.'
+  Subdomain:
+    Description: The subdomain of the dns entry. For example, hello -> hello.mydomain.com, hello is the subdomain.
+    Type: String
+    Default: 'myapp'
+  ALBExistingCertArn:
+    Type: 'String'
+    Default: 'arn:aws:acm:eu-west-2:164045463835:certificate/7dea44a5-ab6d-48f9-9105-396cbdbaed91'
   InstanceType:
     Description: WebServer EC2 instance type
     Type: String
@@ -18,6 +36,7 @@ Parameters:
     Description: Name of an existing EC2 KeyPair to enable SSH access to the instances
     Type: AWS::EC2::KeyPair::KeyName
     ConstraintDescription: must be the name of an existing EC2 KeyPair.
+    Default: 'myawskey'
   SSHLocation:
     Description: The IP address range that can be used to SSH to the EC2 instances
     Type: String
@@ -37,14 +56,24 @@ Mappings:
     eu-west-2:
       HVM64: ami-0e80a462ede03e653
 Resources:
+  MyTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckIntervalSeconds: 30
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 3
+      Port: 80
+      Protocol: 'HTTP'
+      UnhealthyThresholdCount: 5
+      VpcId: !Ref 'TargetGroupVpc'
   WebServerGroup:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
-      AvailabilityZones: !GetAZs ''
+      VPCZoneIdentifier: !Ref 'SubnetList'
       LaunchConfigurationName: !Ref 'LaunchConfig'
-      MinSize: '2'
+      MinSize: '1'
       MaxSize: '5'
-      LoadBalancerNames: [!Ref 'ElasticLoadBalancer']
+      TargetGroupARNs: [!Ref 'MyTargetGroup']
     CreationPolicy:
       ResourceSignal:
         Timeout: PT15M
@@ -58,15 +87,15 @@ Resources:
     Type: AWS::AutoScaling::ScheduledAction
     Properties:
       AutoScalingGroupName: !Ref 'WebServerGroup'
-      MaxSize: 10
-      MinSize: 5
-      Recurrence: 0 7 * * *
+      MaxSize: 1
+      MinSize: 1
+      Recurrence: 0 23 * * *
   ScheduledActionDown:
     Type: AWS::AutoScaling::ScheduledAction
     Properties:
       AutoScalingGroupName: !Ref 'WebServerGroup'
-      MaxSize: 1
-      MinSize: 1
+      MaxSize: 5
+      MinSize: 2
       Recurrence: 0 19 * * *
   LaunchConfig:
     Type: AWS::AutoScaling::LaunchConfiguration
@@ -126,7 +155,7 @@ Resources:
       KeyName: !Ref 'KeyName'
       ImageId: !FindInMap [AWSRegionArch2AMI, !Ref 'AWS::Region', !FindInMap [AWSInstanceType2Arch,
           !Ref 'InstanceType', Arch]]
-      SecurityGroups: [!Ref 'InstanceSecurityGroup']
+      SecurityGroups: [!GetAtt 'InstanceSecurityGroup.GroupId']
       InstanceType: !Ref 'InstanceType'
       UserData:
         Fn::Base64: !Sub |
@@ -138,21 +167,54 @@ Resources:
           echo "Healthy" > /var/www/html/health.html
           # aws s3 cp /var/log/cloud-init-output.log s3://{S3BucketName}/logs/ec2_logs_$(date +%F_%T).log
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackId} --resource WebServerGroup --region ${AWS::Region}
-  ElasticLoadBalancer:
-    Type: AWS::ElasticLoadBalancing::LoadBalancer
+
+  ALBListener:
+    Type: 'AWS::ElasticLoadBalancingV2::Listener'
     Properties:
-      AvailabilityZones: !GetAZs ''
-      CrossZone: true
-      Listeners:
-      - LoadBalancerPort: '80'
-        InstancePort: '80'
-        Protocol: HTTP
-      HealthCheck:
-        Target: HTTP:80/
-        HealthyThreshold: '3'
-        UnhealthyThreshold: '5'
-        Interval: '30'
-        Timeout: '5'
+      DefaultActions:
+        - Type: "forward"
+          TargetGroupArn: !Ref MyTargetGroup
+      LoadBalancerArn: !Ref 'ElasticLoadBalancer'
+      Port: 80
+      Protocol: 'HTTP'
+
+  ALBListenerSSL:
+    Type: 'AWS::ElasticLoadBalancingV2::Listener'
+    Properties:
+      DefaultActions:
+        - Type: "forward"
+          TargetGroupArn: !Ref MyTargetGroup
+      Certificates:
+        - CertificateArn: !Ref ALBExistingCertArn
+      LoadBalancerArn: !Ref 'ElasticLoadBalancer'
+      Port: 443
+      Protocol: 'HTTPS'
+
+  ElasticLoadBalancer:
+    Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer'
+    Properties:
+      LoadBalancerAttributes:
+        - Key: 'deletion_protection.enabled'
+          Value: 'false'
+        - Key: 'access_logs.s3.enabled'
+          Value: 'false'
+      Scheme: 'internet-facing'
+      Subnets: !Ref 'SubnetList'
+      SecurityGroups:
+        - !GetAtt 'ALBSecurityGroup.GroupId'
+
+  DNSRecord:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneName: !Ref 'HostedZoneName'
+      Name: !Join ['', [!Ref 'Subdomain', ., !Ref 'HostedZoneName']]
+      Comment: Zone apex alias targeted to the ALB.
+      Type: A
+      AliasTarget:
+        DNSName: !GetAtt ElasticLoadBalancer.DNSName
+        HostedZoneId: !GetAtt ElasticLoadBalancer.CanonicalHostedZoneID
+        EvaluateTargetHealth: false
+
   InstanceSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -166,7 +228,23 @@ Resources:
         FromPort: 80
         ToPort: 80
         CidrIp: 0.0.0.0/0
+  ALBSecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupDescription: "Allow incoming from anywhere to HTTPS and HTTP"
+      SecurityGroupIngress:
+        - CidrIp: "0.0.0.0/0"
+          FromPort: 80
+          IpProtocol: "tcp"
+          ToPort: 80
+        - CidrIp: "0.0.0.0/0"
+          FromPort: 443
+          IpProtocol: "tcp"
+          ToPort: 443
 Outputs:
-  URL:
-    Description: URL of the website
+  AlbUrl:
+    Description: Website URL (Application Load Balancer DNS Name)
     Value: !Join ['', ['http://', !GetAtt [ElasticLoadBalancer, DNSName]]]
+  R53Url:
+    Description: Website URL (Subdomain of the R53 DNS entry)
+    Value: !Join ['', ['https://', !Ref 'Subdomain', ., !Ref 'HostedZoneName']]
