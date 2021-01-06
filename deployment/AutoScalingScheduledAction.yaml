@@ -6,11 +6,20 @@ Description: 'AWS CloudFormation Sample Template AutoScalingScheduledAction: Cre
   group with time-based scheduled actions behind a load balancer with a simple health
   check. **WARNING** This template creates one or more Amazon EC2 instances and an
   Elastic Load Balancer. You will be billed for the AWS resources used if you create
-  a stack from this template.'
+  a stack from this template.
+  In this template we are demonstrating an EC2 with SSM Session Manager enabled.  We have two instances; one in
+  a public subnet and one in a private subnet.  The SSM Agent running on the EC2 instances must be able to connect
+  to Session Manager’s public endpoint.  Thus for the public instance we utilize its public ip and route to
+  an Internet Gateway and for the private instance we utilize a route to a NAT Gateway.
+  see: https://aws.amazon.com/blogs/aws/new-session-manager/'
 Parameters:
   SubnetList:
     Type: 'List<AWS::EC2::Subnet::Id>'
     Default: 'subnet-103a1a79,subnet-28219264'
+  # PostgresPassword:
+  #   Description: SSM Parameter Name for Postgres DB password
+  #   Type: 'AWS::SSM::Parameter::Value<String>'
+  #   Default: /APP/POSTGRES/PASSWORD
   TargetGroupVpc:
     Description: VpcId of your existing Virtual Private Cloud (VPC)
     Type: 'AWS::EC2::VPC::Id'
@@ -26,36 +35,82 @@ Parameters:
   ALBExistingCertArn:
     Type: 'String'
     Default: 'arn:aws:acm:eu-west-2:164045463835:certificate/7dea44a5-ab6d-48f9-9105-396cbdbaed91'
+  LatestLinuxAmiId:
+    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    Default: '/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2'
+    AllowedValues:
+      - /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2 # Amazon Linux 2
   InstanceType:
     Description: WebServer EC2 instance type
     Type: String
     Default: t2.small
     AllowedValues: [t1.micro, t2.nano, t2.micro, t2.small]
     ConstraintDescription: must be a valid EC2 instance type.
-  KeyName:
-    Description: Name of an existing EC2 KeyPair to enable SSH access to the instances
-    Type: AWS::EC2::KeyPair::KeyName
-    ConstraintDescription: must be the name of an existing EC2 KeyPair.
-    Default: 'myawskey'
-  SSHLocation:
-    Description: The IP address range that can be used to SSH to the EC2 instances
+  # KeyName:
+  #   Description: Name of an existing EC2 KeyPair to enable SSH access to the instances
+  #   Type: AWS::EC2::KeyPair::KeyName
+  #   ConstraintDescription: must be the name of an existing EC2 KeyPair.
+  #   Default: 'myawskey'
+  SSMParamCWAgentConfig:
+    Description: SSM Parameter name for the CloudWatch Agent Configuration JSON file
     Type: String
-    MinLength: '9'
-    MaxLength: '18'
-    Default: 0.0.0.0/0
-    AllowedPattern: (\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})
-    ConstraintDescription: must be a valid IP CIDR range of the form x.x.x.x/x.
+    Default: '/CLOUDWATCH_AGENT/CONFIG'
+  # SSHLocation:
+  #   Description: The IP address range that can be used to SSH to the EC2 instances
+  #   Type: String
+  #   MinLength: '9'
+  #   MaxLength: '18'
+  #   Default: 0.0.0.0/0
+  #   AllowedPattern: (\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})
+  #   ConstraintDescription: must be a valid IP CIDR range of the form x.x.x.x/x.
 Mappings:
   Region2Examples:
     eu-west-2:
       Examples: https://s3-eu-west-2.amazonaws.com/cloudformation-examples-eu-west-2
-  AWSInstanceType2Arch:
-    t2.small:
-      Arch: HVM64
-  AWSRegionArch2AMI:
-    eu-west-2:
-      HVM64: ami-0e80a462ede03e653
 Resources:
+  RootRole:
+    # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-iam-role.html
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: 'sts:AssumeRole'
+            Principal:
+              Service: ec2.amazonaws.com
+            Effect: Allow
+            Sid: ''
+      ManagedPolicyArns:
+        # Enable use of SSM Session Manager to SSH directly via the AWS Console while keeping port 22 closed
+        # The CloudFormation::Init is setting up cloudwatch logs to give visibility to the SSM Agent actions.
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      Policies:
+        # Policy to allow EC2 to interact with the CloudWatch service
+        - PolicyName: CloudWatchAgentServerPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Action:
+                  - 'ssm:GetParameter'
+                Resource: 'arn:aws:ssm:*:*:parameter/AmazonCloudWatch-*'
+                Effect: Allow
+              - Action:
+                  - 'cloudwatch:PutMetricData'
+                  - 'ec2:DescribeVolumes'
+                  - 'ec2:DescribeTags'
+                  - 'logs:PutLogEvents'
+                  - 'logs:DescribeLogStreams'
+                  - 'logs:DescribeLogGroups'
+                  - 'logs:CreateLogStream'
+                  - 'logs:CreateLogGroup'
+                Resource: '*'
+                Effect: Allow
+  RootInstanceProfile:
+    # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-iam-instanceprofile.html
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: /
+      Roles:
+        - !Ref RootRole
   MyTargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
@@ -71,38 +126,114 @@ Resources:
     Properties:
       VPCZoneIdentifier: !Ref 'SubnetList'
       LaunchConfigurationName: !Ref 'LaunchConfig'
-      MinSize: '1'
+      DesiredCapacity: '2'
+      MinSize: '0'
       MaxSize: '5'
       TargetGroupARNs: [!Ref 'MyTargetGroup']
     CreationPolicy:
       ResourceSignal:
-        Timeout: PT15M
+        Count: '2'
+        Timeout: PT10M
     UpdatePolicy:
       AutoScalingRollingUpdate:
         MinInstancesInService: 1
         MaxBatchSize: 1
-        PauseTime: PT15M
+        PauseTime: PT10M
         WaitOnResourceSignals: true
+        SuspendProcesses:
+        - ScheduledActions
+      AutoScalingScheduledAction:
+        # Prevent Scheduled Actions from modifying min/max/desired for CloudFormation
+        IgnoreUnmodifiedGroupSizeProperties: true
   ScheduledActionUp:
-    Type: AWS::AutoScaling::ScheduledAction
-    Properties:
-      AutoScalingGroupName: !Ref 'WebServerGroup'
-      MaxSize: 1
-      MinSize: 1
-      Recurrence: 0 23 * * *
-  ScheduledActionDown:
     Type: AWS::AutoScaling::ScheduledAction
     Properties:
       AutoScalingGroupName: !Ref 'WebServerGroup'
       MaxSize: 5
       MinSize: 2
       Recurrence: 0 19 * * *
+  ScheduledActionDown:
+    Type: AWS::AutoScaling::ScheduledAction
+    Properties:
+      AutoScalingGroupName: !Ref 'WebServerGroup'
+      MaxSize: 1
+      MinSize: 1
+      Recurrence: 0 23 * * *
   LaunchConfig:
     Type: AWS::AutoScaling::LaunchConfiguration
+    Properties:
+      # KeyName: !Ref 'KeyName'
+      ImageId: !Ref LatestLinuxAmiId
+      IamInstanceProfile: !Ref RootInstanceProfile
+      SecurityGroups: [!GetAtt 'InstanceSecurityGroup.GroupId']
+      InstanceType: !Ref 'InstanceType'
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash -xe
+          yum install -y aws-cfn-bootstrap
+          /opt/aws/bin/cfn-init -v --stack ${AWS::StackId} --resource LaunchConfig --configsets InstallAndRun --region ${AWS::Region}
+          export APP_NAME=MySampleApp
+          export INSTANCE_ID=$(curl http://169.254.169.254/latest/meta-data/instance-id)
+          export EC2_AVAIL_ZONE=$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone)
+          echo "Application $APP_NAME says Hiya World from $(hostname -f) (instance id: $INSTANCE_ID) in AZ $EC2_AVAIL_ZONE" >> /var/www/html/index.html
+          echo "Healthy" > /var/www/html/health.html
+          # aws s3 cp /var/log/cloud-init-output.log s3://{S3BucketName}/logs/ec2_logs_$(date +%F_%T).log
+          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackId} --resource WebServerGroup --region ${AWS::Region}
     Metadata:
       Comment: Install a simple application
       AWS::CloudFormation::Init:
-        config:
+        configSets:
+          InstallAndRun:
+            - ConfigureCfnHup
+            - InstallCloudWatchAgent
+            - InstallApplication
+        ConfigureCfnHup:
+          files: 
+            /etc/cfn/cfn-hup.conf:
+              content: !Sub |
+                [main]
+                stack=${AWS::StackId}
+                region=${AWS::Region}
+                # The interval used to check for changes to the resource metadata in minutes. Default is 15
+                interval=2
+              mode: '000400'
+              owner: root
+              group: root
+            # The user actions that the cfn-hup daemon calls periodically are defined in the hooks.conf configuration file.
+            # To support composition of several applications deploying change notification hooks, cfn-hup supports a directory named hooks.d
+            # that is located in the hooks configuration directory. You can place one or more additional hooks configuration files in the hooks.d directory.
+            # The additional hooks files must use the same layout as the hooks.conf file.
+            /etc/cfn/hooks.d/cfn-auto-reloader.conf:
+              content: !Sub |
+                [cfn-auto-reloader-hook]
+                triggers=post.update
+                path=Resources.LaunchConfig.Metadata.AWS::CloudFormation::Init
+                action=/opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource LaunchConfig --region ${AWS::Region}
+              mode: "000400"
+              owner: "root"
+              group: "root"
+          services:
+              cfn-hup:
+                enabled: 'true'
+                ensureRunning: 'true'
+                files: [/etc/cfn/cfn-hup.conf, /etc/cfn/hooks.d/cfn-auto-reloader.conf]
+        InstallCloudWatchAgent:
+          commands:
+            01_install_cw_agent:
+              command: |
+                wget https://s3.amazonaws.com/amazoncloudwatch-agent/amazon_linux/amd64/latest/amazon-cloudwatch-agent.rpm \
+                && sudo rpm -U ./amazon-cloudwatch-agent.rpm
+            02_create_missing_files:
+              command: |
+                sudo mkdir -p /usr/share/collectd \
+                && sudo touch /usr/share/collectd/types.db
+            03_run_cw_agent:
+              command: !Sub |
+                sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
+                  -a fetch-config \
+                  -m ec2 \
+                  -c ssm:${SSMParamCWAgentConfig} -s
+        InstallApplication:
           packages:
             yum:
               httpd: []
@@ -117,57 +248,12 @@ Resources:
               mode: '000644'
               owner: root
               group: root
-            /etc/cfn/cfn-hup.conf:
-              content: !Join ['', ['[main]
-
-                    ', stack=, !Ref 'AWS::StackId', '
-
-                    ', region=, !Ref 'AWS::Region', '
-
-                    ']]
-              mode: '000400'
-              owner: root
-              group: root
-            /etc/cfn/hooks.d/cfn-auto-reloader.conf:
-              content: !Join ['', ['[cfn-auto-reloader-hook]
-
-                    ', 'triggers=post.update
-
-                    ', 'path=Resources.LaunchConfig.Metadata.AWS::CloudFormation::Init
-
-                    ', 'action=/opt/aws/bin/cfn-init -v ', '         --stack ', !Ref 'AWS::StackName',
-                  '         --resource LaunchConfig ', '         --region ', !Ref 'AWS::Region',
-                  '
-
-                    ', 'runas=root
-
-                    ']]
+            # The cfn-hup.conf file stores the name of the stack and the AWS credentials that the cfn-hup daemon targets.
           services:
             sysvinit:
               httpd:
                 enabled: 'true'
                 ensureRunning: 'true'
-              cfn-hup:
-                enabled: 'true'
-                ensureRunning: 'true'
-                files: [/etc/cfn/cfn-hup.conf, /etc/cfn/hooks.d/cfn-auto-reloader.conf]
-    Properties:
-      KeyName: !Ref 'KeyName'
-      ImageId: !FindInMap [AWSRegionArch2AMI, !Ref 'AWS::Region', !FindInMap [AWSInstanceType2Arch,
-          !Ref 'InstanceType', Arch]]
-      SecurityGroups: [!GetAtt 'InstanceSecurityGroup.GroupId']
-      InstanceType: !Ref 'InstanceType'
-      UserData:
-        Fn::Base64: !Sub |
-          #!/bin/bash -xe
-          yum install -y aws-cfn-bootstrap
-          /opt/aws/bin/cfn-init -v --stack ${AWS::StackId} --resource LaunchConfig --region ${AWS::Region}
-          export APP_NAME=MySampleApp
-          echo "Application $APP_NAME says Hello World from $(hostname -f)" >> /var/www/html/index.html
-          echo "Healthy" > /var/www/html/health.html
-          # aws s3 cp /var/log/cloud-init-output.log s3://{S3BucketName}/logs/ec2_logs_$(date +%F_%T).log
-          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackId} --resource WebServerGroup --region ${AWS::Region}
-
   ALBListener:
     Type: 'AWS::ElasticLoadBalancingV2::Listener'
     Properties:
@@ -220,10 +306,10 @@ Resources:
     Properties:
       GroupDescription: Enable SSH access and HTTP access on the configured port
       SecurityGroupIngress:
-      - IpProtocol: tcp
-        FromPort: 22
-        ToPort: 22
-        CidrIp: !Ref 'SSHLocation'
+      # - IpProtocol: tcp
+      #   FromPort: 22
+      #   ToPort: 22
+      #   CidrIp: !Ref 'SSHLocation'
       - IpProtocol: tcp
         FromPort: 80
         ToPort: 80
@@ -248,3 +334,6 @@ Outputs:
   R53Url:
     Description: Website URL (Subdomain of the R53 DNS entry)
     Value: !Join ['', ['https://', !Ref 'Subdomain', ., !Ref 'HostedZoneName']]
+  SessionManagementListUrl:
+    Description: The URL to the Session Management Console listing all instances it is aware of
+    Value: !Sub https://${AWS::Region}.console.aws.amazon.com/systems-manager/session-manager/start-session?region=${AWS::Region}

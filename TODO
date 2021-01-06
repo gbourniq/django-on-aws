@@ -20,13 +20,13 @@ Application features
 - Configure django to use AWS Cognito for Users management and SSO
 
 Cfn / app:
-AutoScalingScheduledAction.yaml: implement everything from
-- cfn templates: integration with cw logs, configsets, get variables from SSM...
-- aws courses on ASG, ALB, 
-- optimise template: remove SSH, use SSM role to ssh from system manager
-- look at all resources config: use ALB instead of classic
+AutoScalingScheduledAction.yaml:
+- aws courses on ASG, ALB + look at all resources configurations and add comments
 - when everything working, try with portfolio docker app
 
 
 Create free SSL certificate for ACM (valid for 3 months)
 https://itnext.io/using-letsencrypt-ssl-certificates-in-aws-certificate-manager-c2bc3c6ae10
+
+add network cfn template (VPC/Subnet): https://github.com/samkeen/aws-ssm-session-manager-example/blob/master/ssm-session-mgr-example.yaml
+-> & add RDS to private subnet?
