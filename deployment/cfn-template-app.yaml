@@ -1,7 +1,7 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Metadata:
   License: Apache-2.0
-Description: 'AWS CloudFormation Sample Template AutoScalingScheduledAction: Create
+Description: 'AWS CloudFormation Sample Template cfn-template-app: Create
   a load balanced, Auto Scaled sample website. This example creates an Auto Scaling
   group with time-based scheduled actions behind a load balancer with a simple health
   check. **WARNING** This template creates one or more Amazon EC2 instances and an
@@ -13,56 +13,44 @@ Description: 'AWS CloudFormation Sample Template AutoScalingScheduledAction: Cre
   an Internet Gateway and for the private instance we utilize a route to a NAT Gateway.
   see: https://aws.amazon.com/blogs/aws/new-session-manager/'
 Parameters:
-  SubnetList:
-    Type: 'List<AWS::EC2::Subnet::Id>'
-    Default: 'subnet-103a1a79,subnet-28219264'
-  # PostgresPassword:
-  #   Description: SSM Parameter Name for Postgres DB password
-  #   Type: 'AWS::SSM::Parameter::Value<String>'
-  #   Default: /APP/POSTGRES/PASSWORD
-  TargetGroupVpc:
-    Description: VpcId of your existing Virtual Private Cloud (VPC)
-    Type: 'AWS::EC2::VPC::Id'
-    Default: 'vpc-e82c7280'
-  HostedZoneName:
-    Description: The route53 HostedZoneName. For example, "mydomain.com."  Don't forget the period at the end.
-    Type: String
-    Default: 'bournique.fr.'
-  Subdomain:
-    Description: The subdomain of the dns entry. For example, hello -> hello.mydomain.com, hello is the subdomain.
-    Type: String
-    Default: 'myapp'
   ALBExistingCertArn:
     Type: 'String'
     Default: 'arn:aws:acm:eu-west-2:164045463835:certificate/7dea44a5-ab6d-48f9-9105-396cbdbaed91'
-  LatestLinuxAmiId:
+  EC2LatestLinuxAmiId:
     Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
     Default: '/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2'
-    AllowedValues:
-      - /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2 # Amazon Linux 2
-  InstanceType:
+    AllowedValues: [/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2] # Amazon Linux 2
+  EC2InstanceType:
     Description: WebServer EC2 instance type
     Type: String
-    Default: t2.small
+    Default: t2.micro
     AllowedValues: [t1.micro, t2.nano, t2.micro, t2.small]
     ConstraintDescription: must be a valid EC2 instance type.
-  # KeyName:
-  #   Description: Name of an existing EC2 KeyPair to enable SSH access to the instances
-  #   Type: AWS::EC2::KeyPair::KeyName
-  #   ConstraintDescription: must be the name of an existing EC2 KeyPair.
-  #   Default: 'myawskey'
+  EC2VolumeSize:
+    Description: Volume size mounted to EC2
+    Type: Number
+    MinValue: 8
+    MaxValue: 20
+    Default: 8
+  R53HostedZoneName:
+    Description: The route53 HostedZoneName. For example, "mydomain.com."  Don't forget the period at the end.
+    Type: String
+    Default: 'bournique.fr.'
+  R53Subdomain:
+    Description: The subdomain of the dns entry. For example, hello -> hello.mydomain.com, hello is the subdomain.
+    Type: String
+    Default: 'myapp'
   SSMParamCWAgentConfig:
     Description: SSM Parameter name for the CloudWatch Agent Configuration JSON file
     Type: String
     Default: '/CLOUDWATCH_AGENT/CONFIG'
-  # SSHLocation:
-  #   Description: The IP address range that can be used to SSH to the EC2 instances
-  #   Type: String
-  #   MinLength: '9'
-  #   MaxLength: '18'
-  #   Default: 0.0.0.0/0
-  #   AllowedPattern: (\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})
-  #   ConstraintDescription: must be a valid IP CIDR range of the form x.x.x.x/x.
+  SubnetList:
+    Type: 'List<AWS::EC2::Subnet::Id>'
+    Default: 'subnet-103a1a79,subnet-28219264'
+  TargetGroupVpc:
+    Description: VpcId of your existing Virtual Private Cloud (VPC)
+    Type: 'AWS::EC2::VPC::Id'
+    Default: 'vpc-e82c7280'
 Mappings:
   Region2Examples:
     eu-west-2:
@@ -127,8 +115,8 @@ Resources:
       VPCZoneIdentifier: !Ref 'SubnetList'
       LaunchConfigurationName: !Ref 'LaunchConfig'
       DesiredCapacity: '2'
-      MinSize: '0'
       MaxSize: '5'
+      MinSize: '0'
       TargetGroupARNs: [!Ref 'MyTargetGroup']
     CreationPolicy:
       ResourceSignal:
@@ -149,35 +137,48 @@ Resources:
     Type: AWS::AutoScaling::ScheduledAction
     Properties:
       AutoScalingGroupName: !Ref 'WebServerGroup'
+      DesiredCapacity: 3
       MaxSize: 5
-      MinSize: 2
+      MinSize: 0
       Recurrence: 0 19 * * *
   ScheduledActionDown:
     Type: AWS::AutoScaling::ScheduledAction
     Properties:
       AutoScalingGroupName: !Ref 'WebServerGroup'
-      MaxSize: 1
-      MinSize: 1
+      DesiredCapacity: 1
+      MaxSize: 5
+      MinSize: 0
       Recurrence: 0 23 * * *
   LaunchConfig:
     Type: AWS::AutoScaling::LaunchConfiguration
     Properties:
       # KeyName: !Ref 'KeyName'
-      ImageId: !Ref LatestLinuxAmiId
+      ImageId: !Ref EC2LatestLinuxAmiId
       IamInstanceProfile: !Ref RootInstanceProfile
       SecurityGroups: [!GetAtt 'InstanceSecurityGroup.GroupId']
-      InstanceType: !Ref 'InstanceType'
+      InstanceType: !Ref EC2InstanceType
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeType: gp2
+            VolumeSize: !Ref EC2VolumeSize
+            DeleteOnTermination: true
+            Encrypted: true
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash -xe
           yum install -y aws-cfn-bootstrap
-          /opt/aws/bin/cfn-init -v --stack ${AWS::StackId} --resource LaunchConfig --configsets InstallAndRun --region ${AWS::Region}
+          /opt/aws/bin/cfn-init -v \
+            --stack ${AWS::StackId} \
+            --resource LaunchConfig \
+            --configsets InstallAndRun \
+            --region ${AWS::Region}
           export APP_NAME=MySampleApp
           export INSTANCE_ID=$(curl http://169.254.169.254/latest/meta-data/instance-id)
           export EC2_AVAIL_ZONE=$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone)
-          echo "Application $APP_NAME says Hiya World from $(hostname -f) (instance id: $INSTANCE_ID) in AZ $EC2_AVAIL_ZONE" >> /var/www/html/index.html
+          MSG="$APP_NAME says Hello v2! Hosted on $(hostname -f) (instance id: $INSTANCE_ID) in AZ $EC2_AVAIL_ZONE"
+          echo $MSG >> /var/www/html/index.html
           echo "Healthy" > /var/www/html/health.html
-          # aws s3 cp /var/log/cloud-init-output.log s3://{S3BucketName}/logs/ec2_logs_$(date +%F_%T).log
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackId} --resource WebServerGroup --region ${AWS::Region}
     Metadata:
       Comment: Install a simple application
@@ -188,7 +189,8 @@ Resources:
             - InstallCloudWatchAgent
             - InstallApplication
         ConfigureCfnHup:
-          files: 
+          files:
+            # The cfn-hup.conf file stores the stack name and the AWS credentials that the cfn-hup daemon targets.
             /etc/cfn/cfn-hup.conf:
               content: !Sub |
                 [main]
@@ -199,16 +201,19 @@ Resources:
               mode: '000400'
               owner: root
               group: root
-            # The user actions that the cfn-hup daemon calls periodically are defined in the hooks.conf configuration file.
-            # To support composition of several applications deploying change notification hooks, cfn-hup supports a directory named hooks.d
-            # that is located in the hooks configuration directory. You can place one or more additional hooks configuration files in the hooks.d directory.
+            # The user actions that the cfn-hup daemon calls periodically are defined in the hooks.conf config file.
+            # To support composition of several applications deploying change notification hooks, cfn-hup supports a
+            # directory named hooks.d that is located in the hooks configuration directory to place additional hooks.
             # The additional hooks files must use the same layout as the hooks.conf file.
             /etc/cfn/hooks.d/cfn-auto-reloader.conf:
               content: !Sub |
                 [cfn-auto-reloader-hook]
                 triggers=post.update
                 path=Resources.LaunchConfig.Metadata.AWS::CloudFormation::Init
-                action=/opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource LaunchConfig --region ${AWS::Region}
+                action=/opt/aws/bin/cfn-init -v \
+                  --stack ${AWS::StackName} \
+                  --resource LaunchConfig \
+                  --region ${AWS::Region}
               mode: "000400"
               owner: "root"
               group: "root"
@@ -248,7 +253,6 @@ Resources:
               mode: '000644'
               owner: root
               group: root
-            # The cfn-hup.conf file stores the name of the stack and the AWS credentials that the cfn-hup daemon targets.
           services:
             sysvinit:
               httpd:
@@ -292,8 +296,8 @@ Resources:
   DNSRecord:
     Type: AWS::Route53::RecordSet
     Properties:
-      HostedZoneName: !Ref 'HostedZoneName'
-      Name: !Join ['', [!Ref 'Subdomain', ., !Ref 'HostedZoneName']]
+      HostedZoneName: !Ref 'R53HostedZoneName'
+      Name: !Join ['', [!Ref 'R53Subdomain', ., !Ref 'R53HostedZoneName']]
       Comment: Zone apex alias targeted to the ALB.
       Type: A
       AliasTarget:
@@ -306,10 +310,6 @@ Resources:
     Properties:
       GroupDescription: Enable SSH access and HTTP access on the configured port
       SecurityGroupIngress:
-      # - IpProtocol: tcp
-      #   FromPort: 22
-      #   ToPort: 22
-      #   CidrIp: !Ref 'SSHLocation'
       - IpProtocol: tcp
         FromPort: 80
         ToPort: 80
@@ -333,7 +333,7 @@ Outputs:
     Value: !Join ['', ['http://', !GetAtt [ElasticLoadBalancer, DNSName]]]
   R53Url:
     Description: Website URL (Subdomain of the R53 DNS entry)
-    Value: !Join ['', ['https://', !Ref 'Subdomain', ., !Ref 'HostedZoneName']]
+    Value: !Join ['', ['https://', !Ref 'R53Subdomain', ., !Ref 'R53HostedZoneName']]
   SessionManagementListUrl:
     Description: The URL to the Session Management Console listing all instances it is aware of
     Value: !Sub https://${AWS::Region}.console.aws.amazon.com/systems-manager/session-manager/start-session?region=${AWS::Region}

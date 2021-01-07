@@ -1,0 +1,38 @@
+[
+    {
+      "ParameterKey": "ALBExistingCertArn",
+      "ParameterValue": "arn:aws:acm:eu-west-2:164045463835:certificate/7dea44a5-ab6d-48f9-9105-396cbdbaed91"
+    },
+    {
+      "ParameterKey": "EC2LatestLinuxAmiId",
+      "ParameterValue": "/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2"
+    },
+    {
+      "ParameterKey": "EC2InstanceType",
+      "ParameterValue": "t2.micro"
+    },
+    {
+      "ParameterKey": "EC2VolumeSize",
+      "ParameterValue": "8"
+    },
+    {
+      "ParameterKey": "R53HostedZoneName",
+      "ParameterValue": "bournique.fr."
+    },
+    {
+      "ParameterKey": "R53Subdomain",
+      "ParameterValue": "myapp"
+    },
+    {
+      "ParameterKey": "SSMParamCWAgentConfig",
+      "ParameterValue": "/CLOUDWATCH_AGENT/CONFIG"
+    },
+    {
+      "ParameterKey": "SubnetList",
+      "ParameterValue": "subnet-103a1a79,subnet-28219264"
+    },
+    {
+      "ParameterKey": "TargetGroupVpc",
+      "ParameterValue": "vpc-e82c7280"
+    }
+  ]

@@ -10,6 +10,9 @@ DOCKER_USER=gbournique
 IMAGE_REPOSITORY=${DOCKER_USER}/django-on-aws
 TAG=$(shell poetry version | awk '{print $$NF}')
 
+# Cloudformation
+CFN_TEMPLATE_FILE=deployment/cfn-template-app.yaml
+
 ### Environment and pre-commit hooks ###
 .PHONY: env env-update pre-commit
 env:
@@ -63,7 +66,6 @@ image:
 	docker build -t ${IMAGE_REPOSITORY}:$(TAG) .
 
 up:
-
 	@ ${INFO} "Running Django tests with PostgreSQL running on Docker"
 	@ docker-compose down
 	@ docker-compose up -d
@@ -94,6 +96,21 @@ rm-app:
 	@ ${INFO} "Removing Django app container"
 	@ docker rm --force $$(docker ps --filter "ancestor=${IMAGE_REPOSITORY}:$(TAG)" -qa)
 
+### CloudFormation ###
+cfn-validate:
+	@ echo "Validating CloudFormation template ${CFN_TEMPLATE_FILE}"
+	@ yamllint -d "{rules: {line-length: {max: 130, level: warning}}}" "${CFN_TEMPLATE_FILE}"
+	@ cfn-lint "${CFN_TEMPLATE_FILE}"
+	@ aws cloudformation validate-template --template-body file://"${CFN_TEMPLATE_FILE}" > /dev/null 2>&1
+
+cfn-create: cfn-validate
+	@ bash ./deployment/create-stack.sh
+
+cfn-update: cfn-validate
+	@ bash ./deployment/update-stack.sh
+
+cfn-delete:
+	@ bash ./deployment/delete-stack.sh
 
 ### Helpers ###
 RED := "\e[1;31m"
