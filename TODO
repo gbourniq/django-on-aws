@@ -22,6 +22,7 @@ Application features
 Cfn / app:
 AutoScalingScheduledAction.yaml:
 - aws courses on ASG, ALB + look at all resources configurations and add comments
+- add scaling alarms based on CPU
 - when everything working, try with portfolio docker app
 - review template, simplify, add comments, descriptions, etc
 

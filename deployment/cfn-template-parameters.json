@@ -4,6 +4,10 @@
       "ParameterValue": "arn:aws:acm:eu-west-2:164045463835:certificate/7dea44a5-ab6d-48f9-9105-396cbdbaed91"
     },
     {
+      "ParameterKey": "ASGCPUTargetTrackingScaling",
+      "ParameterValue": "20"
+    },
+    {
       "ParameterKey": "EC2LatestLinuxAmiId",
       "ParameterValue": "/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2"
     },

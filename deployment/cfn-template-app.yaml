@@ -4,18 +4,23 @@ Metadata:
 Description: 'AWS CloudFormation Sample Template cfn-template-app: Create
   a load balanced, Auto Scaled sample website. This example creates an Auto Scaling
   group with time-based scheduled actions behind a load balancer with a simple health
-  check. **WARNING** This template creates one or more Amazon EC2 instances and an
-  Elastic Load Balancer. You will be billed for the AWS resources used if you create
-  a stack from this template.
-  In this template we are demonstrating an EC2 with SSM Session Manager enabled.  We have two instances; one in
-  a public subnet and one in a private subnet.  The SSM Agent running on the EC2 instances must be able to connect
-  to Session Manager’s public endpoint.  Thus for the public instance we utilize its public ip and route to
-  an Internet Gateway and for the private instance we utilize a route to a NAT Gateway.
-  see: https://aws.amazon.com/blogs/aws/new-session-manager/'
+  check.
+  SSM Session Manager enabled. The SSM Agent running on the EC2 instances must be able to connect
+  to Session Manager’s public endpoint.
+  The application is configured to span all Availability Zones in the
+  region and is Auto-Scaled based on the CPU utilization of the web servers. Notifications
+  will be sent to the operator email address on scaling events. The instances are
+  load balanced with a simple health check against the default web page.'
 Parameters:
   ALBExistingCertArn:
     Type: 'String'
     Default: 'arn:aws:acm:eu-west-2:164045463835:certificate/7dea44a5-ab6d-48f9-9105-396cbdbaed91'
+  ASGCPUTargetTrackingScaling:
+    Description: Average CPU Target for each instance (eg. 60%). Default set to 0 to disable the Target Tracking Scaling policy
+    Type: Number
+    MinValue: 0
+    MaxValue: 100
+    Default: 0
   EC2LatestLinuxAmiId:
     Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
     Default: '/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2'
@@ -55,6 +60,11 @@ Mappings:
   Region2Examples:
     eu-west-2:
       Examples: https://s3-eu-west-2.amazonaws.com/cloudformation-examples-eu-west-2
+
+
+Conditions:
+  AddCPUTargetTrackingScaling: !Not [ !Equals [ !Ref ASGCPUTargetTrackingScaling, 0 ] ]
+
 Resources:
   RootRole:
     # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-iam-role.html
@@ -109,6 +119,19 @@ Resources:
       Protocol: 'HTTP'
       UnhealthyThresholdCount: 5
       VpcId: !Ref 'TargetGroupVpc'
+
+  WebServerCPUTargetTrackingScalingPolicy:
+    Condition: AddCPUTargetTrackingScaling
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties:
+      AutoScalingGroupName: !Ref 'WebServerGroup'
+      Cooldown: '60'
+      PolicyType: TargetTrackingScaling
+      TargetTrackingConfiguration:
+        PredefinedMetricSpecification:
+          PredefinedMetricType: ASGAverageCPUUtilization
+        TargetValue: !Ref ASGCPUTargetTrackingScaling
+
   WebServerGroup:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
@@ -117,7 +140,14 @@ Resources:
       DesiredCapacity: '2'
       MaxSize: '5'
       MinSize: '0'
+      HealthCheckType: ELB
+      HealthCheckGracePeriod: 300
       TargetGroupARNs: [!Ref 'MyTargetGroup']
+      MetricsCollection: 
+        - Granularity: "1Minute"
+          Metrics: 
+            - "GroupMinSize"
+            - "GroupMaxSize"
     CreationPolicy:
       ResourceSignal:
         Count: '2'
@@ -137,7 +167,7 @@ Resources:
     Type: AWS::AutoScaling::ScheduledAction
     Properties:
       AutoScalingGroupName: !Ref 'WebServerGroup'
-      DesiredCapacity: 3
+      DesiredCapacity: 2
       MaxSize: 5
       MinSize: 0
       Recurrence: 0 19 * * *
@@ -303,7 +333,7 @@ Resources:
       AliasTarget:
         DNSName: !GetAtt ElasticLoadBalancer.DNSName
         HostedZoneId: !GetAtt ElasticLoadBalancer.CanonicalHostedZoneID
-        EvaluateTargetHealth: false
+        EvaluateTargetHealth: true
 
   InstanceSecurityGroup:
     Type: AWS::EC2::SecurityGroup
