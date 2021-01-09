@@ -53,6 +53,10 @@ Parameters:
     Description: The subdomain of the dns entry. For example, app -> app.mydomain.com.
     Type: String
     Default: 'app'
+  S3BucketNameCodeDeployArtifacts:
+    Description: S3 bucket name to store artifacts for CodeDeploy
+    Type: 'String'
+    Default: 'codedeploy-s3-bournique'
   SSMParamCWAgentConfig:
     Description: SSM Parameter name for the CloudWatch Agent Configuration JSON file
     Type: String
@@ -76,27 +80,67 @@ Conditions:
   AddCPUTargetTrackingScaling: !Not [ !Equals [ !Ref ASGCPUTargetTrackingScaling, 0 ] ]
 
 Resources:
+  S3BucketCodeDeployArtifacts:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref 'S3BucketNameCodeDeployArtifacts'
+      VersioningConfiguration:
+        Status: Enabled
+
+  CodeDeployRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - "codedeploy.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Policies:
+        - PolicyName: allow-autoscaling
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ec2:*
+                  - autoscaling:*
+                Resource: "*"
+
   EC2InstanceRole:
     # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-iam-role.html
     Type: AWS::IAM::Role
     Properties:
       RoleName: !Join ['-', [!Ref 'AWS::StackName', !Ref 'AWS::Region', AWSEC2InstanceRole]]
       AssumeRolePolicyDocument:
+        Version: "2012-10-17"
         Statement:
-          - Action: 'sts:AssumeRole'
+          - Effect: "Allow"
             Principal:
-              Service: ec2.amazonaws.com
-            Effect: Allow
-            Sid: ''
+              Service:
+                - "ec2.amazonaws.com"
+                - "codedeploy.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
       ManagedPolicyArns:
-        # Enable use of SSM Session Manager to SSH directly via the AWS Console while keeping port 22 closed
-        # The CloudFormation::Init is setting up cloudwatch logs to give visibility to the SSM Agent actions.
+        # Policy to enable use of SSM Session Manager to SSH from the AWS Console
         - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
       Policies:
+        # Policy for CodeDeploy agent to download artifacts from S3
+        - PolicyName: AllowGetObjectsFromS3BucketCodeDeployArtifacts
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: [ 's3:Get*', 's3:List*' ]
+                Resource: !Join ['', ['arn:aws:s3:::', !Ref 'S3BucketCodeDeployArtifacts', '/*']]
         # Policy to allow EC2 to interact with the CloudWatch service
         - PolicyName: !Join ['-', [!Ref 'AWS::StackName', !Ref 'AWS::Region', CloudWatchAgentServerPolicy]]
           PolicyDocument:
-            Version: 2012-10-17
+            Version: "2012-10-17"
             Statement:
               - Action:
                   - 'ssm:GetParameter'
@@ -223,12 +267,19 @@ Resources:
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackId} --resource WebServerGroup --region ${AWS::Region}
     Metadata:
       Comment: Install a simple application
+      AWS::CloudFormation::Authentication:
+        # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-authentication.html
+        S3AccessCreds:
+          type: S3
+          buckets: [ !Ref 'S3BucketCodeDeployArtifacts' ]
+          roleName: !Ref 'EC2InstanceRole'
       AWS::CloudFormation::Init:
         configSets:
           InstallAndRun:
             - ConfigureCfnHup
             - InstallCloudWatchAgent
-            - InstallApplication
+            - InstallCodeDeployAgent
+            - InstallTemporaryApacheServer
         ConfigureCfnHup:
           files:
             # The cfn-hup.conf file stores the stack name and the AWS credentials that the cfn-hup daemon targets.
@@ -279,7 +330,21 @@ Resources:
                   -a fetch-config \
                   -m ec2 \
                   -c ssm:${SSMParamCWAgentConfig} -s
-        InstallApplication:
+        InstallCodeDeployAgent:
+          packages:
+            yum:
+              ruby: []
+          files:
+            /home/ec2-user/install:
+              source: !Join ['', ['https://aws-codedeploy-', !Ref 'AWS::Region', '.s3.amazonaws.com/latest/install']]
+              mode: '000755'
+          commands:
+            00-install-agent:
+              command: sudo ./install auto
+              cwd: /home/ec2-user/
+            01-check-agent-status:
+              command: sudo service codedeploy-agent status
+        InstallTemporaryApacheServer:
           packages:
             yum:
               httpd: []
@@ -408,6 +473,8 @@ Resources:
             Resource:
             - !Sub arn:aws:s3:::${S3BucketForWebsiteContent}/*
             - !Sub arn:aws:s3:::${S3BucketForWebsiteContent}
+            - !Sub arn:aws:s3:::${S3BucketCodeDeployArtifacts}/*
+            - !Sub arn:aws:s3:::${S3BucketCodeDeployArtifacts}
           Version: '2012-10-17'
   S3BucketForWebsiteContent:
     Type: AWS::S3::Bucket
@@ -424,7 +491,7 @@ Resources:
       PolicyDocument:
         Statement:
         - Sid: "AllowPublicGetObject"
-          Action: [ 's3:GetObject' ]
+          Action: [ 's3:Get*', 's3:List*' ]
           Effect: Allow
           Resource: !Join ['', ['arn:aws:s3:::', !Ref 'S3BucketForWebsiteContent', '/*']]
           Principal: "*"
@@ -462,7 +529,8 @@ Resources:
     Type: Custom::S3CustomResource
     Properties:
       ServiceToken: !GetAtt AWSLambdaFunction.Arn
-      bucket_name: !Ref S3BucketForWebsiteContent
+      codedeploy_bucket_name: !Ref S3BucketCodeDeployArtifacts
+      website_bucket_name: !Ref S3BucketForWebsiteContent
       index_html_content: !Sub |
         <!doctype html>
         <html lang="en">
@@ -540,23 +608,26 @@ Resources:
               resource_id = event['PhysicalResourceId']
               s3_client = boto3.client('s3')
               # Retrieve parameters
-              bucket_name = event['ResourceProperties']['bucket_name']
+              codedeploy_bucket_name = event['ResourceProperties']['codedeploy_bucket_name']
+              website_bucket_name = event['ResourceProperties']['website_bucket_name']
               try:
                   if event_type in ('Create', 'Update'):
                       s3_client.put_object(
-                        Bucket=bucket_name,
+                        Bucket=website_bucket_name,
                         Key="index.html",
                         Body=event['ResourceProperties']['index_html_content'].encode("utf-8"),
                         ContentType="text/html"
                       )
                       s3_client.put_object(
-                        Bucket=bucket_name,
+                        Bucket=website_bucket_name,
                         Key="error.html",
                         Body=event['ResourceProperties']['error_html_content'].encode("utf-8"),
                         ContentType="text/html"
                       )
                   elif event_type == 'Delete':
-                    boto3.resource('s3').Bucket(str(bucket_name)).objects.all().delete()
+                    # Empty bucket(s)
+                    boto3.resource('s3').Bucket(str(website_bucket_name)).objects.all().delete()
+                    boto3.resource('s3').Bucket(str(codedeploy_bucket_name)).objects.all().delete()
                   print(f"{event_type} operation successful! Sending the signal back to cfn.")
                   cfnresponse.send(event, context, cfnresponse.SUCCESS, response_data, resource_id)
               except Exception as e:
@@ -591,7 +662,26 @@ Resources:
         - Key: "Name"
           Value: !Join ['', ['healthcheck-', !Ref 'R53Subdomain', ., !Ref 'R53HostedZoneName']]
 
+  WebappApplication:
+    Type: "AWS::CodeDeploy::Application"
+  WebappDeploymentGroup:
+    Type: "AWS::CodeDeploy::DeploymentGroup"
+    Properties:
+      ApplicationName: !Ref WebappApplication
+      ServiceRoleArn: !GetAtt CodeDeployRole.Arn
+      DeploymentConfigName: CodeDeployDefault.OneAtATime
+      AutoScalingGroups: [!Ref 'WebServerGroup']
+
 Outputs:
+  CodeDeployApplicationName:
+    Description: CodeDeploy Application Name
+    Value: !Ref 'WebappApplication'
+  CodeDeployDeploymentGroupName:
+    Description: CodeDeploy Deployment Group Name
+    Value: !Ref 'WebappDeploymentGroup'
+  CodeDeployS3BucketName:
+    Description: Name of the S3 bucket used to store CodeDeploy artifacts
+    Value: !Ref 'S3BucketCodeDeployArtifacts'
   AlbUrl:
     Description: Website URL (Application Load Balancer DNS Name)
     Value: !Join ['', ['https://', !GetAtt [ElasticLoadBalancer, DNSName]]]

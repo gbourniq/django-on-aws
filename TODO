@@ -20,7 +20,11 @@ Application features
 
 Cfn / app:
 AutoScalingScheduledAction.yaml:
+- deploy apache server with CodeDeploy
+- convert codedeploy helpers into proper scripts?
+- create architecture diagram
 - aws courses on ASG, ALB + look at all resources configurations and add comments
+- log ec2 terminal commands to CW
 - add private network and add rds to private network (for SSM DB Password, must retrieved it dynamically within app with python sdk)
 - review all resources configurations, rename variables for consistency, simplify, add comments, descriptions, etc
 - use of nested stack and best practices: eg: split R53 / ALB / CF-S3 / NETWORK+SGs?

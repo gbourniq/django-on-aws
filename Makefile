@@ -13,6 +13,9 @@ TAG=$(shell poetry version | awk '{print $$NF}')
 # Cloudformation
 CFN_TEMPLATE_FILE=deployment/cfn-template-app.yaml
 
+# CodeDeploy (versioned bucket defined with cloudformation)
+APP_CODE=deployment/sample-app
+
 ### Environment and pre-commit hooks ###
 .PHONY: env env-update pre-commit
 env:
@@ -112,7 +115,68 @@ cfn-update: cfn-validate
 cfn-delete:
 	@ bash ./deployment/delete-stack.sh
 
+### CodeDeploy ###
+deploy-push:
+	@ ${INFO} "Push code to S3 and create an application revision"
+	@ aws deploy push \
+		--application-name "$$($(call codedeploy_app_name))" \
+		--s3-location "s3://$$($(call codedeploy_bucket_name))/$$($(call codedeploy_app_name)).zip" \
+		--source "${APP_CODE}" \
+		--ignore-hidden-files
+
+deploy-create-deployment:
+	@ ${INFO} "Create deployment from the latest CodeDeploy application revision"
+	@ aws deploy create-deployment \
+		--application-name "$$($(call codedeploy_app_name))" \
+		--s3-location bucket="$$($(call codedeploy_bucket_name))",key="$$($(call codedeploy_s3_key_name))",bundleType=zip,eTag="$$($(call codedeploy_s3_key_eTag))",version="$$($(call codedeploy_s3_key_version))" \
+		--deployment-group-name "$$($(call codedeploy_deployment_group_name))" \
+		--description "Created by make deploy-create-deployment" \
+		--file-exists-behavior OVERWRITE
+
+get-deployment-status:
+	@ aws deploy get-deployment --deployment-id $$($(call codedeploy_latest_deployment_id)) --query "deploymentInfo.status"
+
 ### Helpers ###
+define codedeploy_app_name
+aws cloudformation describe-stacks \
+	--stack-name myapp \
+	--query 'Stacks[].Outputs[?OutputKey==`CodeDeployApplicationName`].OutputValue' \
+	--output text
+endef
+
+define codedeploy_deployment_group_name
+aws cloudformation describe-stacks \
+	--stack-name myapp \
+	--query 'Stacks[].Outputs[?OutputKey==`CodeDeployDeploymentGroupName`].OutputValue' \
+	--output text
+endef
+
+define codedeploy_bucket_name
+aws cloudformation describe-stacks \
+	--stack-name myapp \
+	--query 'Stacks[].Outputs[?OutputKey==`CodeDeployS3BucketName`].OutputValue' \
+	--output text
+endef
+
+define codedeploy_s3_key_name
+aws deploy list-application-revisions --application-name "$$($(call codedeploy_app_name))" --query "revisions[].s3Location[].key" --sort-by registerTime --sort-order descending --max-items 1 | jq '.[]' | sed 's/\"//g'
+endef
+
+define codedeploy_s3_key_version
+aws deploy list-application-revisions --application-name "$$($(call codedeploy_app_name))" --query "revisions[].s3Location[].version" --sort-by registerTime --sort-order descending --max-items 1 | jq '.[]' | sed 's/\"//g'
+endef
+
+define codedeploy_s3_key_eTag
+aws deploy list-application-revisions --application-name "$$($(call codedeploy_app_name))" --query "revisions[].s3Location[].eTag" --sort-by registerTime --sort-order descending --max-items 1 | jq '.[]' | sed 's/\"//g'
+endef
+
+define codedeploy_latest_deployment_id
+aws deploy list-deployments --application-name "$$($(call codedeploy_app_name))" --deployment-group-name "$$($(call codedeploy_deployment_group_name))" --query "deployments" --max-items 1 | jq '.[]' | sed 's/\"//g'
+endef
+
+
+
+# Cosmetics
 RED := "\e[1;31m"
 YELLOW := "\e[1;33m"
 GREEN := "\033[32m"

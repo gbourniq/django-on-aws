@@ -3,7 +3,7 @@ set -e
 
 # Variables: set with Environment Variable or revert to default value
 AWS_DEFAULT_PROFILE="${AWS_DEFAULT_PROFILE:-myaws}"
-STACK_NAME="${STACK_NAME:-app}"
+STACK_NAME="${STACK_NAME:-myapp}"
 SNS_ARN="arn:aws:sns:eu-west-2:164045463835:CloudFormationNotifications"
 
 # Stack tags

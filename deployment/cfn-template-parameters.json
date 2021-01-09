@@ -29,7 +29,11 @@
     },
     {
       "ParameterKey": "R53Subdomain",
-      "ParameterValue": "app"
+      "ParameterValue": "myapp"
+    },
+    {
+      "ParameterKey": "S3BucketNameCodeDeployArtifacts",
+      "ParameterValue": "codedeploy-s3-bournique"
     },
     {
       "ParameterKey": "SSMParamCWAgentConfig",
