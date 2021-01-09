@@ -5,7 +5,11 @@
     },
     {
       "ParameterKey": "ASGCPUTargetTrackingScaling",
-      "ParameterValue": "20"
+      "ParameterValue": "0"
+    },
+    {
+      "ParameterKey": "CloudFrontExistingCertArn",
+      "ParameterValue": "arn:aws:acm:us-east-1:164045463835:certificate/26654aed-53fe-4033-9866-9b072ad88ed8"
     },
     {
       "ParameterKey": "EC2LatestLinuxAmiId",
@@ -21,11 +25,11 @@
     },
     {
       "ParameterKey": "R53HostedZoneName",
-      "ParameterValue": "bournique.fr."
+      "ParameterValue": "bournique.fr"
     },
     {
       "ParameterKey": "R53Subdomain",
-      "ParameterValue": "myapp"
+      "ParameterValue": "app"
     },
     {
       "ParameterKey": "SSMParamCWAgentConfig",

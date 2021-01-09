@@ -4,15 +4,17 @@ Metadata:
 Description: 'AWS CloudFormation Sample Template cfn-template-app: Create
   a load balanced, Auto Scaled sample website. This example creates an Auto Scaling
   group with time-based scheduled actions behind a load balancer with a simple health
-  check.
+  check. AutoScalingRollingUpdate
   SSM Session Manager enabled. The SSM Agent running on the EC2 instances must be able to connect
-  to Session Manager’s public endpoint.
+  to Session Manager’s public endpoint. R53 failover could be use for a warm standby dr with scaled down
+  version of the app in another region/vpc
   The application is configured to span all Availability Zones in the
   region and is Auto-Scaled based on the CPU utilization of the web servers. Notifications
   will be sent to the operator email address on scaling events. The instances are
   load balanced with a simple health check against the default web page.'
 Parameters:
   ALBExistingCertArn:
+    Description: SSL Cert Arn stored in ACM with the same region as the ALB
     Type: 'String'
     Default: 'arn:aws:acm:eu-west-2:164045463835:certificate/7dea44a5-ab6d-48f9-9105-396cbdbaed91'
   ASGCPUTargetTrackingScaling:
@@ -21,6 +23,10 @@ Parameters:
     MinValue: 0
     MaxValue: 100
     Default: 0
+  CloudFrontExistingCertArn:
+    Description: SSL Cert Arn stored in ACM with the same region CloudFront (us-east-1)
+    Type: 'String'
+    Default: 'arn:aws:acm:us-east-1:164045463835:certificate/26654aed-53fe-4033-9866-9b072ad88ed8'
   EC2LatestLinuxAmiId:
     Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
     Default: '/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2'
@@ -38,13 +44,15 @@ Parameters:
     MaxValue: 20
     Default: 8
   R53HostedZoneName:
-    Description: The route53 HostedZoneName. For example, "mydomain.com."  Don't forget the period at the end.
+    Description: The DNS name of an existing Amazon Route 53 hosted zone. For example, "mydomain.com" 
+    AllowedPattern: (?!-)[a-zA-Z0-9-.]{1,63}(?<!-)
     Type: String
-    Default: 'bournique.fr.'
+    Default: 'bournique.fr'
+    ConstraintDescription: Must be a valid DNS zone name.
   R53Subdomain:
-    Description: The subdomain of the dns entry. For example, hello -> hello.mydomain.com, hello is the subdomain.
+    Description: The subdomain of the dns entry. For example, app -> app.mydomain.com.
     Type: String
-    Default: 'myapp'
+    Default: 'app'
   SSMParamCWAgentConfig:
     Description: SSM Parameter name for the CloudWatch Agent Configuration JSON file
     Type: String
@@ -60,16 +68,19 @@ Mappings:
   Region2Examples:
     eu-west-2:
       Examples: https://s3-eu-west-2.amazonaws.com/cloudformation-examples-eu-west-2
-
+  Region2S3WebsiteSuffix:
+    eu-west-2:
+      Suffix: .s3-website.eu-west-2.amazonaws.com
 
 Conditions:
   AddCPUTargetTrackingScaling: !Not [ !Equals [ !Ref ASGCPUTargetTrackingScaling, 0 ] ]
 
 Resources:
-  RootRole:
+  EC2InstanceRole:
     # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-iam-role.html
     Type: AWS::IAM::Role
     Properties:
+      RoleName: !Join ['-', [!Ref 'AWS::StackName', !Ref 'AWS::Region', AWSEC2InstanceRole]]
       AssumeRolePolicyDocument:
         Statement:
           - Action: 'sts:AssumeRole'
@@ -83,7 +94,7 @@ Resources:
         - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
       Policies:
         # Policy to allow EC2 to interact with the CloudWatch service
-        - PolicyName: CloudWatchAgentServerPolicy
+        - PolicyName: !Join ['-', [!Ref 'AWS::StackName', !Ref 'AWS::Region', CloudWatchAgentServerPolicy]]
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -108,7 +119,7 @@ Resources:
     Properties:
       Path: /
       Roles:
-        - !Ref RootRole
+        - !Ref EC2InstanceRole
   MyTargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
@@ -137,7 +148,7 @@ Resources:
     Properties:
       VPCZoneIdentifier: !Ref 'SubnetList'
       LaunchConfigurationName: !Ref 'LaunchConfig'
-      DesiredCapacity: '2'
+      DesiredCapacity: '2' # Must match Count value for the CreationPolicy resource signal
       MaxSize: '5'
       MinSize: '0'
       HealthCheckType: ELB
@@ -148,12 +159,12 @@ Resources:
           Metrics: 
             - "GroupMinSize"
             - "GroupMaxSize"
-    CreationPolicy:
+    CreationPolicy: # signal back that all desired instances were created
       ResourceSignal:
-        Count: '2'
+        Count: '2' # Must match ASG DesiredCapacity
         Timeout: PT10M
     UpdatePolicy:
-      AutoScalingRollingUpdate:
+      AutoScalingRollingUpdate: # Replace one instance at a time
         MinInstancesInService: 1
         MaxBatchSize: 1
         PauseTime: PT10M
@@ -169,17 +180,17 @@ Resources:
       AutoScalingGroupName: !Ref 'WebServerGroup'
       DesiredCapacity: 2
       MaxSize: 5
-      MinSize: 0
+      MinSize: 1
       Recurrence: 0 19 * * *
   ScheduledActionDown:
     Type: AWS::AutoScaling::ScheduledAction
     Properties:
       AutoScalingGroupName: !Ref 'WebServerGroup'
       DesiredCapacity: 1
-      MaxSize: 5
+      MaxSize: 2
       MinSize: 0
       Recurrence: 0 23 * * *
-  LaunchConfig:
+  LaunchConfig: # Used by ASG to create new instances
     Type: AWS::AutoScaling::LaunchConfiguration
     Properties:
       # KeyName: !Ref 'KeyName'
@@ -323,10 +334,13 @@ Resources:
       SecurityGroups:
         - !GetAtt 'ALBSecurityGroup.GroupId'
 
-  DNSRecord:
+  WebsiteDNSName:
     Type: AWS::Route53::RecordSet
     Properties:
-      HostedZoneName: !Ref 'R53HostedZoneName'
+      Failover: PRIMARY
+      SetIdentifier: R53-DNS-Failover-Primary
+      HealthCheckId: !Ref 'Route53HealthCheck'
+      HostedZoneName: !Join ['', [!Ref 'R53HostedZoneName', .]]
       Name: !Join ['', [!Ref 'R53Subdomain', ., !Ref 'R53HostedZoneName']]
       Comment: Zone apex alias targeted to the ALB.
       Type: A
@@ -357,13 +371,233 @@ Resources:
           FromPort: 443
           IpProtocol: "tcp"
           ToPort: 443
+
+  AWSLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Join ['-', [!Ref 'AWS::StackName', !Ref 'AWS::Region', AWSLambdaExecutionRole]]
+      AssumeRolePolicyDocument:
+        Statement:
+        - Action:
+          - sts:AssumeRole
+          Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+        Version: '2012-10-17'
+      Path: "/"
+      Policies:
+      - PolicyName: !Join ['-', [!Ref 'AWS::StackName', !Ref 'AWS::Region', AWSLambdaCWPolicy]]
+        PolicyDocument:
+          Statement:
+          - Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+            Effect: Allow
+            Resource: arn:aws:logs:*:*:*
+          Version: '2012-10-17'
+      - PolicyName: !Join ['-', [!Ref 'AWS::StackName', !Ref 'AWS::Region', AWSLambdaS3Policy]]
+        PolicyDocument:
+          Statement:
+          - Action:
+            - s3:PutObject
+            - s3:DeleteObject
+            - s3:List*
+            Effect: Allow
+            Resource:
+            - !Sub arn:aws:s3:::${S3BucketForWebsiteContent}/*
+            - !Sub arn:aws:s3:::${S3BucketForWebsiteContent}
+          Version: '2012-10-17'
+  S3BucketForWebsiteContent:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Join ['', [!Ref 'R53Subdomain', ., !Ref 'R53HostedZoneName']]
+      AccessControl: PublicRead
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: error.html
+  BucketPolicyCredentials:  
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref S3BucketForWebsiteContent
+      PolicyDocument:
+        Statement:
+        - Sid: "AllowPublicGetObject"
+          Action: [ 's3:GetObject' ]
+          Effect: Allow
+          Resource: !Join ['', ['arn:aws:s3:::', !Ref 'S3BucketForWebsiteContent', '/*']]
+          Principal: "*"
+
+  WebsiteCDN:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Comment: CDN for S3-backed website
+        # CloudFront CNAME - must match the bucket name and the R53 CNAME record
+        Aliases: [!Join ['', [!Ref 'R53Subdomain', ., !Ref 'R53HostedZoneName']]]
+        Enabled: true
+        DefaultCacheBehavior:
+          ForwardedValues:
+            QueryString: true
+          TargetOriginId: only-origin
+          ViewerProtocolPolicy: redirect-to-https
+        DefaultRootObject: index.html
+        Origins:
+        - CustomOriginConfig:
+            HTTPPort: 80
+            HTTPSPort: 443
+            OriginProtocolPolicy: http-only
+          # S3 website endpoint
+          DomainName: !Join ['', [!Ref 'S3BucketForWebsiteContent', !FindInMap [Region2S3WebsiteSuffix,
+                !Ref 'AWS::Region', Suffix]]]
+          Id: only-origin
+        ViewerCertificate:
+          AcmCertificateArn: !Ref 'CloudFrontExistingCertArn'
+          SslSupportMethod: sni-only
+        # Logging:
+        #   Bucket: !Sub '${LoggingBucket}.s3.amazonaws.com'
+
+  S3CustomResource:
+    Type: Custom::S3CustomResource
+    Properties:
+      ServiceToken: !GetAtt AWSLambdaFunction.Arn
+      bucket_name: !Ref S3BucketForWebsiteContent
+      index_html_content: !Sub |
+        <!doctype html>
+        <html lang="en">
+        <head>
+          <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+          <meta name="viewport" content="width=device-width, initial-scale=1"/>
+          <meta name="description" content="Failover page for ${R53Subdomain}.${R53HostedZoneName}">
+          <meta name="author" content="Guillaume Bournique">
+          <title>Failover page</title>
+          <link href="https://s3.eu-west-2.amazonaws.com/tarikitchen/django_files/static/css/materialize.css" type="text/css" rel="stylesheet" media="screen,projection"/>
+          <link href="https://s3.eu-west-2.amazonaws.com/tarikitchen/django_files/static/css/style.css" type="text/css" rel="stylesheet" media="screen,projection"/>
+          <link rel="shortcut icon" href="https://s3.eu-west-2.amazonaws.com/tarikitchen/django_files/static/favicon.ico">
+          <link rel="apple-touch-icon" href="https://s3.eu-west-2.amazonaws.com/tarikitchen/django_files/static/apple-touch-icon.png">
+        </head>
+        <body>
+          <header>
+            <div class="navbar-fixed">
+              <nav style="background-color:white">
+                <div class="nav-wrapper container">
+                  <a id="logo-container" href="/" class="brand-logo center">
+                    <img class="img-responsive" style="width:250px; height:32px; margin-top:14px" src="https://s3.eu-west-2.amazonaws.com/tarikitchen/django_files/static/Logo.png">
+                  </a>
+                  <a href="#" data-target="nav-mobile" class="sidenav-trigger"><i class="material-icons">menu</i></a>
+                </div>
+              </nav>
+            </div>
+          </header>
+          <main>	
+            <div class="container">
+              <div class="row">
+                <center>
+                  <br><br><br><br><br>
+                  <h5>Oops.. ${R53Subdomain}.${R53HostedZoneName} is currently unavailable. Please try again between 10AM-6PM (GMT).</h5>
+                  <br>
+                  <a href="/" id="refresh-button" class="btn-large waves-effect waves-light brown lighten-1">Try again</a>
+                </center>
+              </div>
+            </div>
+            <br><br><br><br><br><br><br><br>
+          </main>
+          <footer>
+            <footer id="my-footer" class="page-footer grey" style="position:sticky;bottom:0;left:0;width:100%;">
+              <div class="container">
+                Source code on <a class="grey-text text-darken-3" href="https://github.com/gbourniq/django-on-aws" target="_blank">Github</a>
+                <br><br>
+              </div>
+            </footer>
+          </footer>
+        </body>
+        </html>
+      error_html_content: |
+        <h1>Uh oh, there was an error with the S3 website</h1>
+  AWSLambdaFunction:
+    Type: "AWS::Lambda::Function"
+    Properties:
+      Description: "Work with S3 Buckets!"
+      FunctionName: !Sub '${AWS::StackName}-${AWS::Region}-lambda'
+      Handler: index.handler
+      Role: !GetAtt AWSLambdaExecutionRole.Arn
+      Timeout: 360
+      Runtime: python3.6
+      Code:
+        ZipFile: |
+          import boto3
+          import cfnresponse
+          import uuid
+          def handler(event, context):
+              event_type = event['RequestType']
+              print(f"{event_type} event received")
+              response_data = {}
+              # https://stackoverflow.com/questions/50599602/updating-custom-resources-causes-them-to-be-deleted
+              resource_id = ""
+              if "PhysicalResourceId" not in event:
+                event['PhysicalResourceId'] = str(uuid.uuid1())
+              resource_id = event['PhysicalResourceId']
+              s3_client = boto3.client('s3')
+              # Retrieve parameters
+              bucket_name = event['ResourceProperties']['bucket_name']
+              try:
+                  if event_type in ('Create', 'Update'):
+                      s3_client.put_object(
+                        Bucket=bucket_name,
+                        Key="index.html",
+                        Body=event['ResourceProperties']['index_html_content'].encode("utf-8"),
+                        ContentType="text/html"
+                      )
+                      s3_client.put_object(
+                        Bucket=bucket_name,
+                        Key="error.html",
+                        Body=event['ResourceProperties']['error_html_content'].encode("utf-8"),
+                        ContentType="text/html"
+                      )
+                  elif event_type == 'Delete':
+                    boto3.resource('s3').Bucket(str(bucket_name)).objects.all().delete()
+                  print(f"{event_type} operation successful! Sending the signal back to cfn.")
+                  cfnresponse.send(event, context, cfnresponse.SUCCESS, response_data, resource_id)
+              except Exception as e:
+                  print(f"Execution failed... {e}")
+                  response_data['Data'] = f"Execution failed... {e}"
+                  cfnresponse.send(event, context, cfnresponse.FAILED, response_data, resource_id)
+  FailoverWebsiteDNSName:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      Failover: SECONDARY
+      SetIdentifier: R53-DNS-Failover-Secondary
+      HostedZoneName: !Join ['', [!Ref 'R53HostedZoneName', .]]
+      Name: !Join ['', [!Ref 'R53Subdomain', ., !Ref 'R53HostedZoneName']]
+      Comment: Zone apex alias targeted to the CloudFront distribution
+      Type: A
+      AliasTarget:
+        DNSName: !GetAtt [WebsiteCDN, DomainName]
+        HostedZoneId: Z2FDTNDATAQYW2
+        EvaluateTargetHealth: false
+
+  Route53HealthCheck:
+    Type: "AWS::Route53::HealthCheck"
+    Properties:
+      HealthCheckConfig:
+        Port: 80
+        Type: "HTTP"
+        ResourcePath: "/"
+        FullyQualifiedDomainName: !Join ['', [!Ref 'R53Subdomain', ., !Ref 'R53HostedZoneName']]
+        RequestInterval: 30
+        FailureThreshold: 3
+      HealthCheckTags:
+        - Key: "Name"
+          Value: !Join ['', ['healthcheck-', !Ref 'R53Subdomain', ., !Ref 'R53HostedZoneName']]
+
 Outputs:
   AlbUrl:
     Description: Website URL (Application Load Balancer DNS Name)
-    Value: !Join ['', ['http://', !GetAtt [ElasticLoadBalancer, DNSName]]]
+    Value: !Join ['', ['https://', !GetAtt [ElasticLoadBalancer, DNSName]]]
   R53Url:
     Description: Website URL (Subdomain of the R53 DNS entry)
-    Value: !Join ['', ['https://', !Ref 'R53Subdomain', ., !Ref 'R53HostedZoneName']]
+    Value: !Join ['', ['https://', !Ref 'WebsiteDNSName']]
   SessionManagementListUrl:
     Description: The URL to the Session Management Console listing all instances it is aware of
     Value: !Sub https://${AWS::Region}.console.aws.amazon.com/systems-manager/session-manager/start-session?region=${AWS::Region}

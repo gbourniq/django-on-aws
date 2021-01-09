@@ -3,7 +3,7 @@ set -e
 
 # Variables: set with Environment Variable or revert to default value
 AWS_DEFAULT_PROFILE="${AWS_DEFAULT_PROFILE:-myaws}"
-STACK_NAME="${STACK_NAME:-myapp}"
+STACK_NAME="${STACK_NAME:-app}"
 SNS_ARN="arn:aws:sns:eu-west-2:164045463835:CloudFormationNotifications"
 
 # Stack tags
@@ -48,7 +48,7 @@ aws cloudformation create-stack \
     --tags "Key"="Name","Value"="${NAME}" "Key"="Date","Value"="${LAUNCH_DATE}" "Key"="Email","Value"="${EMAIL}" \
     --profile=${AWS_DEFAULT_PROFILE} \
     --notification-arns=${SNS_ARN} \
-    --capabilities=CAPABILITY_IAM
+    --capabilities=CAPABILITY_NAMED_IAM
 
 # Check Stack creation status
 while [[ "$(get_stack_status)" == "CREATE_IN_PROGRESS" ]]; do
