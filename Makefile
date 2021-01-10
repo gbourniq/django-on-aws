@@ -124,7 +124,7 @@ deploy-push:
 		--source "${APP_CODE}" \
 		--ignore-hidden-files
 
-deploy-create-deployment:
+deploy-create:
 	@ ${INFO} "Create deployment from the latest CodeDeploy application revision"
 	@ aws deploy create-deployment \
 		--application-name "$$($(call codedeploy_app_name))" \
@@ -133,8 +133,11 @@ deploy-create-deployment:
 		--description "Created by make deploy-create-deployment" \
 		--file-exists-behavior OVERWRITE
 
-get-deployment-status:
-	@ aws deploy get-deployment --deployment-id $$($(call codedeploy_latest_deployment_id)) --query "deploymentInfo.status"
+check-deployment-status:
+	@ ${INFO} "Check deployment status..."
+	@ echo "$$($(call check_deployment_status))"
+
+deploy: deploy-push deploy-create check-deployment-status
 
 ### Helpers ###
 define codedeploy_app_name
@@ -174,7 +177,19 @@ define codedeploy_latest_deployment_id
 aws deploy list-deployments --application-name "$$($(call codedeploy_app_name))" --deployment-group-name "$$($(call codedeploy_deployment_group_name))" --query "deployments" --max-items 1 | jq '.[]' | sed 's/\"//g'
 endef
 
+define deployment_status
+aws deploy get-deployment --deployment-id $$($(call codedeploy_latest_deployment_id)) --query "deploymentInfo.status"
+endef
 
+check_deployment_status = { \
+  until [[ "$$($(call deployment_status))" != '"InProgress"' ]]; \
+    do sleep 1; \
+  done; \
+  if [[ "$$($(call deployment_status))" != '"Succeeded"' ]]; \
+    then echo "Deployment failed"; exit 1; \
+  fi; \
+  echo "Deployment succeeded!"; \
+}
 
 # Cosmetics
 RED := "\e[1;31m"

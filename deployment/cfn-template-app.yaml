@@ -278,8 +278,8 @@ Resources:
           InstallAndRun:
             - ConfigureCfnHup
             - InstallCloudWatchAgent
-            - InstallCodeDeployAgent
             - InstallTemporaryApacheServer
+            - InstallCodeDeployAgent
         ConfigureCfnHup:
           files:
             # The cfn-hup.conf file stores the stack name and the AWS credentials that the cfn-hup daemon targets.
@@ -626,8 +626,9 @@ Resources:
                       )
                   elif event_type == 'Delete':
                     # Empty bucket(s)
-                    boto3.resource('s3').Bucket(str(website_bucket_name)).objects.all().delete()
-                    boto3.resource('s3').Bucket(str(codedeploy_bucket_name)).objects.all().delete()
+                    boto3.resource('s3').Bucket(website_bucket_name).objects.all().delete()
+                    boto3.resource('s3').Bucket(codedeploy_bucket_name).objects.all().delete()
+                    boto3.resource('s3').Bucket(codedeploy_bucket_name).object_versions.delete()
                   print(f"{event_type} operation successful! Sending the signal back to cfn.")
                   cfnresponse.send(event, context, cfnresponse.SUCCESS, response_data, resource_id)
               except Exception as e:
