@@ -20,11 +20,8 @@ Application features
 
 Cfn / app:
 AutoScalingScheduledAction.yaml:
-- deploy apache server with CodeDeploy
-- delete versioned bucket on stack delete?
-- check app version after scale out event
 - simplify code deploy commands or create scripts
-- convert codedeploy helpers into proper scripts?
+- convert codedeploy helpers into proper scripts? or move from bash scripts to make cfn-* commands into Makefile
 - create architecture diagram
 - aws courses on ASG, ALB + look at all resources configurations and add comments
 - log ec2 terminal commands to CW

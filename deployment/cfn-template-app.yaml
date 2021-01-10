@@ -57,6 +57,10 @@ Parameters:
     Description: S3 bucket name to store artifacts for CodeDeploy
     Type: 'String'
     Default: 'codedeploy-s3-bournique'
+  SNSTopicArn:
+    Description: SNS Topic Arn to notify on CodeDeploy deployment statuses
+    Type: String
+    Default: 'arn:aws:sns:eu-west-2:164045463835:CloudFormationNotifications'
   SSMParamCWAgentConfig:
     Description: SSM Parameter name for the CloudWatch Agent Configuration JSON file
     Type: String
@@ -108,6 +112,8 @@ Resources:
                 Action:
                   - ec2:*
                   - autoscaling:*
+                  - elasticloadbalancing:*
+                  - sns:*
                 Resource: "*"
 
   EC2InstanceRole:
@@ -164,17 +170,23 @@ Resources:
       Path: /
       Roles:
         - !Ref EC2InstanceRole
-  MyTargetGroup:
+  WebappTargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
-      HealthCheckIntervalSeconds: 30
+      HealthCheckIntervalSeconds: 10
       HealthCheckTimeoutSeconds: 5
       HealthyThresholdCount: 3
       Port: 80
       Protocol: 'HTTP'
       UnhealthyThresholdCount: 5
       VpcId: !Ref 'TargetGroupVpc'
-
+      TargetGroupAttributes:
+        - Key: 'deregistration_delay.timeout_seconds'
+          Value: '30'
+        - Key: 'stickiness.enabled'
+          Value: 'false'
+        - Key: 'load_balancing.algorithm.type'
+          Value: 'least_outstanding_requests'
   WebServerCPUTargetTrackingScalingPolicy:
     Condition: AddCPUTargetTrackingScaling
     Type: AWS::AutoScaling::ScalingPolicy
@@ -197,7 +209,7 @@ Resources:
       MinSize: '0'
       HealthCheckType: ELB
       HealthCheckGracePeriod: 300
-      TargetGroupARNs: [!Ref 'MyTargetGroup']
+      TargetGroupARNs: [!Ref 'WebappTargetGroup']
       MetricsCollection: 
         - Granularity: "1Minute"
           Metrics: 
@@ -279,7 +291,7 @@ Resources:
             - ConfigureCfnHup
             - InstallCloudWatchAgent
             - InstallTemporaryApacheServer
-            - InstallCodeDeployAgent
+            - InstallCodeDeployAgent # must be the last configset
         ConfigureCfnHup:
           files:
             # The cfn-hup.conf file stores the stack name and the AWS credentials that the cfn-hup daemon targets.
@@ -369,7 +381,7 @@ Resources:
     Properties:
       DefaultActions:
         - Type: "forward"
-          TargetGroupArn: !Ref MyTargetGroup
+          TargetGroupArn: !Ref WebappTargetGroup
       LoadBalancerArn: !Ref 'ElasticLoadBalancer'
       Port: 80
       Protocol: 'HTTP'
@@ -379,7 +391,7 @@ Resources:
     Properties:
       DefaultActions:
         - Type: "forward"
-          TargetGroupArn: !Ref MyTargetGroup
+          TargetGroupArn: !Ref WebappTargetGroup
       Certificates:
         - CertificateArn: !Ref ALBExistingCertArn
       LoadBalancerArn: !Ref 'ElasticLoadBalancer'
@@ -628,7 +640,13 @@ Resources:
                     # Empty bucket(s)
                     boto3.resource('s3').Bucket(website_bucket_name).objects.all().delete()
                     boto3.resource('s3').Bucket(codedeploy_bucket_name).objects.all().delete()
+                    print(f"Deleting all object version in {codedeploy_bucket_name} bucket")
                     boto3.resource('s3').Bucket(codedeploy_bucket_name).object_versions.delete()
+                    objects = s3_client.list_object_versions(Bucket=codedeploy_bucket_name)
+                    content = objects.get('Contents', [])
+                    for obj in content:
+                      s3_client.delete_object(Bucket=bucket_name, Key=obj['Key'])
+                    print(f"Remaining objects {s3_client.list_object_versions(Bucket=codedeploy_bucket_name)}")
                   print(f"{event_type} operation successful! Sending the signal back to cfn.")
                   cfnresponse.send(event, context, cfnresponse.SUCCESS, response_data, resource_id)
               except Exception as e:
@@ -670,8 +688,26 @@ Resources:
     Properties:
       ApplicationName: !Ref WebappApplication
       ServiceRoleArn: !GetAtt CodeDeployRole.Arn
-      DeploymentConfigName: CodeDeployDefault.OneAtATime
+      DeploymentConfigName: !Ref WebappDeploymentConfig
+      # CodeDeploy automatically deploys revisions to when new instances are created
       AutoScalingGroups: [!Ref 'WebServerGroup']
+      DeploymentStyle:
+        DeploymentOption: WITH_TRAFFIC_CONTROL
+        DeploymentType: IN_PLACE
+      LoadBalancerInfo:
+        # Prevents internet traffic from being routed to an instance that's not ready
+        # by de-registering (BlockTraffic) and re-registering instances (AllowTraffic) from the target groupt
+        TargetGroupInfoList: [Name: !GetAtt WebappTargetGroup.TargetGroupName]
+      TriggerConfigurations:
+        - TriggerName: MyTarget
+          TriggerEvents: [DeploymentSuccess, DeploymentRollback]
+          TriggerTargetArn: !Ref SNSTopicArn
+  WebappDeploymentConfig:
+    Type: AWS::CodeDeploy::DeploymentConfig
+    Properties:
+      MinimumHealthyHosts:
+        Type: FLEET_PERCENT
+        Value: 50
 
 Outputs:
   CodeDeployApplicationName:

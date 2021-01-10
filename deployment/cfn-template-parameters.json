@@ -36,6 +36,10 @@
       "ParameterValue": "codedeploy-s3-bournique"
     },
     {
+      "ParameterKey": "SNSTopicArn",
+      "ParameterValue": "arn:aws:sns:eu-west-2:164045463835:CloudFormationNotifications"
+    },
+    {
       "ParameterKey": "SSMParamCWAgentConfig",
       "ParameterValue": "/CLOUDWATCH_AGENT/CONFIG"
     },
