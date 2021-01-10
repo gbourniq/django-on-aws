@@ -643,8 +643,10 @@ Resources:
                     print(f"Deleting all object version in {codedeploy_bucket_name} bucket")
                     boto3.resource('s3').Bucket(codedeploy_bucket_name).object_versions.delete()
                     objects = s3_client.list_object_versions(Bucket=codedeploy_bucket_name)
+                    print(f"versioned objects count: {len(objects)} - {objects}")
                     content = objects.get('Contents', [])
                     for obj in content:
+                      print(f"Deleting {obj}")
                       s3_client.delete_object(Bucket=bucket_name, Key=obj['Key'])
                     print(f"Remaining objects {s3_client.list_object_versions(Bucket=codedeploy_bucket_name)}")
                   print(f"{event_type} operation successful! Sending the signal back to cfn.")
