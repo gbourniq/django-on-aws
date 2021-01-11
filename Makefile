@@ -11,10 +11,15 @@ IMAGE_REPOSITORY=${DOCKER_USER}/django-on-aws
 TAG=$(shell poetry version | awk '{print $$NF}')
 
 # Cloudformation
-CFN_TEMPLATE_FILE=deployment/cfn-template-app.yaml
 STACK_NAME=myapp
+AWS_DEFAULT_PROFILE=myaws
+CFN_TEMPLATE_FILE="deployment/cfn-template-app.yaml"
+CFN_PARAMETERS_FILE="deployment/cfn-template-parameters.json"
+TAG_NAME="Guillaume Bournique"
+TAG_EMAIL="gbournique.dev1@gmail.com"
+TAG_MODIFIED_DATE="$$(date +%F_%T)"
 
-# CodeDeploy (versioned bucket defined with cloudformation)
+# CodeDeploy
 APP_CODE=deployment/sample-app
 
 ### Environment and pre-commit hooks ###
@@ -62,7 +67,7 @@ open-cov-report:
 	@ open htmlcov/index.html
 
 
-### Deployment ###
+### Docker image ###
 .PHONY: image up down publish
 image:
 	rm -rf dist
@@ -100,7 +105,7 @@ rm-app:
 	@ ${INFO} "Removing Django app container"
 	@ docker rm --force $$(docker ps --filter "ancestor=${IMAGE_REPOSITORY}:$(TAG)" -qa)
 
-### CloudFormation ###
+### Infrastructure ###
 cfn-validate:
 	@ echo "Validating CloudFormation template ${CFN_TEMPLATE_FILE}"
 	@ yamllint -d "{rules: {line-length: {max: 130, level: warning}}}" "${CFN_TEMPLATE_FILE}"
@@ -108,15 +113,33 @@ cfn-validate:
 	@ aws cloudformation validate-template --template-body file://"${CFN_TEMPLATE_FILE}" > /dev/null 2>&1
 
 cfn-create: cfn-validate
-	@ bash ./deployment/create-stack.sh
+	@ ${INFO} "Creating stack ${STACK_NAME}..."
+	@ aws cloudformation create-stack \
+		--stack-name=${STACK_NAME} \
+		--template-body=file://"${CFN_TEMPLATE_FILE}" \
+		--parameters=file://"${CFN_PARAMETERS_FILE}" \
+		--tags "Key"="Name","Value"=\"${TAG_NAME}\" "Key"="Modified_Date","Value"="${TAG_MODIFIED_DATE}" "Key"="Email","Value"="${TAG_EMAIL}" \
+		--profile=${AWS_DEFAULT_PROFILE} \
+		--capabilities=CAPABILITY_NAMED_IAM
+	@ echo "$$($(call wait_for_stack_creation_status))"
 
 cfn-update: cfn-validate
-	@ bash ./deployment/update-stack.sh
+	@ ${INFO} "Updating stack ${STACK_NAME}..."
+	@ aws cloudformation update-stack \
+		--stack-name=${STACK_NAME} \
+		--template-body=file://"${CFN_TEMPLATE_FILE}" \
+		--parameters=file://"${CFN_PARAMETERS_FILE}" \
+		--tags "Key"="Name","Value"=\"${TAG_NAME}\" "Key"="Modified_Date","Value"="${TAG_MODIFIED_DATE}" "Key"="Email","Value"="${TAG_EMAIL}" \
+		--profile=${AWS_DEFAULT_PROFILE} \
+		--capabilities=CAPABILITY_NAMED_IAM
+	@ echo "$$($(call wait_for_stack_update_status))"
 
 cfn-delete:
-	@ bash ./deployment/delete-stack.sh
+	@ ${INFO} "Deleting stack ${STACK_NAME}..."
+	@ aws cloudformation delete-stack --stack-name="${STACK_NAME}"
+	@ echo "$$($(call wait_for_stack_delete_status))"
 
-### CodeDeploy ###
+### Deployment ###
 deploy-push:
 	@ ${INFO} "Push code to S3 and create an application revision"
 	@ aws deploy push \
@@ -134,13 +157,46 @@ deploy-create:
 		--description "Created by make deploy-create-deployment" \
 		--file-exists-behavior OVERWRITE
 
-check-deployment-status:
+deploy-get-status:
 	@ ${INFO} "Check deployment status..."
-	@ echo "$$($(call check_deployment_status))"
+	@ echo "$$($(call wait_for_codedeploy_deployment_status))"
 
-deploy: deploy-push deploy-create check-deployment-status
+deploy: deploy-push deploy-create deploy-get-status
 
 ### Helpers ###
+
+# CloudFormation
+define get_stack_status
+aws cloudformation describe-stacks --stack-name=${STACK_NAME} | jq -r '.Stacks[0].StackStatus'
+endef
+
+wait_for_stack_creation_status = { \
+  until [[ "$$($(call get_stack_status))" != "CREATE_IN_PROGRESS" ]]; \
+    do sleep 5; \
+  done; \
+  if [[ "$$($(call get_stack_status))" != "CREATE_COMPLETE" ]]; \
+    then echo "Oops, something went wrong during stack creation ❌"; exit 1; \
+  fi; \
+  echo "Stack creation completed! ✅"; \
+}
+
+wait_for_stack_update_status = { \
+  until [[ "$$($(call get_stack_status))" != "UPDATE_IN_PROGRESS" ]]; \
+    do sleep 5; \
+  done; \
+  if [[ "$$($(call get_stack_status))" != "UPDATE_COMPLETE" ]]; \
+    then echo "Oops, something went wrong during stack update ❌"; exit 1; \
+  fi; \
+  echo "Stack update completed! ✅"; \
+}
+
+wait_for_stack_delete_status = { \
+  until [[ "$$($(call get_stack_status))" != "DELETE_IN_PROGRESS" ]]; \
+    do sleep 5; \
+  done; \
+  echo "Stack delete completed! ✅"; \
+}
+
 define codedeploy_app_name
 aws cloudformation describe-stacks \
 	--stack-name ${STACK_NAME} \
@@ -182,7 +238,7 @@ define deployment_status
 aws deploy get-deployment --deployment-id $$($(call codedeploy_latest_deployment_id)) --query "deploymentInfo.status"
 endef
 
-check_deployment_status = { \
+wait_for_codedeploy_deployment_status = { \
   until [[ "$$($(call deployment_status))" != '"InProgress"' ]]; \
     do sleep 1; \
   done; \

@@ -23,8 +23,7 @@ Application features
 
 Cfn / app:
 AutoScalingScheduledAction.yaml:
-- simplify code deploy commands or create scripts
-- convert codedeploy helpers into proper scripts? or move from bash scripts to make cfn-* commands into Makefile
+- simply Makefile functions/helpers, create separate Makefile.helpers?
 
 - test postgres connection from parameter store variables
 - define DR strategy
