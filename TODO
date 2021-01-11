@@ -21,6 +21,7 @@ Application features
 Cfn / app:
 AutoScalingScheduledAction.yaml:
 - simplify code deploy commands or create scripts
+- workout codedeploy/cicd strategy to managed dev/prod pipelines
 - convert codedeploy helpers into proper scripts? or move from bash scripts to make cfn-* commands into Makefile
 - create architecture diagram
 - aws courses on ASG, ALB + look at all resources configurations and add comments

@@ -12,6 +12,7 @@ TAG=$(shell poetry version | awk '{print $$NF}')
 
 # Cloudformation
 CFN_TEMPLATE_FILE=deployment/cfn-template-app.yaml
+STACK_NAME=myapp
 
 # CodeDeploy (versioned bucket defined with cloudformation)
 APP_CODE=deployment/sample-app
@@ -142,21 +143,21 @@ deploy: deploy-push deploy-create check-deployment-status
 ### Helpers ###
 define codedeploy_app_name
 aws cloudformation describe-stacks \
-	--stack-name myapp \
+	--stack-name ${STACK_NAME} \
 	--query 'Stacks[].Outputs[?OutputKey==`CodeDeployApplicationName`].OutputValue' \
 	--output text
 endef
 
 define codedeploy_deployment_group_name
 aws cloudformation describe-stacks \
-	--stack-name myapp \
+	--stack-name ${STACK_NAME} \
 	--query 'Stacks[].Outputs[?OutputKey==`CodeDeployDeploymentGroupName`].OutputValue' \
 	--output text
 endef
 
 define codedeploy_bucket_name
 aws cloudformation describe-stacks \
-	--stack-name myapp \
+	--stack-name ${STACK_NAME} \
 	--query 'Stacks[].Outputs[?OutputKey==`CodeDeployS3BucketName`].OutputValue' \
 	--output text
 endef

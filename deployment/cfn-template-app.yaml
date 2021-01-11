@@ -53,10 +53,6 @@ Parameters:
     Description: The subdomain of the dns entry. For example, app -> app.mydomain.com.
     Type: String
     Default: 'app'
-  S3BucketNameCodeDeployArtifacts:
-    Description: S3 bucket name to store artifacts for CodeDeploy
-    Type: 'String'
-    Default: 'codedeploy-s3-bournique'
   SNSTopicArn:
     Description: SNS Topic Arn to notify on CodeDeploy deployment statuses
     Type: String
@@ -87,7 +83,7 @@ Resources:
   S3BucketCodeDeployArtifacts:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Ref 'S3BucketNameCodeDeployArtifacts'
+      BucketName: !Join ['', [!Ref 'R53Subdomain', ., !Ref 'R53HostedZoneName', -, codedeploy-artifacts]]
       VersioningConfiguration:
         Status: Enabled
 
@@ -479,7 +475,7 @@ Resources:
           Statement:
           - Action:
             - s3:PutObject
-            - s3:DeleteObject
+            - s3:DeleteObject*
             - s3:List*
             Effect: Allow
             Resource:
@@ -619,6 +615,7 @@ Resources:
                 event['PhysicalResourceId'] = str(uuid.uuid1())
               resource_id = event['PhysicalResourceId']
               s3_client = boto3.client('s3')
+              s3_resource = boto3.resource('s3')
               # Retrieve parameters
               codedeploy_bucket_name = event['ResourceProperties']['codedeploy_bucket_name']
               website_bucket_name = event['ResourceProperties']['website_bucket_name']
@@ -637,18 +634,15 @@ Resources:
                         ContentType="text/html"
                       )
                   elif event_type == 'Delete':
-                    # Empty bucket(s)
-                    boto3.resource('s3').Bucket(website_bucket_name).objects.all().delete()
-                    boto3.resource('s3').Bucket(codedeploy_bucket_name).objects.all().delete()
-                    print(f"Deleting all object version in {codedeploy_bucket_name} bucket")
-                    boto3.resource('s3').Bucket(codedeploy_bucket_name).object_versions.delete()
-                    objects = s3_client.list_object_versions(Bucket=codedeploy_bucket_name)
-                    print(f"versioned objects count: {len(objects)} - {objects}")
-                    content = objects.get('Contents', [])
-                    for obj in content:
-                      print(f"Deleting {obj}")
-                      s3_client.delete_object(Bucket=bucket_name, Key=obj['Key'])
-                    print(f"Remaining objects {s3_client.list_object_versions(Bucket=codedeploy_bucket_name)}")
+                    # Delete objects
+                    s3_resource.Bucket(website_bucket_name).objects.all().delete()
+                    s3_resource.Bucket(codedeploy_bucket_name).objects.all().delete()
+                    # Delete object versions and deletemarkers for versioned buckets
+                    all_versions = s3_client.list_object_versions(Bucket=codedeploy_bucket_name)["Versions"]
+                    all_delete_markers = s3_client.list_object_versions(Bucket=codedeploy_bucket_name)["DeleteMarkers"]
+                    for obj in (all_versions + all_delete_markers):
+                      print(f"[VERSIONED BUCKET] Deleting object version or markers: {obj}")
+                      s3_client.delete_object(Bucket=codedeploy_bucket_name, Key=obj['Key'], VersionId=obj['VersionId'])
                   print(f"{event_type} operation successful! Sending the signal back to cfn.")
                   cfnresponse.send(event, context, cfnresponse.SUCCESS, response_data, resource_id)
               except Exception as e:

@@ -32,10 +32,6 @@
       "ParameterValue": "myapp"
     },
     {
-      "ParameterKey": "S3BucketNameCodeDeployArtifacts",
-      "ParameterValue": "codedeploy-s3-bournique"
-    },
-    {
       "ParameterKey": "SNSTopicArn",
       "ParameterValue": "arn:aws:sns:eu-west-2:164045463835:CloudFormationNotifications"
     },
