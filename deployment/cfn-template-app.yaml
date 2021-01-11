@@ -53,10 +53,10 @@ Parameters:
     Description: The subdomain of the dns entry. For example, app -> app.mydomain.com.
     Type: String
     Default: 'app'
-  SNSTopicArn:
-    Description: SNS Topic Arn to notify on CodeDeploy deployment statuses
+  SlackWebhookUrl:
+    Description: Incoming WebHook to forward SNS notification (ASG/CodeDeploy events) to Slack. Use empty string to disable.
     Type: String
-    Default: 'arn:aws:sns:eu-west-2:164045463835:CloudFormationNotifications'
+    Default: 'https://hooks.slack.com/services/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'
   SSMParamCWAgentConfig:
     Description: SSM Parameter name for the CloudWatch Agent Configuration JSON file
     Type: String
@@ -211,6 +211,14 @@ Resources:
           Metrics: 
             - "GroupMinSize"
             - "GroupMaxSize"
+      NotificationConfigurations:
+        - TopicARN: !Ref ExampleTopic
+          NotificationTypes: 
+            - autoscaling:EC2_INSTANCE_LAUNCH
+            - autoscaling:EC2_INSTANCE_LAUNCH_ERROR
+            - autoscaling:EC2_INSTANCE_TERMINATE
+            - autoscaling:EC2_INSTANCE_TERMINATE_ERROR
+            - autoscaling:TEST_NOTIFICATION
     CreationPolicy: # signal back that all desired instances were created
       ResourceSignal:
         Count: '2' # Must match ASG DesiredCapacity
@@ -245,7 +253,6 @@ Resources:
   LaunchConfig: # Used by ASG to create new instances
     Type: AWS::AutoScaling::LaunchConfiguration
     Properties:
-      # KeyName: !Ref 'KeyName'
       ImageId: !Ref EC2LatestLinuxAmiId
       IamInstanceProfile: !Ref RootInstanceProfile
       SecurityGroups: [!GetAtt 'InstanceSecurityGroup.GroupId']
@@ -598,7 +605,7 @@ Resources:
       FunctionName: !Sub '${AWS::StackName}-${AWS::Region}-lambda'
       Handler: index.handler
       Role: !GetAtt AWSLambdaExecutionRole.Arn
-      Timeout: 360
+      Timeout: 30
       Runtime: python3.6
       Code:
         ZipFile: |
@@ -672,7 +679,7 @@ Resources:
         ResourcePath: "/"
         FullyQualifiedDomainName: !Join ['', [!Ref 'R53Subdomain', ., !Ref 'R53HostedZoneName']]
         RequestInterval: 30
-        FailureThreshold: 3
+        FailureThreshold: 2
       HealthCheckTags:
         - Key: "Name"
           Value: !Join ['', ['healthcheck-', !Ref 'R53Subdomain', ., !Ref 'R53HostedZoneName']]
@@ -697,13 +704,84 @@ Resources:
       TriggerConfigurations:
         - TriggerName: MyTarget
           TriggerEvents: [DeploymentSuccess, DeploymentRollback]
-          TriggerTargetArn: !Ref SNSTopicArn
+          TriggerTargetArn: !Ref ExampleTopic
   WebappDeploymentConfig:
     Type: AWS::CodeDeploy::DeploymentConfig
     Properties:
       MinimumHealthyHosts:
         Type: FLEET_PERCENT
         Value: 50
+
+  ExampleFunction:
+    Type: "AWS::Lambda::Function"
+    Properties:
+      Description: "Processes messages from Amazon SNS, and logs their contents."
+      FunctionName: !Sub '${AWS::StackName}-${AWS::Region}-lambda-sns-to-slack'
+      Handler: index.handler
+      Role: !GetAtt AWSLambdaExecutionRole.Arn
+      Timeout: 30
+      Runtime: python3.6
+      Code:
+        ZipFile: !Sub |
+          #!/usr/bin/python3.6
+          import urllib3
+          import json
+          http = urllib3.PoolManager()
+          def handler(event, context):
+              try:
+                  # Initialize variables
+                  url = "${SlackWebhookUrl}"
+                  text = event['Records'][0]['Sns']['Message']
+                  # Check slack configuration
+                  if not url:
+                      print(f"Invalid slack configuration. SNS message: {text}")
+                      return
+                  # Post SNS message to Slack
+                  msg = {
+                      "channel": "#general",
+                      "username": "SNS",
+                      "text": text,
+                      "icon_emoji": ":cloud:"
+                  }
+                  encoded_msg = json.dumps(msg).encode('utf-8')
+                  resp = http.request('POST', url, body=encoded_msg)
+                  print({
+                      "message": text, 
+                      "status_code": resp.status, 
+                      "response": resp.data
+                  })
+              except Exception as e:
+                  print(f"Execution failed... {e}")
+
+  ExampleFunctionInvokePermission:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !Ref ExampleFunction
+      Principal: sns.amazonaws.com  
+  ExampleTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: 'cfn-info'
+      TopicName: 'CloudFormationNotifications'
+      Subscription:
+        - Protocol: lambda
+          Endpoint: !GetAtt ExampleFunction.Arn
+  ExampleTopicPolicy:
+    Type: 'AWS::SNS::TopicPolicy'
+    Properties:
+      Topics: [ !Ref ExampleTopic ]
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action: 'sns:Publish'
+            Resource: !Ref ExampleTopic
+            Principal:
+              AWS: '*'
+            Condition:
+              ArnLike:
+                AWS:SourceArn: !Sub 'arn:aws:*:*:${AWS::AccountId}:*'
 
 Outputs:
   CodeDeployApplicationName:

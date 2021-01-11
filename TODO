@@ -1,14 +1,17 @@
 Manual steps prerequisite before launching cfn template:
 - Route53 Hosted Zone
+- Create free SSL certificate for ACM (3 months validity) https://itnext.io/using-letsencrypt-ssl-certificates-in-aws-certificate-manager-c2bc3c6ae10
 - ACM with loaded SSL certificate, certificate must be both in eu-west-2 for ALB, and us-east-1 for CFN (2 different arns)
 - SSM Paremeter to store CW Agent config file (JSON)
-
+- Create RDS postgres with SSL
+- SSM Parameters to store rds db connection details
+- Create a slack incoming webhook for forward sns notifications to slack
 
 AWS Deployment
 - Configure CloudFormation network templates: custom VPC, public/private subnets, SGs,...
 - Configure CloudFormation application templates: Elastic Beanstalk, ECS or ALB+ASG (spot fleet with 1 t2.micro?), API GTW, S3
 - Define infra configurations (eg. schedule, failovers, etc.) and DR strategy
-- Configure SSL on RDS Postgres database and/or private subnet deployment
+
 - Define S3 buckets: CI/CD artifacts, Django static files, Postgres dump, Logs, etc.
 
 Application features
@@ -21,21 +24,18 @@ Application features
 Cfn / app:
 AutoScalingScheduledAction.yaml:
 - simplify code deploy commands or create scripts
-- workout codedeploy/cicd strategy to managed dev/prod pipelines
 - convert codedeploy helpers into proper scripts? or move from bash scripts to make cfn-* commands into Makefile
+
+- test postgres connection from parameter store variables
+- define DR strategy
 - create architecture diagram
-- aws courses on ASG, ALB + look at all resources configurations and add comments
-- log ec2 terminal commands to CW
-- add private network and add rds to private network (for SSM DB Password, must retrieved it dynamically within app with python sdk)
-- review all resources configurations, rename variables for consistency, simplify, add comments, descriptions, etc
+
+
+- define codedeploy/cicd strategy to managed dev/prod pipelines
+- review courses on ASG, ALB + all resources configurations, rename variables for consistency, simplify, add comments, descriptions, etc
+(for SSM DB Password, must retrieved it dynamically within app with python sdk)
 - use of nested stack and best practices: eg: split R53 / ALB / CF-S3 / NETWORK+SGs?
 - when everything working, try with portfolio docker app
-- MUST use CodeDeploy for new app version to be updated across existing instances?
-- connect to private RDS 
-- define DR strategy
 
 
-Create free SSL certificate for ACM (valid for 3 months)
-https://itnext.io/using-letsencrypt-ssl-certificates-in-aws-certificate-manager-c2bc3c6ae10
 
-add network cfn template (VPC/Subnet): https://github.com/samkeen/aws-ssm-session-manager-example/blob/master/ssm-session-mgr-example.yaml

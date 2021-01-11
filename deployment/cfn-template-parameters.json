@@ -32,8 +32,8 @@
       "ParameterValue": "myapp"
     },
     {
-      "ParameterKey": "SNSTopicArn",
-      "ParameterValue": "arn:aws:sns:eu-west-2:164045463835:CloudFormationNotifications"
+      "ParameterKey": "SlackWebhookUrl",
+      "ParameterValue": "https://hooks.slack.com/services/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"
     },
     {
       "ParameterKey": "SSMParamCWAgentConfig",
