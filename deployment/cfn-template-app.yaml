@@ -53,10 +53,10 @@ Parameters:
     Description: The subdomain of the dns entry. For example, app -> app.mydomain.com.
     Type: String
     Default: 'app'
-  SlackWebhookUrl:
-    Description: Incoming WebHook to forward SNS notification (ASG/CodeDeploy events) to Slack. Use empty string to disable.
-    Type: String
-    Default: 'https://hooks.slack.com/services/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'
+  SSMParamSlackWebhookUrl:
+    Description: SSM Parameter for the Slack WebHook Url (sensitive) to forward ASG/CodeDeploy events SNS notifications to Slack. Use empty string to disable.
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: '/SLACK/INCOMING_WEBHOOK_URL'
   SSMParamCWAgentConfig:
     Description: SSM Parameter name for the CloudWatch Agent Configuration JSON file
     Type: String
@@ -730,7 +730,7 @@ Resources:
           def handler(event, context):
               try:
                   # Initialize variables
-                  url = "${SlackWebhookUrl}"
+                  url = "${SSMParamSlackWebhookUrl}"
                   text = event['Records'][0]['Sns']['Message']
                   # Check slack configuration
                   if not url:

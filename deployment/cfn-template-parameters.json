@@ -32,8 +32,8 @@
       "ParameterValue": "myapp"
     },
     {
-      "ParameterKey": "SlackWebhookUrl",
-      "ParameterValue": "https://hooks.slack.com/services/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"
+      "ParameterKey": "SSMParamSlackWebhookUrl",
+      "ParameterValue": "/SLACK/INCOMING_WEBHOOK_URL"
     },
     {
       "ParameterKey": "SSMParamCWAgentConfig",

@@ -5,7 +5,7 @@ Manual steps prerequisite before launching cfn template:
 - SSM Paremeter to store CW Agent config file (JSON)
 - Create RDS postgres with SSL
 - SSM Parameters to store rds db connection details
-- Create a slack incoming webhook for forward sns notifications to slack
+- Create a slack incoming webhook for forward sns notifications to slack + put it to SSM params
 
 AWS Deployment
 - Configure CloudFormation network templates: custom VPC, public/private subnets, SGs,...
