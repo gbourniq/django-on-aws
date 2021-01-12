@@ -22,6 +22,8 @@ TAG_MODIFIED_DATE="$$(date +%F_%T)"
 # CodeDeploy
 APP_CODE=deployment/sample-app
 
+include utils/helpers.mk
+
 ### Environment and pre-commit hooks ###
 .PHONY: env env-update pre-commit
 env:
@@ -68,14 +70,14 @@ open-cov-report:
 
 
 ### Docker image ###
-.PHONY: image up down publish
+.PHONY: image up healthcheck down publish
 image:
 	rm -rf dist
 	poetry build
 	docker build -t ${IMAGE_REPOSITORY}:$(TAG) .
 
 up:
-	@ ${INFO} "Running Django tests with PostgreSQL running on Docker"
+	@ ${INFO} "Running app with docker-compose (includes Postgres container)"
 	@ docker-compose down
 	@ docker-compose up -d
 
@@ -91,8 +93,8 @@ publish:
 	@ docker push ${IMAGE_REPOSITORY}:$(TAG)
 
 run-app:
-	@ ${INFO} "Running Django app as a standalone container"
-	@ ${INFO} "Postgres host: ${POSTGRES_HOST} (default: localhost)"
+	@ ${INFO} "Running app as a standalone container"
+	@ ${INFO} "Postgres host: ${POSTGRES_HOST}"
 	@ docker run -d \
 				-p 8080:8080 \
 				--name=myapp \
@@ -105,7 +107,10 @@ rm-app:
 	@ ${INFO} "Removing Django app container"
 	@ docker rm --force $$(docker ps --filter "ancestor=${IMAGE_REPOSITORY}:$(TAG)" -qa)
 
+
 ### Infrastructure ###
+.PHONY: cfn-validate cfn-create cfn-update cfn-delete
+
 cfn-validate:
 	@ echo "Validating CloudFormation template ${CFN_TEMPLATE_FILE}"
 	@ yamllint -d "{rules: {line-length: {max: 130, level: warning}}}" "${CFN_TEMPLATE_FILE}"
@@ -139,21 +144,26 @@ cfn-delete:
 	@ aws cloudformation delete-stack --stack-name="${STACK_NAME}"
 	@ echo "$$($(call wait_for_stack_delete_status))"
 
+
 ### Deployment ###
+.PHONY: deploy deploy-push deploy-create deploy-get-status
+
+deploy: deploy-push deploy-create deploy-get-status
+
 deploy-push:
-	@ ${INFO} "Push code to S3 and create an application revision"
+	@ ${INFO} "Push code to S3 and create a CodeDeploy application revision"
 	@ aws deploy push \
-		--application-name "$$($(call codedeploy_app_name))" \
-		--s3-location "s3://$$($(call codedeploy_bucket_name))/$$($(call codedeploy_app_name)).zip" \
+		--application-name "$$($(call get_stack_output, CodeDeployApplicationName))" \
+		--s3-location "s3://$$($(call get_stack_output, CodeDeployS3BucketName))/$$($(call codedeploy_app_name)).zip" \
 		--source "${APP_CODE}" \
 		--ignore-hidden-files
 
 deploy-create:
 	@ ${INFO} "Create deployment from the latest CodeDeploy application revision"
 	@ aws deploy create-deployment \
-		--application-name "$$($(call codedeploy_app_name))" \
-		--s3-location bucket="$$($(call codedeploy_bucket_name))",key="$$($(call codedeploy_s3_key_name))",bundleType=zip,eTag="$$($(call codedeploy_s3_key_eTag))",version="$$($(call codedeploy_s3_key_version))" \
-		--deployment-group-name "$$($(call codedeploy_deployment_group_name))" \
+		--application-name "$$($(call get_stack_output, CodeDeployApplicationName))" \
+		--deployment-group-name "$$($(call get_stack_output, CodeDeployDeploymentGroupName))" \
+		--s3-location "$$($(call codedeploy_s3_artifact))" \
 		--description "Created by make deploy-create-deployment" \
 		--file-exists-behavior OVERWRITE
 
@@ -161,99 +171,5 @@ deploy-get-status:
 	@ ${INFO} "Check deployment status..."
 	@ echo "$$($(call wait_for_codedeploy_deployment_status))"
 
-deploy: deploy-push deploy-create deploy-get-status
 
-### Helpers ###
 
-# CloudFormation
-define get_stack_status
-aws cloudformation describe-stacks --stack-name=${STACK_NAME} | jq -r '.Stacks[0].StackStatus'
-endef
-
-wait_for_stack_creation_status = { \
-  until [[ "$$($(call get_stack_status))" != "CREATE_IN_PROGRESS" ]]; \
-    do sleep 5; \
-  done; \
-  if [[ "$$($(call get_stack_status))" != "CREATE_COMPLETE" ]]; \
-    then echo "Oops, something went wrong during stack creation ❌"; exit 1; \
-  fi; \
-  echo "Stack creation completed! ✅"; \
-}
-
-wait_for_stack_update_status = { \
-  until [[ "$$($(call get_stack_status))" != "UPDATE_IN_PROGRESS" ]]; \
-    do sleep 5; \
-  done; \
-  if [[ "$$($(call get_stack_status))" != "UPDATE_COMPLETE" ]]; \
-    then echo "Oops, something went wrong during stack update ❌"; exit 1; \
-  fi; \
-  echo "Stack update completed! ✅"; \
-}
-
-wait_for_stack_delete_status = { \
-  until [[ "$$($(call get_stack_status))" != "DELETE_IN_PROGRESS" ]]; \
-    do sleep 5; \
-  done; \
-  echo "Stack delete completed! ✅"; \
-}
-
-define codedeploy_app_name
-aws cloudformation describe-stacks \
-	--stack-name ${STACK_NAME} \
-	--query 'Stacks[].Outputs[?OutputKey==`CodeDeployApplicationName`].OutputValue' \
-	--output text
-endef
-
-define codedeploy_deployment_group_name
-aws cloudformation describe-stacks \
-	--stack-name ${STACK_NAME} \
-	--query 'Stacks[].Outputs[?OutputKey==`CodeDeployDeploymentGroupName`].OutputValue' \
-	--output text
-endef
-
-define codedeploy_bucket_name
-aws cloudformation describe-stacks \
-	--stack-name ${STACK_NAME} \
-	--query 'Stacks[].Outputs[?OutputKey==`CodeDeployS3BucketName`].OutputValue' \
-	--output text
-endef
-
-define codedeploy_s3_key_name
-aws deploy list-application-revisions --application-name "$$($(call codedeploy_app_name))" --query "revisions[].s3Location[].key" --sort-by registerTime --sort-order descending --max-items 1 | jq '.[]' | sed 's/\"//g'
-endef
-
-define codedeploy_s3_key_version
-aws deploy list-application-revisions --application-name "$$($(call codedeploy_app_name))" --query "revisions[].s3Location[].version" --sort-by registerTime --sort-order descending --max-items 1 | jq '.[]' | sed 's/\"//g'
-endef
-
-define codedeploy_s3_key_eTag
-aws deploy list-application-revisions --application-name "$$($(call codedeploy_app_name))" --query "revisions[].s3Location[].eTag" --sort-by registerTime --sort-order descending --max-items 1 | jq '.[]' | sed 's/\"//g'
-endef
-
-define codedeploy_latest_deployment_id
-aws deploy list-deployments --application-name "$$($(call codedeploy_app_name))" --deployment-group-name "$$($(call codedeploy_deployment_group_name))" --query "deployments" --max-items 1 | jq '.[]' | sed 's/\"//g'
-endef
-
-define deployment_status
-aws deploy get-deployment --deployment-id $$($(call codedeploy_latest_deployment_id)) --query "deploymentInfo.status"
-endef
-
-wait_for_codedeploy_deployment_status = { \
-  until [[ "$$($(call deployment_status))" != '"InProgress"' ]]; \
-    do sleep 1; \
-  done; \
-  if [[ "$$($(call deployment_status))" != '"Succeeded"' ]]; \
-    then echo "Deployment failed"; exit 1; \
-  fi; \
-  echo "Deployment succeeded!"; \
-}
-
-# Cosmetics
-RED := "\e[1;31m"
-YELLOW := "\e[1;33m"
-GREEN := "\033[32m"
-NC := "\e[0m"
-INFO := @bash -c 'printf ${YELLOW}; echo "[INFO] $$1"; printf ${NC}' MESSAGE
-MESSAGE := @bash -c 'printf ${NC}; echo "$$1"; printf ${NC}' MESSAGE
-SUCCESS := @bash -c 'printf ${GREEN}; echo "[SUCCESS] $$1"; printf ${NC}' MESSAGE
-WARNING := @bash -c 'printf ${RED}; echo "[WARNING] $$1"; printf ${NC}' MESSAGEs
