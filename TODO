@@ -9,8 +9,8 @@ Manual steps / prerequisites before launching cfn template:
     - slack incoming webhook (to forward sns notifications from CodeDeploy/ASG to slack)
 
 AWS Deployment
-- simply Makefile functions/helpers, create separate Makefile.helpers?
 - test postgres connection from parameter store variables
+- add elasticache/dynamodb ?
 - define DR strategy
 - prod var to retain/snapshot resources
 - define codedeploy/cicd strategy to managed dev/prod pipelines

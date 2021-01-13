@@ -28,10 +28,10 @@ script:
   # CI
   - make env
   - conda activate django-on-aws
-  - make tests
+  - make tests || travis_terminate 1;
   # CD
-  - make image
-  - make up
-  - make healthcheck
+  - make image || travis_terminate 1;
+  - make up || travis_terminate 1;
+  - make healthcheck || travis_terminate 1;
   - make down
   - make publish

@@ -186,9 +186,10 @@ make publish                      <-- Push docker image to dockerhub
 TBD - will involve cloudformation templates
 ```
 
-Note that the following secret environment variables must be set in the Travis Repository settings, so that the Travis server can push the docker image
+Note that the following secret environment variables must be set in the Travis Repository settings
 ```bash
 DOCKER_PASSWORD
+POSTGRES_PASSWORD
 ```
 
 ## RESTful APIs
