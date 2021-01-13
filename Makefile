@@ -10,11 +10,11 @@ DOCKER_USER=gbournique
 IMAGE_REPOSITORY=${DOCKER_USER}/django-on-aws
 TAG=$(shell poetry version | awk '{print $$NF}')
 
-# Local Postgres container as a DB backend
-# POSTGRES_HOST=localhost
-# POSTGRES_PASSWORD=postgres
 # AWS RDS Postgres as a DB backend (Note password must be stored securely)
-POSTGRES_HOST=portfoliodb.cwr5v77jgf3a.eu-west-2.rds.amazonaws.com
+POSTGRES_HOST=localhost
+POSTGRES_PASSWORD=postgres
+RDS_POSTGRES_HOST=portfoliodb.cwr5v77jgf3a.eu-west-2.rds.amazonaws.com
+# RDS_POSTGRES_HOST=to be defined securely
 
 # Cloudformation
 STACK_NAME=myapp
@@ -51,7 +51,7 @@ pre-commit:
 
 
 ### Development and Testing ###
-.PHONY: runserver tests open-cov-report
+.PHONY: rundb stopdb recreatedb runserver tests open-cov-report
 
 rundb:
 	@ echo "Starting postgres container"
@@ -79,7 +79,7 @@ open-cov-report:
 	@ open htmlcov/index.html
 
 ### Docker image ###
-.PHONY: image up healthcheck down publish
+.PHONY: image up-with-local-db up healthcheck down publish
 image:
 	rm -rf dist
 	poetry build
@@ -89,18 +89,23 @@ up-with-local-db: rundb
 	@ ${INFO} "Running app as a standalone container on docker local network"
 	@ docker run -d -p 8080:8080 --restart=no --network django-on-aws_backend ${IMAGE_REPOSITORY}:$(TAG)
 
-up:
+check-db-connection:
+	@ echo "Check DB connection..."
+	@ echo "User: postgres, Password: **** , Host: ${RDS_POSTGRES_HOST}, Database: portfoliodb"
+	@ psql -d "postgresql://postgres:${RDS_POSTGRES_PASSWORD}@${RDS_POSTGRES_HOST}/portfoliodb" -c "select now()" > /dev/null
+
+up: check-db-connection
 	@ ${INFO} "Running app as a standalone container"
-	@ ${INFO} "RDS postgres host: ${POSTGRES_HOST}"
+	@ ${INFO} "RDS postgres host: ${RDS_POSTGRES_HOST}"
 	@ docker run -d \
 				-p 8080:8080 \
 				--restart=no \
-				--env POSTGRES_HOST=${POSTGRES_HOST} \
-				--env POSTGRES_PASSWORD=${POSTGRES_PASSWORD} \
+				--env POSTGRES_HOST=${RDS_POSTGRES_HOST} \
+				--env POSTGRES_PASSWORD=${RDS_POSTGRES_PASSWORD} \
 				${IMAGE_REPOSITORY}:$(TAG)
 
 healthcheck:
-	@ ${INFO} "Checking Django application health"
+	@ ${INFO} "Checking Django application container health"
 	@ ./utils/healthcheck.sh ${IMAGE_REPOSITORY} ${TAG}
 
 down:
