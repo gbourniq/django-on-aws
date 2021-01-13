@@ -1,18 +1,18 @@
 #!/bin/bash
 set -e
 
+# Check running container health given a docker image name
+# Usage: ./utils/healthcheck.sh "<IMAGE_REPOSITORY>" "<TAG>"
+
 trap "echo 'Something went wrong! Tidying up...' && exit 1" ERR
 
-
 # Helper functions
-
 function get_service_health() {
   echo "$1" | xargs -I ID docker inspect -f '{{if .State.Running}}{{ .State.Health.Status }}{{end}}' ID
 }
 
 function check_service_health() {
-
-  container_id=$(docker ps -aqf "name=$1")
+  container_id=$(docker ps --filter "ancestor=$1:$2" -qa)
 
   # Check if container exists
   if [[ -z "${container_id}" ]]; then
@@ -31,13 +31,10 @@ function check_service_health() {
     exit 1
   fi;
 
-  echo "$1 healthy 🍀"
+  echo "Container running from $1:$2 is healthy 🍀"
 }
 
 # Start script
-echo "Checking services health..."
-services=(postgres app)
-for service in ${services[*]}; do
-    check_service_health "$service"
-done
-echo "✅ All services are up and healthy!"
+echo "Checking health for container running from $1:$2..."
+check_service_health "$1" "$2"
+echo "✅  All services are up and healthy!"

@@ -14,17 +14,23 @@ config = Config(env_file=ENV_PATH)
 # ======================= SETTINGS.PY =========================
 
 # General settings
-SECRET_KEY: Secret = config("SECRET_KEY", cast=Secret)
-MEDIA_URL: str = config("MEDIA_URL", default="mediafiles")
+SECRET_KEY: Secret = getenv("SECRET_KEY", config("SECRET_KEY", cast=Secret))
+MEDIA_URL: str = getenv("MEDIA_URL", config("MEDIA_URL", default="mediafiles"))
 
 # Postgres
-POSTGRES_HOST: str = getenv("POSTGRES_HOST", config("POSTGRES_HOST"))
-POSTGRES_PASSWORD: Secret = getenv(
-    "POSTGRES_PASSWORD", config("POSTGRES_PASSWORD", cast=Secret)
+POSTGRES_HOST: str = getenv(
+    "POSTGRES_HOST", config("POSTGRES_HOST", default="localhost")
 )
-POSTGRES_DB: str = config("POSTGRES_DB")
-POSTGRES_PORT: int = config("POSTGRES_PORT", cast=int)
-POSTGRES_USER: str = config("POSTGRES_USER")
+POSTGRES_PASSWORD: Secret = getenv(
+    "POSTGRES_PASSWORD", config("POSTGRES_PASSWORD", cast=Secret, default="postgres")
+)
+POSTGRES_DB: str = getenv("POSTGRES_DB", config("POSTGRES_DB", default="portfoliodb"))
+POSTGRES_PORT: int = getenv(
+    "POSTGRES_PORT", config("POSTGRES_PORT", cast=int, default=5432)
+)
+POSTGRES_USER: str = getenv(
+    "POSTGRES_USER", config("POSTGRES_USER", default="postgres")
+)
 
 
 # ==================== AWS ======================

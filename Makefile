@@ -10,6 +10,12 @@ DOCKER_USER=gbournique
 IMAGE_REPOSITORY=${DOCKER_USER}/django-on-aws
 TAG=$(shell poetry version | awk '{print $$NF}')
 
+# Local Postgres container as a DB backend
+# POSTGRES_HOST=localhost
+# POSTGRES_PASSWORD=postgres
+# AWS RDS Postgres as a DB backend (Note password must be stored securely)
+POSTGRES_HOST=portfoliodb.cwr5v77jgf3a.eu-west-2.rds.amazonaws.com
+
 # Cloudformation
 STACK_NAME=myapp
 AWS_DEFAULT_PROFILE=myaws
@@ -38,7 +44,7 @@ env-update:
 	@ conda env update -f environment.yml -n $(CONDA_ENV_NAME)
 	@ ($(CONDA_ACTIVATE) $(CONDA_ENV_NAME); poetry update)
 	@ ${SUCCESS} "${CONDA_ENV_NAME} conda environment and poetry dependencies have been updated!"
- 
+
 pre-commit:
 	@ pre-commit install -t pre-commit -t commit-msg
 	@ ${SUCCESS} "pre-commit set up"
@@ -48,7 +54,11 @@ pre-commit:
 .PHONY: runserver tests open-cov-report
 
 rundb:
+	@ echo "Starting postgres container"
 	@ docker-compose up -d postgres || true
+
+stopdb:
+	@ docker-compose down || true
 
 recreatedb: rundb
 	@ ${INFO} "Wiping portfoliodb table"
@@ -60,14 +70,13 @@ runserver: rundb
 	@ python app/manage.py runserver 0.0.0.0:8080
 
 tests: rundb
-	@ ${INFO} "Running Django tests with PostgreSQL running on Docker"
+	@ ${INFO} "Running Django tests using the postgres container"
 	@ pytest app -x
 	@ docker-compose down || true
 	@ ${INFO} "Run 'make open-cov-report' to view coverage details"
 
 open-cov-report:
 	@ open htmlcov/index.html
-
 
 ### Docker image ###
 .PHONY: image up healthcheck down publish
@@ -76,36 +85,32 @@ image:
 	poetry build
 	docker build -t ${IMAGE_REPOSITORY}:$(TAG) .
 
+up-with-local-db: rundb
+	@ ${INFO} "Running app as a standalone container on docker local network"
+	@ docker run -d -p 8080:8080 --restart=no --network django-on-aws_backend ${IMAGE_REPOSITORY}:$(TAG)
+
 up:
-	@ ${INFO} "Running app with docker-compose (includes Postgres container)"
-	@ docker-compose down
-	@ docker-compose up -d
-
-healthcheck:
-	@ ${INFO} "Checking Django application health"
-	@ ./utils/healthcheck.sh
-
-down:
-	@ docker-compose down
-
-publish:
-	@ echo "${DOCKER_PASSWORD}" | docker login --username "${DOCKER_USER}" --password-stdin 2>&1
-	@ docker push ${IMAGE_REPOSITORY}:$(TAG)
-
-run-app:
 	@ ${INFO} "Running app as a standalone container"
-	@ ${INFO} "Postgres host: ${POSTGRES_HOST}"
+	@ ${INFO} "RDS postgres host: ${POSTGRES_HOST}"
 	@ docker run -d \
 				-p 8080:8080 \
-				--name=myapp \
 				--restart=no \
 				--env POSTGRES_HOST=${POSTGRES_HOST} \
 				--env POSTGRES_PASSWORD=${POSTGRES_PASSWORD} \
 				${IMAGE_REPOSITORY}:$(TAG)
 
-rm-app:
+healthcheck:
+	@ ${INFO} "Checking Django application health"
+	@ ./utils/healthcheck.sh ${IMAGE_REPOSITORY} ${TAG}
+
+down:
 	@ ${INFO} "Removing Django app container"
 	@ docker rm --force $$(docker ps --filter "ancestor=${IMAGE_REPOSITORY}:$(TAG)" -qa)
+	@ docker-compose down || true
+
+publish:
+	@ echo "${DOCKER_PASSWORD}" | docker login --username "${DOCKER_USER}" --password-stdin 2>&1
+	@ docker push ${IMAGE_REPOSITORY}:$(TAG)
 
 
 ### Infrastructure ###
@@ -170,6 +175,3 @@ deploy-create:
 deploy-get-status:
 	@ ${INFO} "Check deployment status..."
 	@ echo "$$($(call wait_for_codedeploy_deployment_status))"
-
-
-
