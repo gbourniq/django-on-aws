@@ -1,26 +1,28 @@
 Manual steps / prerequisites before launching cfn template:
 - Route53 Hosted Zone
-- Create free SSL certificate for ACM (3 months validity) https://itnext.io/using-letsencrypt-ssl-certificates-in-aws-certificate-manager-c2bc3c6ae10
-- ACM with loaded SSL certificate, certificate must be both in eu-west-2 for ALB, and us-east-1 for CFN (2 different arns)
-- Create RDS postgres
+- ACM with loaded SSL certificate*, certificate must be both in eu-west-2 for ALB, and us-east-1 for CFN (2 different arns)
 - SSM Parameter store to store
     - CW Agent config file (JSON)
-    - rds db connection details
+    - rds password
     - slack incoming webhook (to forward sns notifications from CodeDeploy/ASG to slack)
 
+* free SSL certificate for ACM (3 months validity) https://itnext.io/using-letsencrypt-ssl-certificates-in-aws-certificate-manager-c2bc3c6ae10
+
 AWS Deployment
-- test postgres connection from parameter store variables
-- add elasticache/dynamodb ?
 - define DR strategy
-- prod var to retain/snapshot resources
-- define codedeploy/cicd strategy to managed dev/prod pipelines
-
-
+- make ALB only accessible by CF, and R53->CF?
+- SA Pro 490 - S3 event -> Lambda -> write metadata to DynDB + indexed by ElasticSearch
 - create architecture diagram
 - review AWS notes for any missing service
+- add sqs/lambda to mock post message to slack from ec2 instance?
+- add bucket for app static resources?
+- think about ci/cd pipeline - how to get variables (postgres & redis host) from cfn outputs into codedeploy scripts
+
 - review courses on ASG, ALB + all resources configurations, rename variables for consistency, simplify, add comments, descriptions, etc
 (for SSM DB Password, must retrieved it dynamically within app with python sdk)
 - use of nested stack and best practices: eg: split R53 / ALB / CF-S3 / NETWORK+SGs?
+- prod var to be used to retain/snapshot resources: RDS, S3
+- define codedeploy/cicd strategy to managed dev/prod pipelines
 - when everything working, try with portfolio docker app
 
 Application features
@@ -30,4 +32,3 @@ Application features
 - Session data: Configure Django app to work with ElastiCache (unless use API Gateway in front of ELB?) or DynamoDB/Streams
 - Configure django to use AWS Cognito for Users management and SSO
 - Define S3 buckets: CI/CD artifacts, Django static files, Postgres dump, Logs, etc.
-

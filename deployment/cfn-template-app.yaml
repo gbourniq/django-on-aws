@@ -54,11 +54,21 @@ Parameters:
     Type: String
     Default: 'app'
   SSMParamSlackWebhookUrl:
-    Description: SSM Parameter for the Slack WebHook Url (sensitive) to forward ASG/CodeDeploy events SNS notifications to Slack. Use empty string to disable.
+    NoEcho: 'true'
+    Description: |
+      SSM Parameter for the Slack WebHook Url (sensitive) to forward ASG/CodeDeploy events
+      SNS notifications to Slack. Use empty string to disable.
     Type: AWS::SSM::Parameter::Value<String>
     Default: '/SLACK/INCOMING_WEBHOOK_URL'
+  SSMParamNameRdsPostgresPassword:
+    NoEcho: 'true'
+    Description: |
+      Name of the SSM Parameter secure string for the RDS Postgres password.
+      Hardcoded in the DBInstance resource config.
+    Type: String
+    Default: '/RDS/POSTGRES_PASSWORD/SECURE'
   SSMParamCWAgentConfig:
-    Description: SSM Parameter name for the CloudWatch Agent Configuration JSON file
+    Description: Name for the SSM Parameter to fetch the CloudWatch Agent Configuration JSON file
     Type: String
     Default: '/CLOUDWATCH_AGENT/CONFIG'
   SubnetList:
@@ -158,6 +168,16 @@ Resources:
                   - 'logs:CreateLogStream'
                   - 'logs:CreateLogGroup'
                 Resource: '*'
+                Effect: Allow
+        # Policy to allow EC2 to send messages to the SQS queue
+        - PolicyName: !Join ['-', [!Ref 'AWS::StackName', !Ref 'AWS::Region', EC2SendMessageToSQS]]
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Action:
+                  - 'sqs:SendMessage'
+                  - 'sqs:SendMessageBatch'
+                Resource: !GetAtt MyQueue.Arn
                 Effect: Allow
   RootInstanceProfile:
     # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-iam-instanceprofile.html
@@ -267,18 +287,34 @@ Resources:
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash -xe
+
+          # Set environment variables for cfn-init scripts
+          export REDIS_HOST=${ElasticacheCluster.RedisEndpoint.Address}
+          export REDIS_PORT=6379
+          export RDS_POSTGRES_HOST=${PostgresDB.Endpoint.Address}
+          export RDS_POSTGRES_PASSWORD=$(aws ssm get-parameter --name ${SSMParamNameRdsPostgresPassword} --with-decryption --query "Parameter.Value" --output text --region ${AWS::Region})
+
+          # Run cfn-init scripts
           yum install -y aws-cfn-bootstrap
           /opt/aws/bin/cfn-init -v \
             --stack ${AWS::StackId} \
             --resource LaunchConfig \
             --configsets InstallAndRun \
             --region ${AWS::Region}
-          export APP_NAME=MySampleApp
-          export INSTANCE_ID=$(curl http://169.254.169.254/latest/meta-data/instance-id)
-          export EC2_AVAIL_ZONE=$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone)
-          MSG="$APP_NAME says Hello v2! Hosted on $(hostname -f) (instance id: $INSTANCE_ID) in AZ $EC2_AVAIL_ZONE"
-          echo $MSG >> /var/www/html/index.html
+
+          # Write to index.html
+          INSTANCE_ID=$(curl http://169.254.169.254/latest/meta-data/instance-id)
+          EC2_AVAIL_ZONE=$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone)
+          echo "Hello from $(hostname -f) ($INSTANCE_ID) in AZ $EC2_AVAIL_ZONE" >> /var/www/html/index.html
           echo "Healthy" > /var/www/html/health.html
+
+          # Set instance environment variables
+          echo "export DUMMY_VAR=secret_value" >> /root/.bashrc
+
+          # Send message to Slack via the SQS queue and Lambda
+          aws sqs send-message --queue-url ${MyQueue} --message-body "Cfn init successful🙌" --region ${AWS::Region}
+          
+          # Send signal back to CloudFormation
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackId} --resource WebServerGroup --region ${AWS::Region}
     Metadata:
       Comment: Install a simple application
@@ -294,7 +330,9 @@ Resources:
             - ConfigureCfnHup
             - InstallCloudWatchAgent
             - InstallTemporaryApacheServer
-            - InstallCodeDeployAgent # must be the last configset
+            - CheckRdsPostgresConnection
+            - CheckEslatiCacheConnection
+            - InstallCodeDeployAgent
         ConfigureCfnHup:
           files:
             # The cfn-hup.conf file stores the stack name and the AWS credentials that the cfn-hup daemon targets.
@@ -359,6 +397,28 @@ Resources:
               cwd: /home/ec2-user/
             01-check-agent-status:
               command: sudo service codedeploy-agent status
+        CheckRdsPostgresConnection:
+          packages:
+            yum:
+              postgresql: []
+          commands:
+            00-check-postgres:
+              command: psql -d "postgresql://postgres:$RDS_POSTGRES_PASSWORD@$RDS_POSTGRES_HOST/portfoliodb" -c "select now()"
+        CheckEslatiCacheConnection: # https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/GettingStarted.ConnectToCacheNode.html
+          packages:
+            yum:
+              gcc: []
+          commands:
+            00_wget_redis_cli:
+              command: "wget http://download.redis.io/redis-stable.tar.gz"
+            01_untar_redis_cli:
+              command: "tar xzf redis-stable.tar.gz"
+            02_clean_tree:
+              command: "cd redis-stable && make distclean"
+            03_compile_redis_cli:
+              command: "cd redis-stable && make"
+            04_ping_elasticache_redis_server:
+              command: "cd redis-stable/src && ./redis-cli -c -h $REDIS_HOST -p $REDIS_PORT ping"
         InstallTemporaryApacheServer:
           packages:
             yum:
@@ -432,7 +492,7 @@ Resources:
   InstanceSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: Enable SSH access and HTTP access on the configured port
+      GroupDescription: Enable HTTP access on the configured port
       SecurityGroupIngress:
       - IpProtocol: tcp
         FromPort: 80
@@ -787,6 +847,151 @@ Resources:
               ArnLike:
                 AWS:SourceArn: !Sub 'arn:aws:*:*:${AWS::AccountId}:*'
 
+  PostgresDB:
+    Type: "AWS::RDS::DBInstance"
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      DeletionProtection: false
+      Engine: postgres
+      EngineVersion: '12.4'
+      DBInstanceClass: db.t2.micro
+      AllocatedStorage: '5'
+      DBName: portfoliodb
+      MasterUsername: postgres
+      MasterUserPassword: "{{resolve:ssm-secure:/RDS/POSTGRES_PASSWORD/SECURE:1}}"
+      Port: '5432'
+      MultiAZ: false
+      PubliclyAccessible: true
+      StorageType: gp2
+      StorageEncrypted: false
+      VPCSecurityGroups: [!Ref DBSecurityGroup]
+  # ReadReplicaDB:
+  #   Type: AWS::RDS::DBInstance
+  #   Properties:
+  #     SourceDBInstanceIdentifier: !Ref 'PostgresDB'
+  #     DBInstanceClass: db.t2.micro
+  #     Tags:
+  #     - Key: Description
+  #       Value: Read Replica Database
+
+  DBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: RDS Security Group
+      VpcId: !Ref TargetGroupVpc
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: 5432
+        ToPort: 5432
+        SourceSecurityGroupId: !GetAtt InstanceSecurityGroup.GroupId
+
+  ElasticacheSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Elasticache Security Group
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 6379
+          ToPort: 6379
+          SourceSecurityGroupName: !Ref InstanceSecurityGroup
+  ElasticacheCluster:
+    Type: 'AWS::ElastiCache::CacheCluster'
+    Properties:
+      AZMode: single-az
+      AutoMinorVersionUpgrade: true
+      Engine: redis
+      CacheNodeType: cache.t2.micro
+      NumCacheNodes: 1
+      VpcSecurityGroupIds: [!GetAtt ElasticacheSecurityGroup.GroupId]
+      NotificationTopicArn: !Ref ExampleTopic
+
+
+  SqsLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Policies:
+        - PolicyName: allowLambdaLogs
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Action:
+              - logs:*
+              Resource: arn:aws:logs:*:*:*
+        - PolicyName: allowSqs
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Action:
+              - sqs:ReceiveMessage
+              - sqs:DeleteMessage
+              - sqs:GetQueueAttributes
+              - sqs:ChangeMessageVisibility
+              Resource: !GetAtt MyQueue.Arn
+  SqsLambdaFunction:
+    Type: "AWS::Lambda::Function"
+    Properties:
+      Description: "Processes messages from Amazon SQS, and logs their contents."
+      FunctionName: !Sub '${AWS::StackName}-${AWS::Region}-lambda-sqs-to-slack'
+      Handler: index.handler
+      Role: !GetAtt SqsLambdaExecutionRole.Arn
+      Timeout: 30
+      MemorySize: 128
+      Runtime: python3.6
+      Code:
+        ZipFile: !Sub |
+          #!/usr/bin/python3.6
+          import urllib3
+          import json
+          http = urllib3.PoolManager()
+          def handler(event, context):
+              try:
+                  # Initialize variables
+                  url = "${SSMParamSlackWebhookUrl}"
+
+                  text = []
+                  for record in event['Records']:
+                      payload=record["body"]
+                      print(f"SQS paylod: {payload}")
+                      text.append(payload)
+                      
+                  # Check slack configuration
+                  if not url:
+                      print(f"Invalid slack configuration. SQS message: {text}")
+                      return
+                  # Post up to 10 SQS record(s) to Slack
+                  msg = {
+                      "channel": "#general", "username": "SQS", "text": str(text), "icon_emoji": ":cloud:"
+                  }
+                  encoded_msg = json.dumps(msg).encode('utf-8')
+                  resp = http.request('POST', url, body=encoded_msg)
+                  print({"message": text, "status_code": resp.status, "response": resp.data})
+              except Exception as e:
+                  print(f"Execution failed... {e}")
+  SqsLambdaFunctionEventSourceMapping:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      BatchSize: 10
+      Enabled: true
+      EventSourceArn: !GetAtt MyQueue.Arn
+      FunctionName: !GetAtt SqsLambdaFunction.Arn
+  MyQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      DelaySeconds: 0
+      VisibilityTimeout: 120
+      
 Outputs:
   CodeDeployApplicationName:
     Description: CodeDeploy Application Name
@@ -806,3 +1011,9 @@ Outputs:
   SessionManagementListUrl:
     Description: The URL to the Session Management Console listing all instances it is aware of
     Value: !Sub https://${AWS::Region}.console.aws.amazon.com/systems-manager/session-manager/start-session?region=${AWS::Region}
+  PostgresRdsEndpoint:
+    Description: RDS postgres endpoint address
+    Value: !GetAtt 'PostgresDB.Endpoint.Address'
+  RedisElasticacheEndpoint:
+    Description: Redis endpoint address
+    Value: !GetAtt 'ElasticacheCluster.RedisEndpoint.Address'

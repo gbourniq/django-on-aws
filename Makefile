@@ -13,7 +13,8 @@ TAG=$(shell poetry version | awk '{print $$NF}')
 # AWS RDS Postgres as a DB backend (Note password must be stored securely)
 POSTGRES_HOST=localhost
 POSTGRES_PASSWORD=postgres
-RDS_POSTGRES_HOST=portfoliodb.cwr5v77jgf3a.eu-west-2.rds.amazonaws.com
+# RDS_POSTGRES_HOST=portfoliodb.cwr5v77jgf3a.eu-west-2.rds.amazonaws.com
+RDS_POSTGRES_HOST=$$(echo "$$($(call get_stack_output, PostgresRdsEndpoint))")
 # RDS_POSTGRES_HOST=to be defined securely
 
 # Cloudformation
@@ -89,7 +90,11 @@ up-with-local-db: rundb
 	@ ${INFO} "Running app as a standalone container on docker local network"
 	@ docker run -d -p 8080:8080 --restart=no --network django-on-aws_backend ${IMAGE_REPOSITORY}:$(TAG)
 
-check-db-connection:
+check-rds-vars:
+	@ [[ ! -z "${RDS_POSTGRES_HOST}" ]] || ${WARNING} "RDS_POSTGRES_HOST not set"
+	@ [[ ! -z "${RDS_POSTGRES_PASSWORD}" ]] || ${WARNING} "RDS_POSTGRES_PASSWORD not set"
+
+check-db-connection: check-rds-vars
 	@ echo "Check DB connection..."
 	@ echo "User: postgres, Password: **** , Host: ${RDS_POSTGRES_HOST}, Database: portfoliodb"
 	@ psql -d "postgresql://postgres:${RDS_POSTGRES_PASSWORD}@${RDS_POSTGRES_HOST}/portfoliodb" -c "select now()" > /dev/null

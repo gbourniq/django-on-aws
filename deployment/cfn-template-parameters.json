@@ -36,6 +36,10 @@
       "ParameterValue": "/SLACK/INCOMING_WEBHOOK_URL"
     },
     {
+      "ParameterKey": "SSMParamNameRdsPostgresPassword",
+      "ParameterValue": "/RDS/POSTGRES_PASSWORD/SECURE"
+    },
+    {
       "ParameterKey": "SSMParamCWAgentConfig",
       "ParameterValue": "/CLOUDWATCH_AGENT/CONFIG"
     },
