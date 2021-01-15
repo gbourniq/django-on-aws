@@ -10,25 +10,18 @@ Manual steps / prerequisites before launching cfn template:
 
 AWS Deployment
 - define DR strategy
-- make ALB only accessible by CF, and R53->CF?
-- SA Pro 490 - S3 event -> Lambda -> write metadata to DynDB + indexed by ElasticSearch
-- create architecture diagram
-- review AWS notes for any missing service
-- add sqs/lambda to mock post message to slack from ec2 instance?
-- add bucket for app static resources?
 - think about ci/cd pipeline - how to get variables (postgres & redis host) from cfn outputs into codedeploy scripts
 
-- review courses on ASG, ALB + all resources configurations, rename variables for consistency, simplify, add comments, descriptions, etc
-(for SSM DB Password, must retrieved it dynamically within app with python sdk)
+- review all resources configurations, rename variables, consistency, simplify, add comments, descriptions, etc
 - use of nested stack and best practices: eg: split R53 / ALB / CF-S3 / NETWORK+SGs?
-- prod var to be used to retain/snapshot resources: RDS, S3
+- dev/prod var to be used to retain/snapshot resources: RDS, S3
 - define codedeploy/cicd strategy to managed dev/prod pipelines
-- when everything working, try with portfolio docker app
+- logging bucket for cloudfront distribution access logs
+- when everything looks good with the sample apache server, implement with portfolio docker app
 
 Application features
-- Use SNS for email notifications on new posts
+- Use the SNS/SQS queue for email/slack notifications on new posts
 - Use CF/S3 for django static and media files 
 - Worker tier: push data from django app to an SQS Queue with Lambda workers defined with AWS SAM
 - Session data: Configure Django app to work with ElastiCache (unless use API Gateway in front of ELB?) or DynamoDB/Streams
 - Configure django to use AWS Cognito for Users management and SSO
-- Define S3 buckets: CI/CD artifacts, Django static files, Postgres dump, Logs, etc.

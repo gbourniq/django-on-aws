@@ -130,7 +130,7 @@ cfn-validate:
 	@ echo "Validating CloudFormation template ${CFN_TEMPLATE_FILE}"
 	@ yamllint -d "{rules: {line-length: {max: 130, level: warning}}}" "${CFN_TEMPLATE_FILE}"
 	@ cfn-lint "${CFN_TEMPLATE_FILE}"
-	@ aws cloudformation validate-template --template-body file://"${CFN_TEMPLATE_FILE}" > /dev/null 2>&1
+	@ aws cloudformation validate-template --template-body file://"${CFN_TEMPLATE_FILE}" > /dev/null
 
 cfn-create: cfn-validate
 	@ ${INFO} "Creating stack ${STACK_NAME}..."

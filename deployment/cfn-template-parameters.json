@@ -1,9 +1,5 @@
 [
     {
-      "ParameterKey": "ALBExistingCertArn",
-      "ParameterValue": "arn:aws:acm:eu-west-2:164045463835:certificate/7dea44a5-ab6d-48f9-9105-396cbdbaed91"
-    },
-    {
       "ParameterKey": "ASGCPUTargetTrackingScaling",
       "ParameterValue": "0"
     },

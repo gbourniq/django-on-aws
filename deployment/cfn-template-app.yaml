@@ -1,22 +1,8 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Metadata:
   License: Apache-2.0
-Description: 'AWS CloudFormation Sample Template cfn-template-app: Create
-  a load balanced, Auto Scaled sample website. This example creates an Auto Scaling
-  group with time-based scheduled actions behind a load balancer with a simple health
-  check. AutoScalingRollingUpdate
-  SSM Session Manager enabled. The SSM Agent running on the EC2 instances must be able to connect
-  to Session Manager’s public endpoint. R53 failover could be use for a warm standby dr with scaled down
-  version of the app in another region/vpc
-  The application is configured to span all Availability Zones in the
-  region and is Auto-Scaled based on the CPU utilization of the web servers. Notifications
-  will be sent to the operator email address on scaling events. The instances are
-  load balanced with a simple health check against the default web page.'
+Description: 'To be coming'
 Parameters:
-  ALBExistingCertArn:
-    Description: SSL Cert Arn stored in ACM with the same region as the ALB
-    Type: 'String'
-    Default: 'arn:aws:acm:eu-west-2:164045463835:certificate/7dea44a5-ab6d-48f9-9105-396cbdbaed91'
   ASGCPUTargetTrackingScaling:
     Description: Average CPU Target for each instance (eg. 60%). Default set to 0 to disable the Target Tracking Scaling policy
     Type: Number
@@ -94,6 +80,11 @@ Resources:
     Type: AWS::S3::Bucket
     Properties:
       BucketName: !Join ['', [!Ref 'R53Subdomain', ., !Ref 'R53HostedZoneName', -, codedeploy-artifacts]]
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
       VersioningConfiguration:
         Status: Enabled
 
@@ -141,7 +132,7 @@ Resources:
         # Policy to enable use of SSM Session Manager to SSH from the AWS Console
         - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
       Policies:
-        # Policy for CodeDeploy agent to download artifacts from S3
+        # Policy for EC2 (CodeDeploy agent) to download artifacts from S3
         - PolicyName: AllowGetObjectsFromS3BucketCodeDeployArtifacts
           PolicyDocument:
             Version: "2012-10-17"
@@ -149,6 +140,10 @@ Resources:
               - Effect: Allow
                 Action: [ 's3:Get*', 's3:List*' ]
                 Resource: !Join ['', ['arn:aws:s3:::', !Ref 'S3BucketCodeDeployArtifacts', '/*']]
+                # Policy for EC2 to put objects to S3
+              - Effect: Allow
+                Action: [ 's3:Put*' ]
+                Resource: !Join ['', ['arn:aws:s3:::', !Ref 'S3StaticFilesWebapp', '/*']]
         # Policy to allow EC2 to interact with the CloudWatch service
         - PolicyName: !Join ['-', [!Ref 'AWS::StackName', !Ref 'AWS::Region', CloudWatchAgentServerPolicy]]
           PolicyDocument:
@@ -449,18 +444,6 @@ Resources:
       Port: 80
       Protocol: 'HTTP'
 
-  ALBListenerSSL:
-    Type: 'AWS::ElasticLoadBalancingV2::Listener'
-    Properties:
-      DefaultActions:
-        - Type: "forward"
-          TargetGroupArn: !Ref WebappTargetGroup
-      Certificates:
-        - CertificateArn: !Ref ALBExistingCertArn
-      LoadBalancerArn: !Ref 'ElasticLoadBalancer'
-      Port: 443
-      Protocol: 'HTTPS'
-
   ElasticLoadBalancer:
     Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer'
     Properties:
@@ -477,40 +460,36 @@ Resources:
   WebsiteDNSName:
     Type: AWS::Route53::RecordSet
     Properties:
-      Failover: PRIMARY
-      SetIdentifier: R53-DNS-Failover-Primary
-      HealthCheckId: !Ref 'Route53HealthCheck'
       HostedZoneName: !Join ['', [!Ref 'R53HostedZoneName', .]]
       Name: !Join ['', [!Ref 'R53Subdomain', ., !Ref 'R53HostedZoneName']]
-      Comment: Zone apex alias targeted to the ALB.
+      Comment: Zone apex alias targeted to the CloudFront distribution
       Type: A
       AliasTarget:
-        DNSName: !GetAtt ElasticLoadBalancer.DNSName
-        HostedZoneId: !GetAtt ElasticLoadBalancer.CanonicalHostedZoneID
-        EvaluateTargetHealth: true
+        DNSName: !GetAtt [WebsiteCDN, DomainName]
+        HostedZoneId: Z2FDTNDATAQYW2
+        EvaluateTargetHealth: false
 
   InstanceSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Enable HTTP access on the configured port
+      VpcId: !Ref TargetGroupVpc
       SecurityGroupIngress:
-      - IpProtocol: tcp
-        FromPort: 80
-        ToPort: 80
-        CidrIp: 0.0.0.0/0
+        - SourceSecurityGroupId: !GetAtt ALBSecurityGroup.GroupId
+          FromPort: 80
+          IpProtocol: "tcp"
+          ToPort: 80
   ALBSecurityGroup:
     Type: "AWS::EC2::SecurityGroup"
     Properties:
       GroupDescription: "Allow incoming from anywhere to HTTPS and HTTP"
+      # Remove open CidrIPs below - and have Lambda to dynamically update with CF public IPs
+      # https://aws.amazon.com/blogs/security/automatically-update-security-groups-for-amazon-cloudfront-ip-ranges-using-aws-lambda/
       SecurityGroupIngress:
         - CidrIp: "0.0.0.0/0"
           FromPort: 80
           IpProtocol: "tcp"
           ToPort: 80
-        - CidrIp: "0.0.0.0/0"
-          FromPort: 443
-          IpProtocol: "tcp"
-          ToPort: 443
 
   AWSLambdaExecutionRole:
     Type: AWS::IAM::Role
@@ -550,6 +529,8 @@ Resources:
             - !Sub arn:aws:s3:::${S3BucketForWebsiteContent}
             - !Sub arn:aws:s3:::${S3BucketCodeDeployArtifacts}/*
             - !Sub arn:aws:s3:::${S3BucketCodeDeployArtifacts}
+            - !Sub arn:aws:s3:::${S3StaticFilesWebapp}/*
+            - !Sub arn:aws:s3:::${S3StaticFilesWebapp}
           Version: '2012-10-17'
   S3BucketForWebsiteContent:
     Type: AWS::S3::Bucket
@@ -575,37 +556,67 @@ Resources:
     Type: AWS::CloudFront::Distribution
     Properties:
       DistributionConfig:
-        Comment: CDN for S3-backed website
-        # CloudFront CNAME - must match the bucket name and the R53 CNAME record
+        Comment: CDN for ALB and S3 website
         Aliases: [!Join ['', [!Ref 'R53Subdomain', ., !Ref 'R53HostedZoneName']]]
         Enabled: true
         DefaultCacheBehavior:
+          DefaultTTL: 0
+          MaxTTL: 0
+          MinTTL: 0
           ForwardedValues:
             QueryString: true
-          TargetOriginId: only-origin
+          TargetOriginId: origin-group-id
           ViewerProtocolPolicy: redirect-to-https
+        CacheBehaviors:
+          - PathPattern: "/staticfiles/*"
+            DefaultTTL: 0
+            MaxTTL: 0
+            MinTTL: 0
+            ForwardedValues:
+              QueryString: true
+            TargetOriginId: s3-oai-origin
+            ViewerProtocolPolicy: redirect-to-https
         DefaultRootObject: index.html
+        OriginGroups:
+          Quantity: 2
+          Items:
+            - Id: origin-group-id
+              FailoverCriteria:
+                StatusCodes:
+                  Items: [502, 503, 504]
+                  Quantity: 3
+              Members:
+                Items: [OriginId: elb-origin, OriginId: s3-web-origin]
+                Quantity: 2
         Origins:
-        - CustomOriginConfig:
-            HTTPPort: 80
-            HTTPSPort: 443
-            OriginProtocolPolicy: http-only
-          # S3 website endpoint
-          DomainName: !Join ['', [!Ref 'S3BucketForWebsiteContent', !FindInMap [Region2S3WebsiteSuffix,
-                !Ref 'AWS::Region', Suffix]]]
-          Id: only-origin
+          - CustomOriginConfig:
+              HTTPPort: 80
+              OriginProtocolPolicy: http-only
+            DomainName: !GetAtt ElasticLoadBalancer.DNSName
+            Id: elb-origin
+          - CustomOriginConfig:
+              HTTPPort: 80
+              OriginProtocolPolicy: http-only
+            # S3 website endpoint
+            DomainName: !Join ['', [!Ref 'S3BucketForWebsiteContent', !FindInMap [Region2S3WebsiteSuffix,
+                  !Ref 'AWS::Region', Suffix]]]
+            Id: s3-web-origin
+          - S3OriginConfig:
+              OriginAccessIdentity: !Join ['/', ['origin-access-identity', 'cloudfront', !Ref 'OriginAccessIdentity']]
+            Id: s3-oai-origin
+            DomainName: !GetAtt S3StaticFilesWebapp.DomainName
         ViewerCertificate:
           AcmCertificateArn: !Ref 'CloudFrontExistingCertArn'
           SslSupportMethod: sni-only
         # Logging:
         #   Bucket: !Sub '${LoggingBucket}.s3.amazonaws.com'
-
   S3CustomResource:
     Type: Custom::S3CustomResource
     Properties:
       ServiceToken: !GetAtt AWSLambdaFunction.Arn
       codedeploy_bucket_name: !Ref S3BucketCodeDeployArtifacts
       website_bucket_name: !Ref S3BucketForWebsiteContent
+      static_assets_bucket_name: !Ref S3StaticFilesWebapp
       index_html_content: !Sub |
         <!doctype html>
         <html lang="en">
@@ -686,6 +697,7 @@ Resources:
               # Retrieve parameters
               codedeploy_bucket_name = event['ResourceProperties']['codedeploy_bucket_name']
               website_bucket_name = event['ResourceProperties']['website_bucket_name']
+              static_assets_bucket_name = event['ResourceProperties']['static_assets_bucket_name']
               try:
                   if event_type in ('Create', 'Update'):
                       s3_client.put_object(
@@ -703,6 +715,7 @@ Resources:
                   elif event_type == 'Delete':
                     # Delete objects
                     s3_resource.Bucket(website_bucket_name).objects.all().delete()
+                    s3_resource.Bucket(static_assets_bucket_name).objects.all().delete()
                     s3_resource.Bucket(codedeploy_bucket_name).objects.all().delete()
                     # Delete object versions and deletemarkers for versioned buckets
                     object_versions = s3_client.list_object_versions(Bucket=codedeploy_bucket_name)
@@ -720,33 +733,6 @@ Resources:
                   print(f"Execution failed... {e}")
                   response_data['Data'] = f"Execution failed... {e}"
                   cfnresponse.send(event, context, cfnresponse.FAILED, response_data, resource_id)
-  FailoverWebsiteDNSName:
-    Type: AWS::Route53::RecordSet
-    Properties:
-      Failover: SECONDARY
-      SetIdentifier: R53-DNS-Failover-Secondary
-      HostedZoneName: !Join ['', [!Ref 'R53HostedZoneName', .]]
-      Name: !Join ['', [!Ref 'R53Subdomain', ., !Ref 'R53HostedZoneName']]
-      Comment: Zone apex alias targeted to the CloudFront distribution
-      Type: A
-      AliasTarget:
-        DNSName: !GetAtt [WebsiteCDN, DomainName]
-        HostedZoneId: Z2FDTNDATAQYW2
-        EvaluateTargetHealth: false
-
-  Route53HealthCheck:
-    Type: "AWS::Route53::HealthCheck"
-    Properties:
-      HealthCheckConfig:
-        Port: 80
-        Type: "HTTP"
-        ResourcePath: "/"
-        FullyQualifiedDomainName: !Join ['', [!Ref 'R53Subdomain', ., !Ref 'R53HostedZoneName']]
-        RequestInterval: 30
-        FailureThreshold: 2
-      HealthCheckTags:
-        - Key: "Name"
-          Value: !Join ['', ['healthcheck-', !Ref 'R53Subdomain', ., !Ref 'R53HostedZoneName']]
 
   WebappApplication:
     Type: "AWS::CodeDeploy::Application"
@@ -890,11 +876,12 @@ Resources:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
       GroupDescription: Elasticache Security Group
+      VpcId: !Ref TargetGroupVpc
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 6379
           ToPort: 6379
-          SourceSecurityGroupName: !Ref InstanceSecurityGroup
+          SourceSecurityGroupId: !GetAtt InstanceSecurityGroup.GroupId
   ElasticacheCluster:
     Type: 'AWS::ElastiCache::CacheCluster'
     Properties:
@@ -991,7 +978,43 @@ Resources:
     Properties:
       DelaySeconds: 0
       VisibilityTimeout: 120
-      
+
+  S3StaticFilesWebapp:
+    Type: AWS::S3::Bucket
+    # All files must be within the prefix staticfiles/ to be served by the CFN
+    # as per the configured cache settings
+    Properties:
+      BucketName: !Join ['', [!Ref 'R53Subdomain', ., !Ref 'R53HostedZoneName', -, static-files]]
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+  BucketPolicyS3StaticFiles:  
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref S3StaticFilesWebapp
+      PolicyDocument:
+        Statement:
+        - Sid: "AllowEC2toUploadS3Files"
+          Action: [ 's3:Get*', 's3:List*', 's3:Put*' ]
+          Effect: Allow
+          Resource: !Join ['', [!GetAtt S3StaticFilesWebapp.Arn, '/*']]
+          Principal:
+            Service:
+              - "ec2.amazonaws.com"
+        - Sid: "GetObjectOnlyFromCloudFrontOAIUser"
+          Action: [ 's3:Get*' ]
+          Effect: Allow
+          Resource: !Join ['', [!GetAtt S3StaticFilesWebapp.Arn, '/*']]
+          Principal:
+            CanonicalUser: !GetAtt OriginAccessIdentity.S3CanonicalUserId
+  OriginAccessIdentity:
+    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: !Sub Static assets in ${AWS::StackName}
+        
 Outputs:
   CodeDeployApplicationName:
     Description: CodeDeploy Application Name
