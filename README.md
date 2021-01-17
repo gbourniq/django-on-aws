@@ -23,7 +23,9 @@ Screenshots of the frontend can be found [here](https://github.com/gbourniq/port
 ## Application architecture
 
 The architecture diagram defines the general AWS infrastructure around the application, inline with the CloudFormation template `deployment/cfn-template-app.yaml`.
-> To deploy all resources as a CloudFormation Stack, simply run `make cfn-create`. 
+> To deploy all resources as a CloudFormation Stack, simply run `make cfn-create`.
+
+
 ![Architecture Diagram](docs/app-architecture.png)
 
 ## Contents
