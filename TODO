@@ -1,12 +1,10 @@
 Manual steps / prerequisites before launching cfn template:
 - Route53 Hosted Zone
-- ACM with loaded SSL certificate*, certificate must be both in eu-west-2 for ALB, and us-east-1 for CFN (2 different arns)
+- ACM with loaded SSL certificate in the us-east-1 region for CDN (free SSL - https://itnext.io/using-letsencrypt-ssl-certificates-in-aws-certificate-manager-c2bc3c6ae10)
 - SSM Parameter store to store
     - CW Agent config file (JSON)
     - rds password
     - slack incoming webhook (to forward sns notifications from CodeDeploy/ASG to slack)
-
-* free SSL certificate for ACM (3 months validity) https://itnext.io/using-letsencrypt-ssl-certificates-in-aws-certificate-manager-c2bc3c6ae10
 
 AWS Deployment
 - define DR strategy

@@ -20,6 +20,12 @@ Other improvements compared to the previous version:
 
 Screenshots of the frontend can be found [here](https://github.com/gbourniq/portfolio/blob/master/README.md#portfolio-app-overview).
 
+## Application architecture
+
+The architecture diagram defines the general AWS infrastructure around the application, inline with the CloudFormation template `deployment/cfn-template-app.yaml`.
+> To deploy all resources as a CloudFormation Stack, simply run `make cfn-create`. 
+![Architecture Diagram](docs/app-architecture.pdf)
+
 ## Contents
 - [Prerequisites](#prerequisites)
 - [Virtual environment and git-hooks setup](#virtual-environment-and-git-hooks-setup)

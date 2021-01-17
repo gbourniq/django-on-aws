@@ -1025,9 +1025,6 @@ Outputs:
   CodeDeployS3BucketName:
     Description: Name of the S3 bucket used to store CodeDeploy artifacts
     Value: !Ref 'S3BucketCodeDeployArtifacts'
-  AlbUrl:
-    Description: Website URL (Application Load Balancer DNS Name)
-    Value: !Join ['', ['https://', !GetAtt [ElasticLoadBalancer, DNSName]]]
   R53Url:
     Description: Website URL (Subdomain of the R53 DNS entry)
     Value: !Join ['', ['https://', !Ref 'WebsiteDNSName']]
