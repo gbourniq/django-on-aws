@@ -31,8 +31,7 @@ script:
   - make tests || travis_terminate 1;
   # CD
   - make image || travis_terminate 1;
-  - make check-db-connection || travis_terminate 1;
-  - make up || travis_terminate 1;
+  - make up-with-local-db || travis_terminate 1;
   - make healthcheck || travis_terminate 1;
   - make down
   - make publish
