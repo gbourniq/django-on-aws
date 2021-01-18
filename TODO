@@ -1,25 +1,24 @@
-Manual steps / prerequisites before launching cfn template:
-- Route53 Hosted Zone
-- ACM with loaded SSL certificate in the us-east-1 region for CDN (free SSL - https://itnext.io/using-letsencrypt-ssl-certificates-in-aws-certificate-manager-c2bc3c6ae10)
-- SSM Parameter store to store
-    - CW Agent config file (JSON)
-    - rds password
-    - slack incoming webhook (to forward sns notifications from CodeDeploy/ASG to slack)
-
 AWS Deployment
-- define DR strategy
-- think about ci/cd pipeline - how to get variables (postgres & redis host) from cfn outputs into codedeploy scripts
-
+- add cloudwatch dashboard resource to cfn template (using variables for eg. to get Cloudfront data) + update archi diagram
 - review all resources configurations, rename variables, consistency, simplify, add comments, descriptions, etc
+- review all policies, ensure least priviledge
 - use of nested stack and best practices: eg: split R53 / ALB / CF-S3 / NETWORK+SGs?
+- Use StackPolicies to prevent accidental updates / deletes to stack resources
+- define DR strategy (eg. S3 bucket SRR/CRR)
 - dev/prod var to be used to retain/snapshot resources: RDS, S3
+- logging bucket for cloudfront/ALB access logs + cloudtrail + vpc flow log to s3/cw
+- when everything looks good, replace the sample apache server with the django app (docker)
+- codedeploy course + best practices (eg. customise deployment behavior with environment variables eg. DEPLOYMENT_GROUP_NAME==dev)
 - define codedeploy/cicd strategy to managed dev/prod pipelines
-- logging bucket for cloudfront distribution access logs
-- when everything looks good with the sample apache server, implement with portfolio docker app
+- Check CW Events sources (eg. CodeDeploy as a source) for CI/CD workflows
+- review 5 pillars - https://aws.amazon.com/architecture/
+- network stack
+- define Cloudfront caching strategy: Check/update cache based on Headers, Cookies, or Query string parameters
 
 Application features
-- Use the SNS/SQS queue for email/slack notifications on new posts
-- Use CF/S3 for django static and media files 
+- use of metric filter - eg. if too many 404 over 5mn -> trigger alarm (devops alarm)
+- Use the DynamoDB streams + SNS/SQS queue for email/slack notifications on new posts, and user welcome email
 - Worker tier: push data from django app to an SQS Queue with Lambda workers defined with AWS SAM
-- Session data: Configure Django app to work with ElastiCache (unless use API Gateway in front of ELB?) or DynamoDB/Streams
-- Configure django to use AWS Cognito for Users management and SSO
+- Session data: Configure Django app to work with ElastiCache
+- Try AWS Cognito for Users management and SSO
+- use S3 event for notifications on new image / object created + sqs & put metadata to dynamodb?

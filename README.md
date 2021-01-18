@@ -22,11 +22,20 @@ Screenshots of the frontend can be found [here](https://github.com/gbourniq/port
 
 ## Application architecture
 
-The architecture diagram defines the general AWS infrastructure around the application, inline with the CloudFormation template `deployment/cfn-template-app.yaml`.
-> To deploy all resources as a CloudFormation Stack, simply run `make cfn-create`.
-
+The diagram below represents the general application infrastructure, as defined in the CloudFormation template `deployment/cfn-template-app.yaml`.
 
 ![Architecture Diagram](docs/app-architecture.png)
+
+To deploy all resources as a CloudFormation Stack:
+
+1. Complete the following prerequisites:
+- Create Route 53 Hosted Zone
+- Create a [free SSL certificate](https://itnext.io/using-letsencrypt-ssl-certificates-in-aws-certificate-manager-c2bc3c6ae10) and load it to ACM in the us-east-1 region 
+- Add variables to the SSM Parameter store: CW Agent config file (.json), RDS password (SecureString), Slack incoming webhook URL (String)
+
+2. Review stack parameters in `deployment/cfn-template-parameters.json`
+
+3. Run `make cfn-create`.
 
 ## Contents
 - [Prerequisites](#prerequisites)
