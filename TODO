@@ -1,5 +1,7 @@
 AWS Deployment
 - add cloudwatch dashboard resource to cfn template (using variables for eg. to get Cloudfront data) + update archi diagram
+- put cw log config within cfn template
+- create custom metrics for failed/successful deployment and create pie chart in cw dashboard
 - review all resources configurations, rename variables, consistency, simplify, add comments, descriptions, etc
 - review all policies, ensure least priviledge
 - use of nested stack and best practices: eg: split R53 / ALB / CF-S3 / NETWORK+SGs?
@@ -9,6 +11,7 @@ AWS Deployment
 - logging bucket for cloudfront/ALB access logs + cloudtrail + vpc flow log to s3/cw
 - when everything looks good, replace the sample apache server with the django app (docker)
 - codedeploy course + best practices (eg. customise deployment behavior with environment variables eg. DEPLOYMENT_GROUP_NAME==dev)
+- add django logs + metrics filtering to CW dashboard
 - define codedeploy/cicd strategy to managed dev/prod pipelines
 - Check CW Events sources (eg. CodeDeploy as a source) for CI/CD workflows
 - review 5 pillars - https://aws.amazon.com/architecture/

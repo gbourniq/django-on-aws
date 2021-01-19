@@ -1,7 +1,7 @@
 [
     {
       "ParameterKey": "ASGCPUTargetTrackingScaling",
-      "ParameterValue": "0"
+      "ParameterValue": "60"
     },
     {
       "ParameterKey": "CloudFrontExistingCertArn",

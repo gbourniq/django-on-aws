@@ -255,7 +255,9 @@ Resources:
       AutoScalingGroupName: !Ref 'WebServerGroup'
       DesiredCapacity: 2
       MaxSize: 5
-      MinSize: 1
+      # Minimum of 2 instances because CodeDeploy deployment configuration
+      # requires a minimum of 1 healthy instance for rolling updates
+      MinSize: 2
       Recurrence: 0 19 * * *
   ScheduledActionDown:
     Type: AWS::AutoScaling::ScheduledAction
@@ -1022,7 +1024,366 @@ Resources:
     Properties:
       CloudFrontOriginAccessIdentityConfig:
         Comment: !Sub Static assets in ${AWS::StackName}
-        
+
+  CloudWatchDashboard:
+    Type: AWS::CloudWatch::Dashboard
+    Properties:
+      DashboardName: !Join ['-', [!Ref 'AWS::StackName', !Ref 'AWS::Region', dashboard]]
+      DashboardBody: !Sub |
+        {
+            "widgets": [
+                {
+                    "type": "log",
+                    "x": 9,
+                    "y": 14,
+                    "width": 15,
+                    "height": 6,
+                    "properties": {
+                        "query": "SOURCE 'cfn-init.log' | fields @timestamp | parse @message \"[*] *\" as level, details | filter level = \"ERROR\" | limit 20",
+                        "region": "${AWS::Region}",
+                        "title": "CloudFormation cfn-init errors logs",
+                        "view": "table"
+                    }
+                },
+                {
+                    "type": "metric",
+                    "x": 3,
+                    "y": 2,
+                    "width": 9,
+                    "height": 3,
+                    "properties": {
+                        "view": "timeSeries",
+                        "stacked": false,
+                        "metrics": [
+                            [ "AWS/CloudFront", "Requests", "Region", "Global", "DistributionId", "${WebsiteCDN}" ]
+                        ],
+                        "region": "us-east-1",
+                        "title": "CF Requests (sum)",
+                        "yAxis": {
+                            "left": {
+                                "showUnits": false
+                            },
+                            "right": {
+                                "showUnits": false
+                            }
+                        },
+                        "stat": "Sum"
+                    }
+                },
+                {
+                    "type": "metric",
+                    "x": 12,
+                    "y": 2,
+                    "width": 12,
+                    "height": 3,
+                    "properties": {
+                        "view": "timeSeries",
+                        "stacked": false,
+                        "metrics": [
+                            [ "AWS/CloudFront", "TotalErrorRate", "Region", "Global", "DistributionId", "${WebsiteCDN}" ],
+                            [ ".", "4xxErrorRate", ".", ".", ".", ".", { "label": "Total4xxErrors" } ],
+                            [ ".", "5xxErrorRate", ".", ".", ".", ".", { "label": "Total5xxErrors" } ],
+                            [ { "expression": "(m4+m5+m6)/m7*100", "label": "5xxErrorByLambdaEdge", "id": "e1" } ],
+                            [ "AWS/CloudFront", "LambdaExecutionError", "Region", "Global", "DistributionId", "${WebsiteCDN}", { "id": "m4", "stat": "Sum", "visible": false } ],
+                            [ ".", "LambdaValidationError", ".", ".", ".", ".", { "id": "m5", "stat": "Sum", "visible": false } ],
+                            [ ".", "LambdaLimitExceededErrors", ".", ".", ".", ".", { "id": "m6", "stat": "Sum", "visible": false } ],
+                            [ ".", "Requests", ".", ".", ".", ".", { "id": "m7", "stat": "Sum", "visible": false } ]
+                        ],
+                        "region": "us-east-1",
+                        "title": "CF Error rate (% of total requests)",
+                        "yAxis": {
+                            "left": {
+                                "showUnits": false
+                            },
+                            "right": {
+                                "showUnits": false
+                            }
+                        }
+                    }
+                },
+                {
+                    "type": "text",
+                    "x": 0,
+                    "y": 0,
+                    "width": 24,
+                    "height": 2,
+                    "properties": {
+                        "markdown": "\n# **CloudWatch Dashboard for stack ${AWS::StackName}**\n\nThis CloudWatch Dashboard monitors performance metrics for the main resources deployed within the `${AWS::StackName}` CloudFormation stack.\n"
+                    }
+                },
+                {
+                    "type": "metric",
+                    "x": 3,
+                    "y": 26,
+                    "width": 21,
+                    "height": 6,
+                    "properties": {
+                        "view": "singleValue",
+                        "metrics": [
+                            [ "AWS/ElastiCache", "BytesUsedForCache" ],
+                            [ ".", "CacheHitRate" ],
+                            [ ".", "CacheHits" ],
+                            [ ".", "CacheMisses" ],
+                            [ ".", "CPUUtilization" ],
+                            [ ".", "CurrConnections" ],
+                            [ ".", "CurrItems" ],
+                            [ ".", "DatabaseMemoryUsagePercentage" ],
+                            [ ".", "EngineCPUUtilization" ],
+                            [ ".", "Evictions" ],
+                            [ ".", "SwapUsage" ]
+                        ],
+                        "region": "${AWS::Region}",
+                        "title": "ElastiCache"
+                    }
+                },
+                {
+                    "type": "metric",
+                    "x": 6,
+                    "y": 8,
+                    "width": 3,
+                    "height": 6,
+                    "properties": {
+                        "view": "singleValue",
+                        "metrics": [
+                            [ "AWS/AutoScaling", "GroupMaxSize", "AutoScalingGroupName", "${WebServerGroup}" ],
+                            [ ".", "GroupMinSize", ".", "." ]
+                        ],
+                        "region": "${AWS::Region}",
+                        "title": "AutoScaling Group Size"
+                    }
+                },
+                {
+                    "type": "metric",
+                    "x": 3,
+                    "y": 8,
+                    "width": 3,
+                    "height": 3,
+                    "properties": {
+                        "period": 60,
+                        "metrics": [
+                            [ "AWS/ApplicationELB", "HealthyHostCount", "TargetGroup", "${WebappTargetGroup.TargetGroupFullName}", "LoadBalancer", "app/myapp-Elast-1880MWKBP186K/616fa57021469968" ]
+                        ],
+                        "region": "${AWS::Region}",
+                        "stat": "Average",
+                        "title": "Healthy Hosts",
+                        "yAxis": {
+                            "left": {
+                                "min": 0
+                            }
+                        }
+                    }
+                },
+                {
+                    "type": "metric",
+                    "x": 3,
+                    "y": 5,
+                    "width": 9,
+                    "height": 3,
+                    "properties": {
+                        "period": 60,
+                        "metrics": [
+                            [ "AWS/ApplicationELB", "RequestCount", "TargetGroup", "${WebappTargetGroup.TargetGroupFullName}", "LoadBalancer", "${ElasticLoadBalancer.LoadBalancerFullName}" ]
+                        ],
+                        "region": "${AWS::Region}",
+                        "stat": "Sum",
+                        "title": "Requests",
+                        "yAxis": {
+                            "left": {
+                                "min": 0
+                            }
+                        }
+                    }
+                },
+                {
+                    "type": "metric",
+                    "x": 18,
+                    "y": 8,
+                    "width": 6,
+                    "height": 6,
+                    "properties": {
+                        "metrics": [
+                            [ "AWS/ApplicationELB", "HTTPCode_Target_3XX_Count", "TargetGroup", "${WebappTargetGroup.TargetGroupFullName}", "LoadBalancer", "${ElasticLoadBalancer.LoadBalancerFullName}" ],
+                            [ ".", "HTTPCode_Target_4XX_Count", ".", ".", ".", "." ],
+                            [ ".", "HTTPCode_Target_2XX_Count", ".", ".", ".", "." ],
+                            [ ".", "HTTPCode_Target_5XX_Count", ".", ".", ".", "." ]
+                        ],
+                        "view": "singleValue",
+                        "region": "eu-west-2",
+                        "period": 86400,
+                        "stat": "Sum",
+                        "title": "HTTP status codes count"
+                    }
+                },
+                {
+                    "type": "metric",
+                    "x": 12,
+                    "y": 5,
+                    "width": 12,
+                    "height": 3,
+                    "properties": {
+                        "metrics": [
+                            [ "AWS/ApplicationELB", "HTTPCode_Target_3XX_Count", "LoadBalancer", "${ElasticLoadBalancer.LoadBalancerFullName}" ],
+                            [ ".", "HTTPCode_Target_4XX_Count", ".", "." ],
+                            [ ".", "HTTPCode_Target_2XX_Count", ".", "." ],
+                            [ ".", "HTTPCode_ELB_4XX_Count", ".", "." ]
+                        ],
+                        "view": "timeSeries",
+                        "stacked": false,
+                        "region": "${AWS::Region}",
+                        "title": "ALB HTTP status codes",
+                        "setPeriodToTimeRange": true,
+                        "period": 300,
+                        "stat": "Sum",
+                        "legend": {
+                            "position": "hidden"
+                        }
+                    }
+                },
+                {
+                    "type": "text",
+                    "x": 0,
+                    "y": 8,
+                    "width": 3,
+                    "height": 6,
+                    "properties": {
+                        "markdown": "\n# Auto Scaling Group\n\n[button:primary:Go To ASG](https://${AWS::Region}.console.aws.amazon.com/ec2autoscaling/home?region=${AWS::Region}#/details)\n\n[button:primary:Go To Target Group](https://${AWS::Region}.console.aws.amazon.com/ec2/v2/home?region=${AWS::Region}#TargetGroups)\n\n[button:primary:Go To EC2](https://${AWS::Region}.console.aws.amazon.com/ec2/v2/home?region=${AWS::Region}#Instances)\n"
+                    }
+                },
+                {
+                    "type": "text",
+                    "x": 0,
+                    "y": 2,
+                    "width": 3,
+                    "height": 3,
+                    "properties": {
+                        "markdown": "\n# CloudFront\n\nMore useful metrics on the CloudFront dashboard.\n\n[button:primary:Go To CF Dashboard](https://console.aws.amazon.com/cloudfront/v2/home#/monitoring/)\n"
+                    }
+                },
+                {
+                    "type": "text",
+                    "x": 0,
+                    "y": 5,
+                    "width": 3,
+                    "height": 3,
+                    "properties": {
+                        "markdown": "\n# Application Load Balancer\n\n[button:primary:Go To ALB](https://${AWS::Region}.console.aws.amazon.com/ec2/v2/home?region=${AWS::Region}#LoadBalancers:sort=loadBalancerName)\n"
+                    }
+                },
+                {
+                    "type": "metric",
+                    "x": 3,
+                    "y": 11,
+                    "width": 3,
+                    "height": 3,
+                    "properties": {
+                        "period": 60,
+                        "metrics": [
+                            [ "AWS/ApplicationELB", "UnHealthyHostCount", "TargetGroup", "${WebappTargetGroup.TargetGroupFullName}", "LoadBalancer", "${ElasticLoadBalancer.LoadBalancerFullName}" ]
+                        ],
+                        "region": "${AWS::Region}",
+                        "stat": "Average",
+                        "title": "Unhealthy Hosts",
+                        "yAxis": {
+                            "left": {
+                                "min": 0
+                            }
+                        },
+                        "view": "timeSeries",
+                        "stacked": false
+                    }
+                },
+                {
+                    "type": "text",
+                    "x": 0,
+                    "y": 14,
+                    "width": 3,
+                    "height": 6,
+                    "properties": {
+                        "markdown": "\n# cfn-init\n\n[button:primary:Go To CloudFormation](https://${AWS::Region}.console.aws.amazon.com/cloudformation/home?region=${AWS::Region})\n"
+                    }
+                },
+                {
+                    "type": "log",
+                    "x": 3,
+                    "y": 14,
+                    "width": 6,
+                    "height": 6,
+                    "properties": {
+                        "query": "SOURCE 'cfn-init.log' | stats count(*) by bin(30s) | fields @timestamp | parse @message \"[*] *\" as level, details | filter level = \"ERROR\"",
+                        "region": "${AWS::Region}",
+                        "stacked": false,
+                        "view": "bar",
+                        "title": "CloudFormation cfn-init errors count"
+                    }
+                },
+                {
+                    "type": "text",
+                    "x": 0,
+                    "y": 26,
+                    "width": 3,
+                    "height": 6,
+                    "properties": {
+                        "markdown": "\n# ElastiCache\n\n[button:primary:Go To ElastiCache](https://${AWS::Region}.console.aws.amazon.com/elasticache/home?region=${AWS::Region}#redis:)\n"
+                    }
+                },
+                {
+                    "type": "text",
+                    "x": 0,
+                    "y": 20,
+                    "width": 3,
+                    "height": 6,
+                    "properties": {
+                        "markdown": "\n# RDS\n\n[button:primary:Go To RDS](https://${AWS::Region}.console.aws.amazon.com/rds/home?region=${AWS::Region}#databases:)\n"
+                    }
+                },
+                {
+                    "type": "metric",
+                    "x": 3,
+                    "y": 20,
+                    "width": 21,
+                    "height": 6,
+                    "properties": {
+                        "view": "singleValue",
+                        "metrics": [
+                            [ "AWS/RDS", "BurstBalance" ],
+                            [ ".", "CPUCreditBalance" ],
+                            [ ".", "CPUCreditUsage" ],
+                            [ ".", "CPUUtilization" ],
+                            [ ".", "DatabaseConnections" ],
+                            [ ".", "DiskQueueDepth" ],
+                            [ ".", "FreeStorageSpace" ],
+                            [ ".", "MaximumUsedTransactionIDs" ],
+                            [ ".", "ReadIOPS" ],
+                            [ ".", "ReadLatency" ],
+                            [ ".", "ReadThroughput" ],
+                            [ ".", "SwapUsage" ],
+                            [ ".", "WriteIOPS" ],
+                            [ ".", "WriteLatency" ],
+                            [ ".", "WriteThroughput" ]
+                        ],
+                        "region": "${AWS::Region}",
+                        "title": "RDS"
+                    }
+                },
+                {
+                    "type": "metric",
+                    "x": 9,
+                    "y": 8,
+                    "width": 9,
+                    "height": 6,
+                    "properties": {
+                        "view": "timeSeries",
+                        "stacked": false,
+                        "metrics": [
+                            [ "AWS/EC2", "CPUUtilization", "AutoScalingGroupName", "myapp-WebServerGroup-3QPYL1UDKS8Q" ]
+                        ],
+                        "region": "${AWS::Region}",
+                        "title": "Avg. CPU Utilization (%)"
+                    }
+                }
+            ]
+        }
+
 Outputs:
   CodeDeployApplicationName:
     Description: CodeDeploy Application Name
