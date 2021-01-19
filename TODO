@@ -27,3 +27,29 @@ Application features
 
 Extras
 - create custom metrics for failed/successful deployment and create pie chart in cw dashboard
+
+
+Nested stack:
+
+Application
+- ASG resources + LC/Userdata/cfn-init + IAM (instance profile)
+- CodeDeploy + IAM
+
+S3/Static
+- S3 x3 + bucket policy x2
+- S3 Custom resource
+
+Serverless
+- Lambda x3 + IAM x3 + Event source mapping + permission
+- SNS, SQS
+
+Database
+- ElastiCache
+- RDS
+
+Network
+- Route 53
+- CF
+- ELB
+- SGs
+

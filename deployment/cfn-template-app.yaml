@@ -316,6 +316,7 @@ Resources:
     Metadata:
       Comment: Install a simple application
       AWS::CloudFormation::Authentication:
+        # TODO: check if actually needed
         # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-authentication.html
         S3AccessCreds:
           type: S3
@@ -562,28 +563,19 @@ Resources:
         Aliases: [!Join ['', [!Ref 'R53Subdomain', ., !Ref 'R53HostedZoneName']]]
         Enabled: true
         DefaultCacheBehavior:
-          DefaultTTL: 0
-          MaxTTL: 0
-          MinTTL: 0
-          ForwardedValues:
-            QueryString: true
+          # Managed-CachingDisabled
+          CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
           TargetOriginId: origin-group-id
           ViewerProtocolPolicy: redirect-to-https
         CacheBehaviors:
           - PathPattern: "/staticfiles/*"
-            DefaultTTL: 0
-            MaxTTL: 0
-            MinTTL: 0
-            ForwardedValues:
-              QueryString: true
+            # Managed-CachingDisabled
+            CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
             TargetOriginId: s3-oai-origin
             ViewerProtocolPolicy: redirect-to-https
           - PathPattern: "*.png"
-            DefaultTTL: 0
-            MaxTTL: 0
-            MinTTL: 0
-            ForwardedValues:
-              QueryString: true
+            # Managed-CachingDisabled
+            CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
             TargetOriginId: s3-oai-origin
             ViewerProtocolPolicy: redirect-to-https
         DefaultRootObject: index.html
@@ -1026,6 +1018,7 @@ Resources:
         Comment: !Sub Static assets in ${AWS::StackName}
 
 Outputs:
+  # CW dashboard?
   CodeDeployApplicationName:
     Description: CodeDeploy Application Name
     Value: !Ref 'WebappApplication'
