@@ -1,11 +1,10 @@
 AWS Deployment
-- add cloudwatch dashboard resource to cfn template (using variables for eg. to get Cloudfront data) + update archi diagram
-- put cw log config within cfn template
-- create custom metrics for failed/successful deployment and create pie chart in cw dashboard
 - review all resources configurations, rename variables, consistency, simplify, add comments, descriptions, etc
 - review all policies, ensure least priviledge
 - use of nested stack and best practices: eg: split R53 / ALB / CF-S3 / NETWORK+SGs?
 - Use StackPolicies to prevent accidental updates / deletes to stack resources
+- put cw log config within cfn template
+
 - define DR strategy (eg. S3 bucket SRR/CRR)
 - dev/prod var to be used to retain/snapshot resources: RDS, S3
 - logging bucket for cloudfront/ALB access logs + cloudtrail + vpc flow log to s3/cw
@@ -25,3 +24,6 @@ Application features
 - Session data: Configure Django app to work with ElastiCache
 - Try AWS Cognito for Users management and SSO
 - use S3 event for notifications on new image / object created + sqs & put metadata to dynamodb?
+
+Extras
+- create custom metrics for failed/successful deployment and create pie chart in cw dashboard
