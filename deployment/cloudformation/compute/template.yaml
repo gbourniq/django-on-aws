@@ -7,6 +7,7 @@ Description: |
   - Launch Configuration to configure and provision EC2s at launch time
   - EC2 Instance Role to determine how EC2s can interact with other AWS services
   - CodeDeploy and Role to deploy new application versions to running EC2 instances
+
 Parameters:
   ASGCPUTargetValue:
     Description: Average CPU Target for each instance (eg. 60%)
@@ -19,36 +20,31 @@ Parameters:
   ASGSubnetsString:
     Description: List of subnets the auto scaling group of EC2s will be spread across
     Type: String
-  EC2InstanceSecurityGroupId:
-    Description: GroupId for the EC2 Instance security group
+  EC2SecurityGroupId:
     Type: String 
   EC2InstanceType:
-    Description: WebServer EC2 instance type
     Type: String
     AllowedValues: [t1.micro, t2.nano, t2.micro, t2.small]
     ConstraintDescription: must be a valid EC2 instance type.
   EC2AmiId:
     Description: AMI ID
     Type: AWS::EC2::Image::Id
-  ElasticacheClusterRedisEndpointAddress:
-    Description: ElastiCache Redis endpoint
+  ElasticacheRedisEndpoint:
     Type: String
   EC2VolumeSize:
-    Description: Volume size mounted to EC2
     Type: Number
     MinValue: 8
     MaxValue: 20
-  RDSPostgresDBEndpointAddress:
-    Description: RDS Postgres endpoint
+  RDSPostgresEndpoint:
     Type: String
   SSMParamNameRdsPostgresPassword:
-    NoEcho: 'true'
-    Description: SSM Parameter Name for the RDS password SecureString. Note it must be hardcoded in the DBInstance resource config.
+    NoEcho: true
+    Description: SSM Parameter Name for the RDS password SecureString.
     Type: String
-  S3BucketCodeDeployArtifactsArn:
+  S3BucketArnCodeDeployArtifacts:
     Description: S3 Bucket Arn for EC2 to pull CodeDeploy Artifacts
     Type: String
-  S3BucketStaticFilesArn:
+  S3BucketArnStaticFiles:
     Description: S3 Bucket Arn for EC2 to put Webapp resources and static files
     Type: String
   SNSTopicArn:
@@ -73,7 +69,7 @@ Resources:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
       VPCZoneIdentifier: !Split [',', !Ref ASGSubnetsString]
-      LaunchConfigurationName: !Ref 'LaunchConfig'
+      LaunchConfigurationName: !Ref LaunchConfig
       DesiredCapacity: !Ref ASGDesiredCapacity
       MaxSize: '5'
       # Minimum of 2 instances because CodeDeploy deployment configuration
@@ -81,10 +77,10 @@ Resources:
       MinSize: '2'
       HealthCheckType: ELB
       HealthCheckGracePeriod: 300
-      TargetGroupARNs: [!Ref 'TargetGroupArn']
+      TargetGroupARNs: [!Ref TargetGroupArn]
       MetricsCollection: 
-        - Granularity: "1Minute"
-          Metrics: ["GroupMinSize", "GroupMaxSize"]
+        - Granularity: 1Minute
+          Metrics: [GroupMinSize, GroupMaxSize, GroupDesiredCapacity]
       NotificationConfigurations:
         - TopicARN: !Ref SNSTopicArn
           NotificationTypes: 
@@ -103,7 +99,7 @@ Resources:
         MaxBatchSize: 1
         PauseTime: PT10M
         WaitOnResourceSignals: true
-        SuspendProcesses: ["ScheduledActions"]
+        SuspendProcesses: [ScheduledActions]
       AutoScalingScheduledAction:
         # Prevent Scheduled Actions from modifying min/max/desired for CloudFormation
         IgnoreUnmodifiedGroupSizeProperties: true
@@ -112,7 +108,7 @@ Resources:
   ScheduledActionUp:
     Type: AWS::AutoScaling::ScheduledAction
     Properties:
-      AutoScalingGroupName: !Ref 'AutoScalingGroup'
+      AutoScalingGroupName: !Ref AutoScalingGroup
       DesiredCapacity: 2
       MaxSize: 5
       # Minimum of 2 instances because CodeDeploy deployment configuration
@@ -122,10 +118,9 @@ Resources:
   ScheduledActionDown:
     Type: AWS::AutoScaling::ScheduledAction
     Properties:
-      AutoScalingGroupName: !Ref 'AutoScalingGroup'
+      AutoScalingGroupName: !Ref AutoScalingGroup
       DesiredCapacity: 0
-      MaxSize: 5
-      # No CodeDeploy action possible
+      MaxSize: 2
       MinSize: 0
       Recurrence: 0 23 * * *
 
@@ -133,7 +128,7 @@ Resources:
   WebServerCPUTargetTrackingScalingPolicy:
     Type: AWS::AutoScaling::ScalingPolicy
     Properties:
-      AutoScalingGroupName: !Ref 'AutoScalingGroup'
+      AutoScalingGroupName: !Ref AutoScalingGroup
       Cooldown: '60'
       PolicyType: TargetTrackingScaling
       TargetTrackingConfiguration:
@@ -150,73 +145,73 @@ Resources:
   EC2InstanceRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Join ['-', [!Ref 'AWS::StackName', AWSEC2InstanceRole]]
+      RoleName: !Join ['-', [!Ref AWS::StackName, AWSEC2InstanceRole]]
       AssumeRolePolicyDocument:
         # Allow EC2 and CodeDeploy services to assume the role
         Version: "2012-10-17"
         Statement:
-          - Effect: "Allow"
+          - Effect: Allow
             Principal:
-              Service: ["ec2.amazonaws.com", "codedeploy.amazonaws.com"]
-            Action: ["sts:AssumeRole"]
+              Service: [ec2.amazonaws.com, codedeploy.amazonaws.com]
+            Action: [sts:AssumeRole]
       ManagedPolicyArns:
         # SSM Session Manager to SSH from the AWS Console
         - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
       Policies:
         # Policy for EC2 (CodeDeploy agent) to download artifacts from S3
-        - PolicyName: !Join ['-', [!Ref 'AWS::StackName', EC2ToGetObjectsFromS3]]
+        - PolicyName: !Join ['-', [!Ref AWS::StackName, EC2ToGetObjectsFromS3]]
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
               - Effect: Allow
-                Action: ['s3:Get*', 's3:List*']
-                Resource: !Join ['', [!Ref S3BucketCodeDeployArtifactsArn, '/*']]
+                Action: [s3:Get*, s3:List*]
+                Resource: !Join ['', [!Ref S3BucketArnCodeDeployArtifacts, '/*']]
         # Policy for EC2 to put static files to the S3 bucket
-        - PolicyName: !Join ['-', [!Ref 'AWS::StackName', EC2ToPutObjectsToS3]]
+        - PolicyName: !Join ['-', [!Ref AWS::StackName, EC2ToPutObjectsToS3]]
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
               - Effect: Allow
-                Action: ['s3:Put*']
-                Resource: !Join ['', [!Ref S3BucketStaticFilesArn, '/*']]
+                Action: [s3:Put*]
+                Resource: !Join ['', [!Ref S3BucketArnStaticFiles, '/*']]
         # Policy for EC2 to interact with the CloudWatch service
-        - PolicyName: !Join ['-', [!Ref 'AWS::StackName', EC2CWAgentPolicy]]
+        - PolicyName: !Join ['-', [!Ref AWS::StackName, EC2CWAgentPolicy]]
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
-              - Action: ['ssm:GetParameter']
-                Resource: 'arn:aws:ssm:*:*:parameter/AmazonCloudWatch-*'
+              - Action: [ssm:GetParameter]
+                Resource: arn:aws:ssm:*:*:parameter/AmazonCloudWatch-*
                 Effect: Allow
               - Action:
-                  - 'cloudwatch:PutMetricData'
-                  - 'ec2:DescribeVolumes'
-                  - 'ec2:DescribeTags'
-                  - 'logs:PutLogEvents'
-                  - 'logs:DescribeLogStreams'
-                  - 'logs:DescribeLogGroups'
-                  - 'logs:CreateLogStream'
-                  - 'logs:CreateLogGroup'
+                  - cloudwatch:PutMetricData
+                  - ec2:DescribeVolumes
+                  - ec2:DescribeTags
+                  - logs:PutLogEvents
+                  - logs:DescribeLogStreams
+                  - logs:DescribeLogGroups
+                  - logs:CreateLogStream
+                  - logs:CreateLogGroup
                 Resource: '*'
                 Effect: Allow
         # Policy for EC2 to send messages to the SQS queue
-        - PolicyName: !Join ['-', [!Ref 'AWS::StackName', EC2SendMessageToSQS]]
+        - PolicyName: !Join ['-', [!Ref AWS::StackName, EC2SendMessageToSQS]]
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
-              - Action: ['sqs:SendMessage', 'sqs:SendMessageBatch']
+              - Action: [sqs:SendMessage, sqs:SendMessageBatch]
                 Resource: !Ref SQSQueueArn
                 Effect: Allow
   CodeDeployRole:
-    Type: "AWS::IAM::Role"
+    Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
         # Allow CodeDeploy service to assume the role
         Version: "2012-10-17"
         Statement:
-          - Effect: "Allow"
+          - Effect: Allow
             Principal:
-              Service: ["codedeploy.amazonaws.com"]
-            Action: ["sts:AssumeRole"]
+              Service: [codedeploy.amazonaws.com]
+            Action: [sts:AssumeRole]
       Policies:
         # Policy for CodeDeploy to interact with the AutoScaling service
         - PolicyName: allow-autoscaling
@@ -237,7 +232,7 @@ Resources:
     Properties:
       ImageId: !Ref EC2AmiId
       IamInstanceProfile: !Ref RootInstanceProfile
-      SecurityGroups: [!Ref 'EC2InstanceSecurityGroupId']
+      SecurityGroups: [!Ref EC2SecurityGroupId]
       InstanceType: !Ref EC2InstanceType
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
@@ -251,9 +246,9 @@ Resources:
           #!/bin/bash -xe
 
           # Set environment variables for cfn-init scripts
-          export REDIS_HOST=${ElasticacheClusterRedisEndpointAddress}
+          export REDIS_HOST=${ElasticacheRedisEndpoint}
           export REDIS_PORT=6379
-          export RDS_POSTGRES_HOST=${RDSPostgresDBEndpointAddress}
+          export RDS_POSTGRES_HOST=${RDSPostgresEndpoint}
           export RDS_POSTGRES_PASSWORD=$(aws ssm get-parameter --name ${SSMParamNameRdsPostgresPassword} --with-decryption --query "Parameter.Value" --output text --region ${AWS::Region})
 
           # Run cfn-init scripts defined under the AWS::CloudFormation::Init section
@@ -313,12 +308,12 @@ Resources:
                 path=Resources.LaunchConfig.Metadata.AWS::CloudFormation::Init
                 action=/opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource LaunchConfig --region ${AWS::Region}
               mode: "000400"
-              owner: "root"
-              group: "root"
+              owner: root
+              group: root
           services:
               cfn-hup:
-                enabled: 'true'
-                ensureRunning: 'true'
+                enabled: true
+                ensureRunning: true
                 files: [/etc/cfn/cfn-hup.conf, /etc/cfn/hooks.d/cfn-auto-reloader.conf]
         InstallCloudWatchAgent:
           files:
@@ -405,7 +400,7 @@ Resources:
               ruby: []
           files:
             /home/ec2-user/install:
-              source: !Join ['', ['https://aws-codedeploy-', !Ref 'AWS::Region', '.s3.amazonaws.com/latest/install']]
+              source: !Join ['', [https://aws-codedeploy-, !Ref AWS::Region, .s3.amazonaws.com/latest/install]]
               mode: '000755'
           commands:
             00-install-agent:
@@ -454,15 +449,15 @@ Resources:
 
   # CodeDeploy
   CodeDeployApplication:
-    Type: "AWS::CodeDeploy::Application"
+    Type: AWS::CodeDeploy::Application
   CodeDeployDeploymentGroup:
-    Type: "AWS::CodeDeploy::DeploymentGroup"
+    Type: AWS::CodeDeploy::DeploymentGroup
     Properties:
       ApplicationName: !Ref CodeDeployApplication
       ServiceRoleArn: !GetAtt CodeDeployRole.Arn
       DeploymentConfigName: !Ref WebappDeploymentConfig
       # CodeDeploy automatically deploys revisions to when new instances are created
-      AutoScalingGroups: [!Ref 'AutoScalingGroup']
+      AutoScalingGroups: [!Ref AutoScalingGroup]
       DeploymentStyle:
         DeploymentOption: WITH_TRAFFIC_CONTROL
         DeploymentType: IN_PLACE

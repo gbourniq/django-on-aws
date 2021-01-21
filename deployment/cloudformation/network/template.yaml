@@ -2,18 +2,19 @@ AWSTemplateFormatVersion: '2010-09-09'
 Metadata:
   License: Apache-2.0
 Description: |
-  This CloudFormation template defines network resources routing traffic from the public internet to Application Load Balancer:
+  This CloudFormation template defines network resources routing traffic from the public www to the ALB:
   - Route 53 Record Set to map the website name to the CloudFront Distribution Endpoint
   - CloudFront Distribution to make the application globally accessible via Amazon's Content Delivery Network
-  - CloudFront Origin Access Identity to make private content from S3 bucket accessible through CloudFront
+  - CloudFront Origin Access Identity to make private content from S3 accessible through CloudFront
   - Application Load Balancer and Target Group to be associated with compute targets such as EC2 / ASG.
-  - All Security Groups within the application, to allow traffic between our resources 
+  - All Security Groups within the application stack, to allow traffic between our resources 
+
 Parameters:
   ALBSubnetsString:
     Description: List of subnets the application load balancer will be deployed across
     Type: String
   CloudFrontExistingCertArn:
-    Description: SSL Cert Arn stored in ACM with the same region CloudFront (us-east-1)
+    Description: SSL Cert Arn stored in ACM in region us-east-1 for CF
     Type: String
   OAIUserId:
     Description: CloudFront Origin Access Identity User Id to serve private S3 resources through CF
@@ -32,11 +33,11 @@ Parameters:
   S3BucketNameLogging:
     Description: Name for the S3 bucket to store CloudFront, ALB, VPC access logs
     Type: String
-  S3StaticContentBucketDomainName:
-    Description: Domain Name for the S3 bucket which serve the webapp resources and static content through CF
+  S3BucketDomainNameWebappStaticFiles:
+    Description: Domain Name for the S3 bucket which serves the webapp resources and static content through CF
     Type: String
-  S3WebsiteBucketName:
-    Description: Bucket Name for the S3 Website to be used as a failover endpoint if CF primary origin is unreachable
+  S3WebsiteBucketDomainName:
+    Description: Domain Name for the S3 Website to be used as a failover endpoint if CF primary origin is unreachable
     Type: String
   VpcId:
     Description: Vpc Id of the existing Virtual Private Cloud (VPC)
@@ -61,7 +62,7 @@ Resources:
     Type: AWS::CloudFront::Distribution
     Properties:
       DistributionConfig:
-        Comment: CDN for ALB and S3 website
+        Comment: CDN for ALB, S3 website, and private S3 static files
         Aliases: [!Join ['', [!Ref R53Subdomain, ., !Ref R53HostedZoneName]]]
         Enabled: true
         DefaultCacheBehavior:
@@ -101,12 +102,12 @@ Resources:
           - CustomOriginConfig:
               HTTPPort: 80
               OriginProtocolPolicy: http-only
-            DomainName: !Join ['', [!Ref S3WebsiteBucketName, ., s3-website, ., !Ref 'AWS::Region', ., amazonaws.com]]
+            DomainName: !Ref S3WebsiteBucketDomainName
             Id: s3-web-origin
           - S3OriginConfig:
               OriginAccessIdentity: !Join ['/', [origin-access-identity, cloudfront, !Ref OAIUserId]]
             Id: s3-oai-origin
-            DomainName: !Ref S3StaticContentBucketDomainName
+            DomainName: !Ref S3BucketDomainNameWebappStaticFiles
         ViewerCertificate:
           AcmCertificateArn: !Ref CloudFrontExistingCertArn
           SslSupportMethod: sni-only
@@ -166,6 +167,7 @@ Resources:
         - IpProtocol: tcp
           FromPort: 80
           ToPort: 80
+          # # https://aws.amazon.com/blogs/security/automatically-update-security-groups-for-amazon-cloudfront-ip-ranges-using-aws-lambda/
           CidrIp: 0.0.0.0/0
   EC2SecurityGroup:
     Type: AWS::EC2::SecurityGroup

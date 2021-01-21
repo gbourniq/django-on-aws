@@ -5,25 +5,37 @@ Description: |
   This CloudFormation template defines the databases backend for the stack.
   - RDS Postgres with Read Replica in another AZ
   - ElastiCache Redis cluster with a master and child node spread across 2 AZ
+
 Parameters:
   AddRDSReadReplica:
-    Description: Security Group Name for RDS to allow incoming request from EC2s
+    Description: Boolean to add an RDS read replica. Defaults to false
     Type: String
     AllowedValues: ['true', 'false']
+    Default: 'false'
   ElasticacheSecurityGroupId:
     Description: Security Group Id for ElastiCache to allow incoming request from EC2s
     Type: String
+  RDSDeletionUpdateReplacePolicy:
+    Description: Policy for when stack is deleted or update.
+    Type: String
+    AllowedValues: ['Delete', 'Snapshot', 'Retain']
   RDSSecurityGroupName:
     Description: Security Group Name for RDS to allow incoming request from EC2s
+    Type: String
+  SSMParamNameRdsPostgresPassword:
+    NoEcho: true
+    Description: SSM Parameter Name for the RDS password SecureString.
     Type: String
 
 
 Conditions:
-  RDSReadReplica: !Equals [ !Ref AddRDSReadReplica, true ]
+  RDSReadReplica: !Equals [ !Ref AddRDSReadReplica, 'true' ]
+  IsProduction: !Equals [ !Ref RDSDeletionUpdateReplacePolicy, "true" ]
+  IsTest: !Equals [ !Ref RDSDeletionUpdateReplacePolicy, "false" ]
 
 Resources:
-  RDSPostgresDB:
-    Type: "AWS::RDS::DBInstance"
+  RDSPostgresDB: &queue-config
+    Type: AWS::RDS::DBInstance
     DeletionPolicy: Delete
     UpdateReplacePolicy: Delete
     Properties:
@@ -34,24 +46,33 @@ Resources:
       AllocatedStorage: '5'
       DBName: portfoliodb
       MasterUsername: postgres
-      MasterUserPassword: "{{resolve:ssm-secure:/RDS/POSTGRES_PASSWORD/SECURE:1}}"
+      MasterUserPassword:
+        !Sub
+          - "{{resolve:ssm-secure:${paramName}:1}}"
+          - { paramName: !Ref SSMParamNameRdsPostgresPassword }
       Port: '5432'
       MultiAZ: false
       PubliclyAccessible: true
       StorageType: gp2
       StorageEncrypted: false
       VPCSecurityGroups: [!Ref RDSSecurityGroupName]
+      Condition: IsProduction
+  ProdRDSPostgresDB:
+    <<: *queue-config
+    UpdateReplacePolicy: Retain
+    Condition: IsTest
+
   ReadReplicaDB:
     Condition: RDSReadReplica
     Type: AWS::RDS::DBInstance
     Properties:
-      SourceDBInstanceIdentifier: !Ref 'RDSPostgresDB'
+      SourceDBInstanceIdentifier: !Ref RDSPostgresDB
       DBInstanceClass: db.t2.micro
       Tags:
       - Key: Description
         Value: Read Replica Database
   ElasticacheRedisCluster:
-    Type: 'AWS::ElastiCache::CacheCluster'
+    Type: AWS::ElastiCache::CacheCluster
     Properties:
       AZMode: single-az
       AutoMinorVersionUpgrade: true

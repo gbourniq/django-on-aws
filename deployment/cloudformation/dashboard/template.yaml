@@ -2,14 +2,15 @@ AWSTemplateFormatVersion: '2010-09-09'
 Metadata:
   License: Apache-2.0
 Description: |
-  This CloudFormation template defines the CloudWatch dashboard which monitors stack resources performance:
+  This CloudFormation template defines a CloudWatch dashboard to monitor stack resources performance:
   - CloudFront requests and % error rate
   - ALB requests and HTTP status codes
-  - AutoScaling Group Mix/Max size
+  - AutoScaling Group Mix/Max/Desired size
   - Target Group heatlhy hosts
   - Average CPU utilization for EC2 instances
   - CloudFormation cfn-init error logs
   - RDS and ElastiCache metrics
+
 Parameters:
   ALBFullName:
     Type: String
@@ -145,7 +146,8 @@ Resources:
                         "view": "singleValue",
                         "metrics": [
                             [ "AWS/AutoScaling", "GroupMaxSize", "AutoScalingGroupName", "${AutoScalingGroupName}" ],
-                            [ ".", "GroupMinSize", ".", "." ]
+                            [ ".", "GroupMinSize", ".", "." ],
+                            [ ".", "GroupDesiredCapacity", ".", "." ]
                         ],
                         "region": "${AWS::Region}",
                         "title": "AutoScaling Group Size"

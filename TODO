@@ -1,22 +1,15 @@
-for each template, check:
-- quotes
-- names, order parameters alphabetically
-- formula consistency
-- simplify
-- add comments/descriptions
-
 AWS Deployment
-- define DR strategy (eg. S3 bucket SRR/CRR)
 - dev/prod var to be used to retain/snapshot resources: RDS, S3
+- define DR strategy (eg. S3 bucket SRR/CRR)
+
 - when everything looks good, replace the sample apache server with the django app (docker)
 - codedeploy course + best practices (eg. customise deployment behavior with environment variables eg. DEPLOYMENT_GROUP_NAME==dev)
 - add django logs + metrics filtering to CW dashboard
 - define codedeploy/cicd strategy to managed dev/prod pipelines
 - Check CW Events sources (eg. CodeDeploy as a source) for CI/CD workflows
 - review 5 pillars - https://aws.amazon.com/architecture/
-- network stack
-- define Cloudfront caching strategy: Check/update cache based on Headers, Cookies, or Query string parameters
 - review failover html page
+- test rds snapshots when deleting stack and then restore it
 
 Application features
 - use of metric filter - eg. if too many 404 over 5mn -> trigger alarm (devops alarm)
@@ -28,6 +21,7 @@ Application features
 
 Extras
 - create custom metrics for failed/successful deployment and create pie chart in cw dashboard
+- define/refine Cloudfront caching strategy: Check/update cache based on Headers, Cookies, or Query string parameters
 - Remove open CidrIPs below - and have Lambda to dynamically update with CF public IPs
 # https://aws.amazon.com/blogs/security/automatically-update-security-groups-for-amazon-cloudfront-ip-ranges-using-aws-lambda/
 

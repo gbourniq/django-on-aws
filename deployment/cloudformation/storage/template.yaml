@@ -4,17 +4,19 @@ Metadata:
 Description: |
   This CloudFormation template defines the S3 buckets and a Lambda Custom Resource to manage them.
   - S3BucketForFailoverWebsite:  S3 website to be used as a failover endpoint when the main app is unavailable
-  - S3BucketCodeDeployArtifacts: Stores CodeDeploy artifacts
+  - S3BucketCodeDeployArtifacts: Stores CodeDeploy artifacts, such as application code and deployment scripts
   - S3BucketWebappStaticFiles: Stores and serve the web application resources and static files through CF
-  - S3LoggingBucketDomainName: Stores CloudFront access logs
+  - S3LoggingBucketDomainName: Stores CloudFront, ALB, VPC access logs
+  - CloudFront Origin Access Identity User for CF to serve private static resources from S3BucketWebappStaticFiles
   - Lambda custom resource to manage the creation of files at S3 Bucket creation and emptying buckets before delete
   - Bucket Policies and Lambda Role
+
 Parameters:
   R53HostedZoneName:
     Description: The DNS name of an existing Amazon Route 53 hosted zone. For eg, mydomain.com
     AllowedPattern: (?!-)[a-zA-Z0-9-.]{1,63}(?<!-)
     Type: String
-    ConstraintDescription: Must be a valid DNS zone name.
+    ConstraintDescription: Must be an existing DNS zone name.
   R53Subdomain:
     Description: The subdomain of the dns entry. For example, app -> app.mydomain.com.
     Type: String
@@ -24,8 +26,8 @@ Resources:
   S3BucketForFailoverWebsite:
     Type: AWS::S3::Bucket
     Properties:
-      # S3 website bucket name must be the DNS Name served by the CloudFront distribution custom origin
-      BucketName: !Join ['', [!Ref 'R53Subdomain', ., !Ref 'R53HostedZoneName']]
+      # S3 website bucket name must match the DNS Name served by the CloudFront distribution custom origin
+      BucketName: !Join ['', [!Ref R53Subdomain, ., !Ref R53HostedZoneName]]
       AccessControl: PublicRead
       WebsiteConfiguration:
         IndexDocument: index.html
@@ -33,7 +35,7 @@ Resources:
   S3BucketCodeDeployArtifacts:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Join ['', [!Ref 'R53Subdomain', ., !Ref 'R53HostedZoneName', -, codedeploy-artifacts]]
+      BucketName: !Join ['', [!Ref R53Subdomain, ., !Ref R53HostedZoneName, -, codedeploy-artifacts]]
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
         BlockPublicPolicy: true
@@ -45,7 +47,7 @@ Resources:
     Type: AWS::S3::Bucket
     # Note: Private S3 files served through CloudFront OAI are defined by the CF Caching behaviours, eg. 'staticfiles/*', '*.png'
     Properties:
-      BucketName: !Join ['', [!Ref 'R53Subdomain', ., !Ref 'R53HostedZoneName', -, static-files]]
+      BucketName: !Join ['', [!Ref R53Subdomain, ., !Ref R53HostedZoneName, -, static-files]]
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
         BlockPublicPolicy: true
@@ -55,7 +57,7 @@ Resources:
     Type: AWS::S3::Bucket
     # Note: Stores CloudFront access logs
     Properties:
-      BucketName: !Join ['', [!Ref 'R53Subdomain', ., !Ref 'R53HostedZoneName', -, logging-bucket]]
+      BucketName: !Join ['', [!Ref R53Subdomain, ., !Ref R53HostedZoneName, -, logging-bucket]]
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
         BlockPublicPolicy: true
@@ -69,25 +71,25 @@ Resources:
       Bucket: !Ref S3BucketLogging
       PolicyDocument:
         Statement:
-        - Sid: "AllowCFandALBToPutLogs"
-          Action: ['s3:PutObject']
+        - Sid: AllowCFandALBToPutLogs
+          Action: [s3:PutObject]
           Effect: Allow
           Resource: !Join ['', [!GetAtt S3BucketLogging.Arn, '/*']]
           # https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-access-logs.html
           Principal:
-            AWS: ["arn:aws:iam::652711504416:root"]
-        - Sid: "AllowDeliveryLogsPutObjects"
-          Action: ['s3:PutObject']
+            AWS: [arn:aws:iam::652711504416:root]
+        - Sid: AllowDeliveryLogsPutObjects
+          Action: [s3:PutObject]
           Effect: Allow
           Resource: !Join ['', [!GetAtt S3BucketLogging.Arn, '/*']]
           Principal:
-            Service: ["delivery.logs.amazonaws.com"]
-        - Sid: "AllowDeliveryLogsGetBucketAcl"
-          Action: ['s3:GetBucketAcl']
+            Service: [delivery.logs.amazonaws.com]
+        - Sid: AllowDeliveryLogsGetBucketAcl
+          Action: [s3:GetBucketAcl]
           Effect: Allow
           Resource: !Join ['', [!GetAtt S3BucketLogging.Arn]]
           Principal:
-            Service: ["delivery.logs.amazonaws.com"]
+            Service: [delivery.logs.amazonaws.com]
 
 
   BucketPolicyForFailoverWebsite:  
@@ -96,10 +98,10 @@ Resources:
       Bucket: !Ref S3BucketForFailoverWebsite
       PolicyDocument:
         Statement:
-        - Sid: "AllowPublicGetObject"
-          Action: ['s3:Get*', 's3:List*']
+        - Sid: AllowPublicGetObject
+          Action: [s3:Get*, s3:List*]
           Effect: Allow
-          Resource: !Join ['', [!GetAtt 'S3BucketForFailoverWebsite.Arn', '/*']]
+          Resource: !Join ['', [!GetAtt S3BucketForFailoverWebsite.Arn, '/*']]
           Principal: "*"
   BucketPolicyForWebappStaticFiles:  
     Type: AWS::S3::BucketPolicy
@@ -107,14 +109,14 @@ Resources:
       Bucket: !Ref S3BucketWebappStaticFiles
       PolicyDocument:
         Statement:
-        - Sid: "AllowEC2toUploadS3Files"
-          Action: ['s3:Get*', 's3:List*', 's3:Put*']
+        - Sid: AllowEC2toUploadS3Files
+          Action: [s3:Get*, s3:List*, s3:Put*]
           Effect: Allow
           Resource: !Join ['', [!GetAtt S3BucketWebappStaticFiles.Arn, '/*']]
           Principal:
-            Service: ["ec2.amazonaws.com"]
-        - Sid: "GetObjectOnlyFromCloudFrontOAIUser"
-          Action: ['s3:Get*']
+            Service: [ec2.amazonaws.com]
+        - Sid: GetObjectOnlyFromCloudFrontOAIUser
+          Action: [s3:Get*]
           Effect: Allow
           Resource: !Join ['', [!GetAtt S3BucketWebappStaticFiles.Arn, '/*']]
           Principal:
@@ -189,8 +191,8 @@ Resources:
   LambdaCustomResourceForS3:
     Type: AWS::Lambda::Function
     Properties:
-      Description: "Lambda function to manage S3 buckets lifecycle"
-      FunctionName: !Sub '${AWS::StackName}-lambda-s3'
+      Description: Lambda function to manage S3 buckets lifecycle
+      FunctionName: !Sub ${AWS::StackName}-lambda-s3
       Handler: index.handler
       Role: !GetAtt LambdaRoleCustomResourceForS3.Arn
       Timeout: 30
@@ -280,7 +282,7 @@ Resources:
   LambdaRoleCustomResourceForS3:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Join ['-', [!Ref 'AWS::StackName', LambdaRoleCustomS3]]
+      RoleName: !Join ['-', [!Ref AWS::StackName, LambdaRoleCustomS3]]
       AssumeRolePolicyDocument:
         # Allow Lambda service to assume the role
         Version: '2012-10-17'
@@ -291,7 +293,7 @@ Resources:
             Service: [lambda.amazonaws.com]
       Policies:
         # Policy for Lambda to push logs to CloudWatch
-        - PolicyName: !Join ['-', [!Ref 'AWS::StackName', AWSLambdaCWPolicy]]
+        - PolicyName: !Join ['-', [!Ref AWS::StackName, AWSLambdaCWPolicy]]
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
@@ -302,11 +304,11 @@ Resources:
               Effect: Allow
               Resource: arn:aws:logs:*:*:*
         # Policy for Lambda to manage S3 bucket resources and S3 objects
-        - PolicyName: !Join ['-', [!Ref 'AWS::StackName', AWSLambdaS3Policy]]
+        - PolicyName: !Join ['-', [!Ref AWS::StackName, AWSLambdaS3Policy]]
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
-            - Action: ['s3:PutObject', 's3:DeleteObject', 's3:List*']
+            - Action: [s3:PutObject, s3:DeleteObject, s3:List*]
               Effect: Allow
               Resource:
                 - !Join ['', [!GetAtt S3BucketForFailoverWebsite.Arn, '*']]
@@ -316,19 +318,19 @@ Resources:
 Outputs:
   OAIUserId:
     Value: !Ref OriginAccessIdentity
-  S3BucketNameForFailoverWebsite:
-    Value: !Ref 'S3BucketForFailoverWebsite'
+  S3WebsiteBucketDomainName:
+    Value: !GetAtt S3BucketForFailoverWebsite.DomainName
   S3BucketNameWebappStaticFiles:
-    Value: !Ref 'S3BucketWebappStaticFiles'
+    Value: !Ref S3BucketWebappStaticFiles
   S3BucketDomainNameWebappStaticFiles:
-    Value: !GetAtt 'S3BucketWebappStaticFiles.DomainName'
-  S3BucketArnWebappStaticFiles:
-    Value: !GetAtt 'S3BucketWebappStaticFiles.Arn'
+    Value: !GetAtt S3BucketWebappStaticFiles.DomainName
+  S3BucketArnStaticFiles:
+    Value: !GetAtt S3BucketWebappStaticFiles.Arn
   S3BucketNameCodeDeployArtifacts:
-    Value: !Ref 'S3BucketCodeDeployArtifacts'
+    Value: !Ref S3BucketCodeDeployArtifacts
   S3BucketArnCodeDeployArtifacts:
-    Value: !GetAtt 'S3BucketCodeDeployArtifacts.Arn'
+    Value: !GetAtt S3BucketCodeDeployArtifacts.Arn
   S3BucketDomainNameLogging:
-    Value: !GetAtt 'S3BucketLogging.DomainName'
+    Value: !GetAtt S3BucketLogging.DomainName
   S3BucketNameLogging:
-    Value: !Ref 'S3BucketLogging'
+    Value: !Ref S3BucketLogging

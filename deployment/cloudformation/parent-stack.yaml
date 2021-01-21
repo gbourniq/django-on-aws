@@ -16,12 +16,12 @@ Parameters:
     Default: '2'
   CloudFrontExistingCertArn:
     Description: SSL Cert Arn stored in ACM with the same region CloudFront (us-east-1)
-    Type: 'String'
-    Default: 'arn:aws:acm:us-east-1:164045463835:certificate/26654aed-53fe-4033-9866-9b072ad88ed8'
+    Type: String
+    Default: arn:aws:acm:us-east-1:164045463835:certificate/26654aed-53fe-4033-9866-9b072ad88ed8
   EC2LatestLinuxAmiId:
     Description: AWS managed SSM parameter to retrieve the latest Amazon Linux 2 AMI Id
-    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
-    Default: '/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2'
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2
   EC2InstanceType:
     Description: WebServer EC2 instance type
     Type: String
@@ -38,29 +38,28 @@ Parameters:
     Description: The DNS name of an existing Amazon Route 53 hosted zone. For example, "mydomain.com" 
     AllowedPattern: (?!-)[a-zA-Z0-9-.]{1,63}(?<!-)
     Type: String
-    Default: 'bournique.fr'
+    Default: bournique.fr
     ConstraintDescription: Must be an existing DNS zone name.
   R53Subdomain:
     Description: The subdomain of the dns entry. For example, app -> app.mydomain.com.
     Type: String
-    Default: 'app'
+    Default: app
   SSMParamSlackWebhookUrl:
     NoEcho: 'true'
-    Description: SSM Parameter Name for the Slack WebHook Url used for ASG/CodeDeploy notifications. Set empty string to disable.
+    Description: SSM Parameter Name for the Slack WebHook Url used for ASG/CodeDeploy notifications. Create an empty SSM variable to disable.
     Type: AWS::SSM::Parameter::Value<String>
-    Default: '/SLACK/INCOMING_WEBHOOK_URL'
+    Default: /SLACK/INCOMING_WEBHOOK_URL
   SSMParamNameRdsPostgresPassword:
-    NoEcho: 'true'
-    Description: SSM Parameter Name for the RDS password SecureString. Note it must be hardcoded in the DBInstance resource config.
+    Description: SSM Parameter Name for the RDS password SecureString.
     Type: String
-    Default: '/RDS/POSTGRES_PASSWORD/SECURE'
+    Default: /RDS/POSTGRES_PASSWORD/SECURE
   SubnetList:
-    Type: 'List<AWS::EC2::Subnet::Id>'
-    Default: 'subnet-103a1a79,subnet-28219264'
+    Type: List<AWS::EC2::Subnet::Id>
+    Default: subnet-103a1a79,subnet-28219264
   VpcId:
     Description: VpcId of the existing Virtual Private Cloud (VPC)
-    Type: 'AWS::EC2::VPC::Id'
-    Default: 'vpc-e82c7280'
+    Type: AWS::EC2::VPC::Id
+    Default: vpc-e82c7280
 
 Resources:
   NetworkStack:
@@ -75,8 +74,8 @@ Resources:
         R53Subdomain: !Ref R53Subdomain
         S3BucketDomainNameLogging: !GetAtt StorageStack.Outputs.S3BucketDomainNameLogging
         S3BucketNameLogging: !GetAtt StorageStack.Outputs.S3BucketNameLogging
-        S3StaticContentBucketDomainName: !GetAtt StorageStack.Outputs.S3BucketDomainNameWebappStaticFiles
-        S3WebsiteBucketName: !GetAtt StorageStack.Outputs.S3BucketNameForFailoverWebsite
+        S3BucketDomainNameWebappStaticFiles: !GetAtt StorageStack.Outputs.S3BucketDomainNameWebappStaticFiles
+        S3WebsiteBucketDomainName: !GetAtt StorageStack.Outputs.S3WebsiteBucketDomainName
         VpcId: !Ref VpcId
   ComputeStack:
     Type: AWS::CloudFormation::Stack
@@ -86,15 +85,15 @@ Resources:
         ASGCPUTargetValue: !Ref ASGCPUTargetValue
         ASGDesiredCapacity: !Ref ASGDesiredCapacity
         ASGSubnetsString: !Join [',', !Ref SubnetList ]
-        EC2InstanceSecurityGroupId: !GetAtt NetworkStack.Outputs.EC2SecurityGroupId
+        EC2SecurityGroupId: !GetAtt NetworkStack.Outputs.EC2SecurityGroupId
         EC2InstanceType: !Ref EC2InstanceType
         EC2AmiId: !Ref EC2LatestLinuxAmiId
         EC2VolumeSize: !Ref EC2VolumeSize
-        ElasticacheClusterRedisEndpointAddress: !GetAtt DatabaseStack.Outputs.RedisEndpoint
-        RDSPostgresDBEndpointAddress: !GetAtt DatabaseStack.Outputs.PostgresEndpoint
+        ElasticacheRedisEndpoint: !GetAtt DatabaseStack.Outputs.RedisEndpoint
+        RDSPostgresEndpoint: !GetAtt DatabaseStack.Outputs.PostgresEndpoint
         SSMParamNameRdsPostgresPassword: !Ref SSMParamNameRdsPostgresPassword
-        S3BucketCodeDeployArtifactsArn: !GetAtt StorageStack.Outputs.S3BucketArnCodeDeployArtifacts
-        S3BucketStaticFilesArn: !GetAtt StorageStack.Outputs.S3BucketArnWebappStaticFiles
+        S3BucketArnCodeDeployArtifacts: !GetAtt StorageStack.Outputs.S3BucketArnCodeDeployArtifacts
+        S3BucketArnStaticFiles: !GetAtt StorageStack.Outputs.S3BucketArnStaticFiles
         SNSTopicArn: !GetAtt ServerlessStack.Outputs.SNSTopicArn
         SQSQueueArn: !GetAtt ServerlessStack.Outputs.SQSQueueArn
         SQSQueueUrl: !GetAtt ServerlessStack.Outputs.SQSQueueUrl
@@ -121,6 +120,7 @@ Resources:
         AddRDSReadReplica: 'false'
         ElasticacheSecurityGroupId: !GetAtt NetworkStack.Outputs.ElastiCacheSecurityGroupId
         RDSSecurityGroupName: !GetAtt NetworkStack.Outputs.RDSSecurityGroupName
+        SSMParamNameRdsPostgresPassword: !Ref SSMParamNameRdsPostgresPassword
   DashboardStack:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -130,7 +130,7 @@ Resources:
         AutoScalingGroupName: !GetAtt ComputeStack.Outputs.AutoScalingGroupName
         CloudFrontDistributionId: !GetAtt NetworkStack.Outputs.CloudFrontDistributionId
         TargetGroupFullName: !GetAtt NetworkStack.Outputs.TargetGroupFullName
-        WebsiteUrl: !Join ['', ['https://', !GetAtt NetworkStack.Outputs.Route53RecordSetDomainName]]
+        WebsiteUrl: !Join ['', [https://, !GetAtt NetworkStack.Outputs.Route53RecordSetDomainName]]
 
 Outputs:
   DashboardUrl:

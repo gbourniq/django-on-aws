@@ -5,7 +5,8 @@ Description: |
   This CloudFormation template defines serverless resources:
   - SNS Topic for AutoScaling and CodeDeploy to send notifications
   - SQS Queue to send user-defined notifications to Slack via Lambda
-  - Lambda function to send Slack notifications
+  - Lambda functions to send Slack notifications from SNS and SQS triggers
+
 Parameters:
   SlackWebhookUrl:
     NoEcho: 'true'
@@ -18,7 +19,7 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       Description: Forward messages from Amazon SNS to Slack.
-      FunctionName: !Sub '${AWS::StackName}-lambda-sns'
+      FunctionName: !Join ['', [!Ref AWS::StackName, -lambda-sns]]
       Handler: sns_lambda_handler.py
       Role: !GetAtt LambdaRoleForwardMessagesToSlack.Arn
       Timeout: 30
@@ -30,16 +31,16 @@ Resources:
           SLACK_WEBHOOK_URL: !Ref SlackWebhookUrl
   SnsLambdaFunctionInvokePermission:
     # Allow SNS service to send messages to the LambdaForwardSNSToSlack Lambda function
-    Type: 'AWS::Lambda::Permission'
+    Type: AWS::Lambda::Permission
     Properties:
-      Action: 'lambda:InvokeFunction'
+      Action: lambda:InvokeFunction
       FunctionName: !Ref LambdaForwardSNSToSlack
       Principal: sns.amazonaws.com
   LambdaForwardSQSToSlack:
     Type: AWS::Lambda::Function
     Properties:
       Description: Forward messages from Amazon SQS to Slack.
-      FunctionName: !Sub '${AWS::StackName}-lambda-sqs'
+      FunctionName: !Join ['', [!Ref AWS::StackName, -lambda-sqs]]
       Handler: sqs_lambda_handler.py
       Role: !GetAtt LambdaRoleForwardMessagesToSlack.Arn
       Timeout: 30
@@ -61,20 +62,20 @@ Resources:
   SNSTopic:
     Type: AWS::SNS::Topic
     Properties:
-      DisplayName: 'cfn-info'
-      TopicName: 'CloudFormationNotifications'
+      DisplayName: cfn-info
+      TopicName: CloudFormationNotifications
       Subscription:
         - Protocol: lambda
           Endpoint: !GetAtt LambdaForwardSNSToSlack.Arn
   SNSTopicPolicy:
-    Type: 'AWS::SNS::TopicPolicy'
+    Type: AWS::SNS::TopicPolicy
     Properties:
       Topics: [!Ref SNSTopic]
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
           - Effect: Allow
-            Action: 'sns:Publish'
+            Action: sns:Publish
             Resource: !Ref SNSTopic
             Principal:
               AWS: '*'
@@ -93,7 +94,7 @@ Resources:
   LambdaRoleForwardMessagesToSlack:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Join ['-', [!Ref 'AWS::StackName', LambdaRoleSNSToSlack]]
+      RoleName: !Join ['-', [!Ref AWS::StackName, LambdaRoleSNSToSlack]]
       AssumeRolePolicyDocument:
         # Allow Lambda service to assume the role
         Version: '2012-10-17'
@@ -104,7 +105,7 @@ Resources:
               Service: [lambda.amazonaws.com]
       Policies:
         # Policy for Lambda to push logs to CloudWatch
-        - PolicyName: !Join ['-', [!Ref 'AWS::StackName', LambdaCWLogsPolicy]]
+        - PolicyName: !Join ['-', [!Ref AWS::StackName, LambdaCWLogsPolicy]]
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
