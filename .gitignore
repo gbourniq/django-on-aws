@@ -1,5 +1,6 @@
 # Ignore builds
 *bin/
+*nested-stacks.yaml
 
 # default ignore
 __pycache__/
