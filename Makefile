@@ -20,8 +20,10 @@ RDS_POSTGRES_HOST=$$(echo "$$($(call get_stack_output, PostgresRdsEndpoint))")
 # Cloudformation
 STACK_NAME=myapp
 AWS_DEFAULT_PROFILE=myaws
-CFN_TEMPLATE_FILE="deployment/cfn-template-app.yaml"
-CFN_PARAMETERS_FILE="deployment/cfn-template-parameters.json"
+S3_BUCKET_NAME_CFN_TEMPLATES=gbournique-sam-artifacts
+CFN_PARENT_TEMPLATE_FILE="deployment/cloudformation/parent-stack.yaml"
+CFN_PACKAGED_TEMPLATE_FILE="deployment/cloudformation/nested-stacks.yaml"
+CFN_PARAMETERS_FILE="deployment/cloudformation/cfn-parameters.json"
 TAG_NAME="Guillaume Bournique"
 TAG_EMAIL="gbournique.dev1@gmail.com"
 TAG_MODIFIED_DATE="$$(date +%F_%T)"
@@ -126,17 +128,24 @@ publish:
 ### Infrastructure ###
 .PHONY: cfn-validate cfn-create cfn-update cfn-delete
 
-cfn-validate:
-	@ echo "Validating CloudFormation template ${CFN_TEMPLATE_FILE}"
-	@ yamllint -d "{rules: {line-length: {max: 130, level: warning}}}" "${CFN_TEMPLATE_FILE}"
-	@ cfn-lint "${CFN_TEMPLATE_FILE}"
-	@ aws cloudformation validate-template --template-body file://"${CFN_TEMPLATE_FILE}" > /dev/null
+cfn-package:
+	@ ${INFO} "Packaging nested CloudFormation templates into ${CFN_PACKAGED_TEMPLATE_FILE}"
+	@ aws cloudformation package \
+		--template-file ${CFN_PARENT_TEMPLATE_FILE} \
+		--output-template ${CFN_PACKAGED_TEMPLATE_FILE} \
+		--s3-bucket ${S3_BUCKET_NAME_CFN_TEMPLATES}
+
+cfn-validate: cfn-package
+	@ ${INFO} "Validating CloudFormation template ${CFN_PACKAGED_TEMPLATE_FILE}"
+	@ yamllint -d "{rules: {line-length: {max: 130, level: warning}}}" "${CFN_PACKAGED_TEMPLATE_FILE}"
+	@ cfn-lint "${CFN_PACKAGED_TEMPLATE_FILE}"
+	@ aws cloudformation validate-template --template-body file://"${CFN_PACKAGED_TEMPLATE_FILE}" > /dev/null
 
 cfn-create: cfn-validate
 	@ ${INFO} "Creating stack ${STACK_NAME}..."
 	@ aws cloudformation create-stack \
 		--stack-name=${STACK_NAME} \
-		--template-body=file://"${CFN_TEMPLATE_FILE}" \
+		--template-body=file://"${CFN_PACKAGED_TEMPLATE_FILE}" \
 		--parameters=file://"${CFN_PARAMETERS_FILE}" \
 		--tags "Key"="Name","Value"=\"${TAG_NAME}\" "Key"="Modified_Date","Value"="${TAG_MODIFIED_DATE}" "Key"="Email","Value"="${TAG_EMAIL}" \
 		--profile=${AWS_DEFAULT_PROFILE} \
@@ -147,7 +156,7 @@ cfn-update: cfn-validate
 	@ ${INFO} "Updating stack ${STACK_NAME}..."
 	@ aws cloudformation update-stack \
 		--stack-name=${STACK_NAME} \
-		--template-body=file://"${CFN_TEMPLATE_FILE}" \
+		--template-body=file://"${CFN_PACKAGED_TEMPLATE_FILE}" \
 		--parameters=file://"${CFN_PARAMETERS_FILE}" \
 		--tags "Key"="Name","Value"=\"${TAG_NAME}\" "Key"="Modified_Date","Value"="${TAG_MODIFIED_DATE}" "Key"="Email","Value"="${TAG_EMAIL}" \
 		--profile=${AWS_DEFAULT_PROFILE} \

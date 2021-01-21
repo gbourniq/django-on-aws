@@ -1,4 +1,5 @@
 AWS Deployment
+- logging bucket for cloudfront/ALB access logs + cloudtrail + vpc flow log to s3/cw
 - review all resources configurations, rename variables, consistency, simplify, add comments, descriptions, etc
 - review all policies, ensure least priviledge
 - use of nested stack and best practices: eg: split R53 / ALB / CF-S3 / NETWORK+SGs?
@@ -7,7 +8,7 @@ AWS Deployment
 
 - define DR strategy (eg. S3 bucket SRR/CRR)
 - dev/prod var to be used to retain/snapshot resources: RDS, S3
-- logging bucket for cloudfront/ALB access logs + cloudtrail + vpc flow log to s3/cw
+
 - when everything looks good, replace the sample apache server with the django app (docker)
 - codedeploy course + best practices (eg. customise deployment behavior with environment variables eg. DEPLOYMENT_GROUP_NAME==dev)
 - add django logs + metrics filtering to CW dashboard
@@ -16,6 +17,7 @@ AWS Deployment
 - review 5 pillars - https://aws.amazon.com/architecture/
 - network stack
 - define Cloudfront caching strategy: Check/update cache based on Headers, Cookies, or Query string parameters
+- review failover html page
 
 Application features
 - use of metric filter - eg. if too many 404 over 5mn -> trigger alarm (devops alarm)
@@ -27,6 +29,9 @@ Application features
 
 Extras
 - create custom metrics for failed/successful deployment and create pie chart in cw dashboard
+- Remove open CidrIPs below - and have Lambda to dynamically update with CF public IPs
+# https://aws.amazon.com/blogs/security/automatically-update-security-groups-for-amazon-cloudfront-ip-ranges-using-aws-lambda/
+
 
 
 Nested stack:
@@ -52,4 +57,11 @@ Network
 - CF
 - ELB
 - SGs
+
+for each template, check:
+- quotes
+- names, order parameters alphabetically
+- remove TODOs
+
+
 

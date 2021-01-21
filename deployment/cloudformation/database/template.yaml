@@ -1,0 +1,67 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Metadata:
+  License: Apache-2.0
+Description: |
+  This CloudFormation template defines the databases backend for the stack.
+  - RDS Postgres with Read Replica in another AZ
+  - ElastiCache Redis cluster with a master and child node spread across 2 AZ
+Parameters:
+  AddRDSReadReplica:
+    Description: Security Group Name for RDS to allow incoming request from EC2s
+    Type: String
+    AllowedValues: ['true', 'false']
+  ElasticacheSecurityGroupId:
+    Description: Security Group Id for ElastiCache to allow incoming request from EC2s
+    Type: String
+  RDSSecurityGroupName:
+    Description: Security Group Name for RDS to allow incoming request from EC2s
+    Type: String
+
+
+Conditions:
+  RDSReadReplica: !Equals [ !Ref AddRDSReadReplica, true ]
+
+Resources:
+  RDSPostgresDB:
+    Type: "AWS::RDS::DBInstance"
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      DeletionProtection: false
+      Engine: postgres
+      EngineVersion: '12.4'
+      DBInstanceClass: db.t2.micro
+      AllocatedStorage: '5'
+      DBName: portfoliodb
+      MasterUsername: postgres
+      MasterUserPassword: "{{resolve:ssm-secure:/RDS/POSTGRES_PASSWORD/SECURE:1}}"
+      Port: '5432'
+      MultiAZ: false
+      PubliclyAccessible: true
+      StorageType: gp2
+      StorageEncrypted: false
+      VPCSecurityGroups: [!Ref RDSSecurityGroupName]
+  ReadReplicaDB:
+    Condition: RDSReadReplica
+    Type: AWS::RDS::DBInstance
+    Properties:
+      SourceDBInstanceIdentifier: !Ref 'RDSPostgresDB'
+      DBInstanceClass: db.t2.micro
+      Tags:
+      - Key: Description
+        Value: Read Replica Database
+  ElasticacheRedisCluster:
+    Type: 'AWS::ElastiCache::CacheCluster'
+    Properties:
+      AZMode: single-az
+      AutoMinorVersionUpgrade: true
+      Engine: redis
+      CacheNodeType: cache.t2.micro
+      NumCacheNodes: 1
+      VpcSecurityGroupIds: [!Ref ElasticacheSecurityGroupId]
+
+Outputs:
+  RedisEndpoint:
+    Value: !GetAtt ElasticacheRedisCluster.RedisEndpoint.Address
+  PostgresEndpoint:
+    Value: !GetAtt RDSPostgresDB.Endpoint.Address

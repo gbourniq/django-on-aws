@@ -1,0 +1,133 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Metadata:
+  License: Apache-2.0
+Description: |
+  This CloudFormation template defines serverless resources:
+  - SNS Topic for AutoScaling and CodeDeploy to send notifications
+  - SQS Queue to send user-defined notifications to Slack via Lambda
+  - Lambda function to send Slack notifications
+Parameters:
+  SlackWebhookUrl:
+    NoEcho: 'true'
+    Description: Slack WebHook Url to forward ASG/CodeDeploy events SNS notifications to Slack
+    Type: String
+
+Resources:
+  # Lambda functions
+  LambdaForwardSNSToSlack:
+    Type: AWS::Lambda::Function
+    Properties:
+      Description: Forward messages from Amazon SNS to Slack.
+      FunctionName: !Sub '${AWS::StackName}-lambda-sns'
+      Handler: sns_lambda_handler.py
+      Role: !GetAtt LambdaRoleForwardMessagesToSlack.Arn
+      Timeout: 30
+      MemorySize: 128
+      Runtime: python3.6
+      Code: src/
+      Environment:
+        Variables:
+          SLACK_WEBHOOK_URL: !Ref SlackWebhookUrl
+  SnsLambdaFunctionInvokePermission:
+    # Allow SNS service to send messages to the LambdaForwardSNSToSlack Lambda function
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !Ref LambdaForwardSNSToSlack
+      Principal: sns.amazonaws.com
+  LambdaForwardSQSToSlack:
+    Type: AWS::Lambda::Function
+    Properties:
+      Description: Forward messages from Amazon SQS to Slack.
+      FunctionName: !Sub '${AWS::StackName}-lambda-sqs'
+      Handler: sqs_lambda_handler.py
+      Role: !GetAtt LambdaRoleForwardMessagesToSlack.Arn
+      Timeout: 30
+      MemorySize: 128
+      Runtime: python3.6
+      Code: src/
+      Environment:
+        Variables:
+          SLACK_WEBHOOK_URL: !Ref SlackWebhookUrl
+  SqsLambdaFunctionEventSourceMapping:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      BatchSize: 10
+      Enabled: true
+      EventSourceArn: !GetAtt SQSQueue.Arn
+      FunctionName: !GetAtt LambdaForwardSQSToSlack.Arn
+
+  # SNS
+  SNSTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: 'cfn-info'
+      TopicName: 'CloudFormationNotifications'
+      Subscription:
+        - Protocol: lambda
+          Endpoint: !GetAtt LambdaForwardSNSToSlack.Arn
+  SNSTopicPolicy:
+    Type: 'AWS::SNS::TopicPolicy'
+    Properties:
+      Topics: [!Ref SNSTopic]
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action: 'sns:Publish'
+            Resource: !Ref SNSTopic
+            Principal:
+              AWS: '*'
+            Condition:
+              ArnLike:
+                AWS:SourceArn: !Sub 'arn:aws:*:*:${AWS::AccountId}:*'
+      
+  # SQS
+  SQSQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      DelaySeconds: 0
+      VisibilityTimeout: 120
+
+  # IAM
+  LambdaRoleForwardMessagesToSlack:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Join ['-', [!Ref 'AWS::StackName', LambdaRoleSNSToSlack]]
+      AssumeRolePolicyDocument:
+        # Allow Lambda service to assume the role
+        Version: '2012-10-17'
+        Statement:
+          - Action: [sts:AssumeRole]
+            Effect: Allow
+            Principal:
+              Service: [lambda.amazonaws.com]
+      Policies:
+        # Policy for Lambda to push logs to CloudWatch
+        - PolicyName: !Join ['-', [!Ref 'AWS::StackName', LambdaCWLogsPolicy]]
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Action: [logs:CreateLogGroup, logs:CreateLogStream, logs:PutLogEvents]
+                Effect: Allow
+                Resource: arn:aws:logs:*:*:*
+        # Policy for Lambda to interact with the SQS Queue
+        - PolicyName: allowSqs
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Action:
+              - sqs:ReceiveMessage
+              - sqs:DeleteMessage
+              - sqs:GetQueueAttributes
+              - sqs:ChangeMessageVisibility
+              Resource: !GetAtt SQSQueue.Arn
+
+Outputs:
+  SNSTopicArn:
+    Value: !Ref SNSTopic
+  SQSQueueArn:
+    Value: !GetAtt SQSQueue.Arn
+  SQSQueueUrl:
+    Value: !Ref SQSQueue

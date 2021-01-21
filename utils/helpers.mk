@@ -14,7 +14,7 @@ wait_for_stack_creation_status = { \
 }
 
 wait_for_stack_update_status = { \
-  until [[ "$$($(call get_stack_status))" != "UPDATE_IN_PROGRESS" ]]; do sleep 5; done; \
+  until [[ "$$($(call get_stack_status))" != "UPDATE_IN_PROGRESS" && "$$($(call get_stack_status))" != "UPDATE_COMPLETE_CLEANUP_IN_PROGRESS" ]]; do sleep 5; done; \
   if [[ "$$($(call get_stack_status))" != "UPDATE_COMPLETE" ]]; \
     then echo "Oops, something went wrong during stack update ❌"; exit 1; \
   fi; \

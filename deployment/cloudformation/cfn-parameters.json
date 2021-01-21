@@ -1,7 +1,11 @@
 [
     {
-      "ParameterKey": "ASGCPUTargetTrackingScaling",
+      "ParameterKey": "ASGCPUTargetValue",
       "ParameterValue": "60"
+    },
+    {
+      "ParameterKey": "ASGDesiredCapacity",
+      "ParameterValue": "2"
     },
     {
       "ParameterKey": "CloudFrontExistingCertArn",
@@ -36,15 +40,11 @@
       "ParameterValue": "/RDS/POSTGRES_PASSWORD/SECURE"
     },
     {
-      "ParameterKey": "SSMParamCWAgentConfig",
-      "ParameterValue": "/CLOUDWATCH_AGENT/CONFIG"
-    },
-    {
       "ParameterKey": "SubnetList",
       "ParameterValue": "subnet-103a1a79,subnet-28219264"
     },
     {
-      "ParameterKey": "TargetGroupVpc",
+      "ParameterKey": "VpcId",
       "ParameterValue": "vpc-e82c7280"
     }
   ]

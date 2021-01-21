@@ -1,0 +1,215 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Metadata:
+  License: Apache-2.0
+Description: |
+  This CloudFormation template defines network resources routing traffic from the public internet to Application Load Balancer:
+  - Route 53 Record Set to map the website name to the CloudFront Distribution Endpoint
+  - CloudFront Distribution to make the application globally accessible via Amazon's Content Delivery Network
+  - CloudFront Origin Access Identity to make private content from S3 bucket accessible through CloudFront
+  - Application Load Balancer and Target Group to be associated with compute targets such as EC2 / ASG.
+  - All Security Groups within the application, to allow traffic between our resources 
+Parameters:
+  ALBSubnetsString:
+    Description: List of subnets the application load balancer will be deployed across
+    Type: String
+  CloudFrontExistingCertArn:
+    Description: SSL Cert Arn stored in ACM with the same region CloudFront (us-east-1)
+    Type: String
+  OAIUserId:
+    Description: CloudFront Origin Access Identity User Id to serve private S3 resources through CF
+    Type: String
+  R53HostedZoneName:
+    Description: The DNS name of an existing Amazon Route 53 hosted zone. For eg, mydomain.com
+    AllowedPattern: (?!-)[a-zA-Z0-9-.]{1,63}(?<!-)
+    Type: String
+    ConstraintDescription: Must be a valid DNS zone name.
+  R53Subdomain:
+    Description: The subdomain of the dns entry. For example, app -> app.mydomain.com.
+    Type: String
+  S3LoggingBucketDomainName:
+    Description: Domain Name for the S3 bucket to store CloudFront access logs
+    Type: String
+  S3StaticContentBucketDomainName:
+    Description: Domain Name for the S3 bucket which serve the webapp resources and static content through CF
+    Type: String
+  S3WebsiteBucketName:
+    Description: Bucket Name for the S3 Website to be used as a failover endpoint if CF primary origin is unreachable
+    Type: String
+  VpcId:
+    Description: Vpc Id of the existing Virtual Private Cloud (VPC)
+    Type: String
+
+Resources:
+  # Route 53
+  WebsiteDNSName:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneName: !Join ['', [!Ref R53HostedZoneName, .]]
+      Name: !Join ['', [!Ref R53Subdomain, ., !Ref R53HostedZoneName]]
+      Comment: Zone apex alias targeted to the CloudFront distribution
+      Type: A
+      AliasTarget:
+        DNSName: !GetAtt WebsiteCDN.DomainName
+        HostedZoneId: Z2FDTNDATAQYW2
+        EvaluateTargetHealth: false
+
+  # CloudFront Distribution
+  WebsiteCDN:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Comment: CDN for ALB and S3 website
+        Aliases: [!Join ['', [!Ref R53Subdomain, ., !Ref R53HostedZoneName]]]
+        Enabled: true
+        DefaultCacheBehavior:
+          # Managed-CachingDisabled
+          CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
+          TargetOriginId: origin-group-id
+          ViewerProtocolPolicy: redirect-to-https
+        CacheBehaviors:
+          - PathPattern: '/staticfiles/*'
+            # Managed-CachingDisabled
+            CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
+            TargetOriginId: s3-oai-origin
+            ViewerProtocolPolicy: redirect-to-https
+          - PathPattern: '*.png'
+            # Managed-CachingDisabled
+            CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
+            TargetOriginId: s3-oai-origin
+            ViewerProtocolPolicy: redirect-to-https
+        DefaultRootObject: index.html
+        OriginGroups:
+          Quantity: 2
+          Items:
+            - Id: origin-group-id
+              FailoverCriteria:
+                StatusCodes:
+                  Items: [502, 503, 504]
+                  Quantity: 3
+              Members:
+                Items: [OriginId: elb-origin, OriginId: s3-web-origin]
+                Quantity: 2
+        Origins:
+          - CustomOriginConfig:
+              HTTPPort: 80
+              OriginProtocolPolicy: http-only
+            DomainName: !GetAtt ApplicationLoadBalancer.DNSName
+            Id: elb-origin
+          - CustomOriginConfig:
+              HTTPPort: 80
+              OriginProtocolPolicy: http-only
+            DomainName: !Join ['', [!Ref S3WebsiteBucketName, ., s3-website, ., !Ref 'AWS::Region', ., amazonaws.com]]
+            Id: s3-web-origin
+          - S3OriginConfig:
+              OriginAccessIdentity: !Join ['/', [origin-access-identity, cloudfront, !Ref OAIUserId]]
+            Id: s3-oai-origin
+            DomainName: !Ref S3StaticContentBucketDomainName
+        ViewerCertificate:
+          AcmCertificateArn: !Ref CloudFrontExistingCertArn
+          SslSupportMethod: sni-only
+        Logging:
+          Bucket: !Ref S3LoggingBucketDomainName
+
+  # Application Load Balancer
+  ALBListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref WebappTargetGroup
+      LoadBalancerArn: !Ref ApplicationLoadBalancer
+      Port: 80
+      Protocol: HTTP
+  ApplicationLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      LoadBalancerAttributes:
+        - Key: deletion_protection.enabled
+          Value: 'false'
+        - Key: access_logs.s3.enabled
+          Value: 'false'
+      Scheme: internet-facing
+      Subnets: !Split [',', !Ref ALBSubnetsString ]
+      SecurityGroups: [!GetAtt ALBSecurityGroup.GroupId]
+  WebappTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckIntervalSeconds: 10
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 3
+      Port: 80
+      Protocol: HTTP
+      UnhealthyThresholdCount: 5
+      VpcId: !Ref VpcId
+      TargetGroupAttributes:
+        - Key: deregistration_delay.timeout_seconds
+          Value: '30'
+        - Key: stickiness.enabled
+          Value: 'false'
+        - Key: load_balancing.algorithm.type
+          Value: 'least_outstanding_requests'
+
+  # Security Groups
+  ALBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow ALB HTTP access from CloudFront
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+  EC2SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow EC2 instances HTTP access from ALB
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          SourceSecurityGroupId: !GetAtt ALBSecurityGroup.GroupId
+  RDSSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow RDS Postgres port access from EC2
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 5432
+          ToPort: 5432
+          SourceSecurityGroupId: !GetAtt EC2SecurityGroup.GroupId
+  ElastiCacheSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow ElastiCache Redis port access from EC2
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 6379
+          ToPort: 6379
+          SourceSecurityGroupId: !GetAtt EC2SecurityGroup.GroupId
+
+Outputs:
+  ALBFullName:
+    Value: !GetAtt ApplicationLoadBalancer.LoadBalancerFullName
+  EC2SecurityGroupName:
+    Value: !Ref EC2SecurityGroup
+  EC2SecurityGroupId:
+    Value: !GetAtt EC2SecurityGroup.GroupId
+  ElastiCacheSecurityGroupName:
+    Value: !Ref ElastiCacheSecurityGroup
+  ElastiCacheSecurityGroupId:
+    Value: !GetAtt ElastiCacheSecurityGroup.GroupId
+  CloudFrontDistributionId:
+    Value: !Ref WebsiteCDN
+  RDSSecurityGroupName:
+    Value: !Ref RDSSecurityGroup
+  TargetGroupArn:
+    Value: !Ref WebappTargetGroup
+  TargetGroupName:
+    Value: !GetAtt WebappTargetGroup.TargetGroupName
+  TargetGroupFullName:
+    Value: !GetAtt WebappTargetGroup.TargetGroupFullName
+  Route53RecordSetDomainName:
+    Value: !Ref WebsiteDNSName

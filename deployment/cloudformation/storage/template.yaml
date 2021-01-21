@@ -1,0 +1,314 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Metadata:
+  License: Apache-2.0
+Description: |
+  This CloudFormation template defines the S3 buckets and a Lambda Custom Resource to manage them.
+  - S3BucketForFailoverWebsite:  S3 website to be used as a failover endpoint when the main app is unavailable
+  - S3BucketCodeDeployArtifacts: Stores CodeDeploy artifacts
+  - S3BucketWebappStaticFiles: Stores and serve the web application resources and static files through CF
+  - S3LoggingBucketDomainName: Stores CloudFront access logs
+  - Lambda custom resource to manage the creation of files at S3 Bucket creation and emptying buckets before delete
+  - Bucket Policies and Lambda Role
+Parameters:
+  R53HostedZoneName:
+    Description: The DNS name of an existing Amazon Route 53 hosted zone. For eg, mydomain.com
+    AllowedPattern: (?!-)[a-zA-Z0-9-.]{1,63}(?<!-)
+    Type: String
+    ConstraintDescription: Must be a valid DNS zone name.
+  R53Subdomain:
+    Description: The subdomain of the dns entry. For example, app -> app.mydomain.com.
+    Type: String
+
+Resources:
+  # S3 Buckets
+  S3BucketForFailoverWebsite:
+    Type: AWS::S3::Bucket
+    Properties:
+      # S3 website bucket name must be the DNS Name served by the CloudFront distribution custom origin
+      BucketName: !Join ['', [!Ref 'R53Subdomain', ., !Ref 'R53HostedZoneName']]
+      AccessControl: PublicRead
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: error.html
+  S3BucketCodeDeployArtifacts:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Join ['', [!Ref 'R53Subdomain', ., !Ref 'R53HostedZoneName', -, codedeploy-artifacts]]
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      VersioningConfiguration:
+        Status: Enabled
+  S3BucketWebappStaticFiles:
+    Type: AWS::S3::Bucket
+    # Note: Private S3 files served through CloudFront OAI are defined by the CF Caching behaviours, eg. 'staticfiles/*', '*.png'
+    Properties:
+      BucketName: !Join ['', [!Ref 'R53Subdomain', ., !Ref 'R53HostedZoneName', -, static-files]]
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+  S3BucketCFLogging:
+    Type: AWS::S3::Bucket
+    # Note: Stores CloudFront access logs
+    Properties:
+      BucketName: !Join ['', [!Ref 'R53Subdomain', ., !Ref 'R53HostedZoneName', -, cf-logs]]
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  # S3 Bucket Policies
+  # BucketPolicyForCloudFrontAccessLogs:  
+  #   Type: AWS::S3::BucketPolicy
+  #   Properties:
+  #     Bucket: !Ref S3BucketCFLogging
+  #     PolicyDocument:
+  #       Statement:
+  #       - Sid: "AllowCloudFrontToPutLogs"
+  #         Action: ['s3:GetBucketAcl', 's3:PutBucketAcl']
+  #         Effect: Allow
+  #         Resource: !Join ['', [!GetAtt S3BucketCFLogging.Arn, '/*']]
+  #         Principal:
+  #           AWS: [arn:aws:iam::123456789012:root]
+  BucketPolicyForFailoverWebsite:  
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref S3BucketForFailoverWebsite
+      PolicyDocument:
+        Statement:
+        - Sid: "AllowPublicGetObject"
+          Action: ['s3:Get*', 's3:List*']
+          Effect: Allow
+          Resource: !Join ['', [!GetAtt 'S3BucketForFailoverWebsite.Arn', '/*']]
+          Principal: "*"
+  BucketPolicyForWebappStaticFiles:  
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref S3BucketWebappStaticFiles
+      PolicyDocument:
+        Statement:
+        - Sid: "AllowEC2toUploadS3Files"
+          Action: ['s3:Get*', 's3:List*', 's3:Put*']
+          Effect: Allow
+          Resource: !Join ['', [!GetAtt S3BucketWebappStaticFiles.Arn, '/*']]
+          Principal:
+            Service: ["ec2.amazonaws.com"]
+        - Sid: "GetObjectOnlyFromCloudFrontOAIUser"
+          Action: ['s3:Get*']
+          Effect: Allow
+          Resource: !Join ['', [!GetAtt S3BucketWebappStaticFiles.Arn, '/*']]
+          Principal:
+            CanonicalUser: !GetAtt OriginAccessIdentity.S3CanonicalUserId
+  OriginAccessIdentity:
+    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: !Sub Static assets in ${AWS::StackName}
+
+  # Lambda Custom Resource
+  S3CustomResource:
+    Type: Custom::S3CustomResource
+    Properties:
+      ServiceToken: !GetAtt LambdaCustomResourceForS3.Arn
+      codedeploy_bucket_name: !Ref S3BucketCodeDeployArtifacts
+      website_bucket_name: !Ref S3BucketForFailoverWebsite
+      static_assets_bucket_name: !Ref S3BucketWebappStaticFiles
+      index_html_content: !Sub |
+        <!doctype html>
+        <html lang="en">
+        <head>
+          <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+          <meta name="viewport" content="width=device-width, initial-scale=1"/>
+          <meta name="description" content="Failover page for ${R53Subdomain}.${R53HostedZoneName}">
+          <meta name="author" content="Guillaume Bournique">
+          <title>Failover page</title>
+          <link href="https://s3.eu-west-2.amazonaws.com/tarikitchen/django_files/static/css/materialize.css" type="text/css" rel="stylesheet" media="screen,projection"/>
+          <link href="https://s3.eu-west-2.amazonaws.com/tarikitchen/django_files/static/css/style.css" type="text/css" rel="stylesheet" media="screen,projection"/>
+          <link rel="shortcut icon" href="https://s3.eu-west-2.amazonaws.com/tarikitchen/django_files/static/favicon.ico">
+          <link rel="apple-touch-icon" href="https://s3.eu-west-2.amazonaws.com/tarikitchen/django_files/static/apple-touch-icon.png">
+        </head>
+        <body>
+          <header>
+            <div class="navbar-fixed">
+              <nav style="background-color:white">
+                <div class="nav-wrapper container">
+                  <a id="logo-container" href="/" class="brand-logo center">
+                    <img class="img-responsive" style="width:250px; height:32px; margin-top:14px" src="https://s3.eu-west-2.amazonaws.com/tarikitchen/django_files/static/Logo.png">
+                  </a>
+                  <a href="#" data-target="nav-mobile" class="sidenav-trigger"><i class="material-icons">menu</i></a>
+                </div>
+              </nav>
+            </div>
+          </header>
+          <main>	
+            <div class="container">
+              <div class="row">
+                <center>
+                  <br><br><br><br><br>
+                  <h5>Oops.. ${R53Subdomain}.${R53HostedZoneName} is currently unavailable. Please try again between 10AM-6PM (GMT).</h5>
+                  <br>
+                  <a href="/" id="refresh-button" class="btn-large waves-effect waves-light brown lighten-1">Try again</a>
+                </center>
+              </div>
+            </div>
+            <br><br><br><br><br><br><br><br>
+          </main>
+          <footer>
+            <footer id="my-footer" class="page-footer grey" style="position:sticky;bottom:0;left:0;width:100%;">
+              <div class="container">
+                Source code on <a class="grey-text text-darken-3" href="https://github.com/gbourniq/django-on-aws" target="_blank">Github</a>
+                <br><br>
+              </div>
+            </footer>
+          </footer>
+        </body>
+        </html>
+      error_html_content: |
+        <h1>Uh oh, there was an error with the S3 website</h1>
+  LambdaCustomResourceForS3:
+    Type: AWS::Lambda::Function
+    Properties:
+      Description: "Lambda function to manage S3 buckets lifecycle"
+      FunctionName: !Sub '${AWS::StackName}-lambda-s3'
+      Handler: index.handler
+      Role: !GetAtt LambdaRoleCustomResourceForS3.Arn
+      Timeout: 30
+      MemorySize: 128
+      Runtime: python3.6
+      Code:
+        # Using ZipFile is required to import the cfnresponse module
+        ZipFile: |
+          import boto3
+          import cfnresponse
+          import uuid
+
+          def handler(event, context):
+              """
+              This Lambda function has two purposes:
+              - Provision S3 buckets with resources on Stack Creation and Update
+              - Empty S3 buckets on Stack Deletion, including versioned buckets
+              """
+              event_type = event['RequestType']
+              print(f"{event_type} event received")
+              response_data = {}
+              # https://stackoverflow.com/questions/50599602/updating-custom-resources-causes-them-to-be-deleted
+              resource_id = ""
+              if "PhysicalResourceId" not in event:
+                  event['PhysicalResourceId'] = str(uuid.uuid1())
+              resource_id = event['PhysicalResourceId']
+              s3_client = boto3.client('s3')
+              s3_resource = boto3.resource('s3')
+              # Retrieve parameters from the CloudFormation Custom Resource
+              codedeploy_bucket_name = event['ResourceProperties']['codedeploy_bucket_name']
+              website_bucket_name = event['ResourceProperties']['website_bucket_name']
+              static_assets_bucket_name = event['ResourceProperties']['static_assets_bucket_name']
+              try:
+                  if event_type in ('Create', 'Update'):
+                      s3_client.put_object(
+                          Bucket=website_bucket_name,
+                          Key="index.html",
+                          Body=event['ResourceProperties']['index_html_content'].encode("utf-8"),
+                          ContentType="text/html"
+                      )
+                      s3_client.put_object(
+                          Bucket=website_bucket_name,
+                          Key="error.html",
+                          Body=event['ResourceProperties']['error_html_content'].encode("utf-8"),
+                          ContentType="text/html"
+                      )
+                  elif event_type == 'Delete':
+                      # Delete objects
+                      s3_resource.Bucket(website_bucket_name).objects.all().delete()
+                      s3_resource.Bucket(static_assets_bucket_name).objects.all().delete()
+                      s3_resource.Bucket(codedeploy_bucket_name).objects.all().delete()
+                      # Delete object versions and deletemarkers for versioned buckets
+                      object_versions = s3_client.list_object_versions(
+                          Bucket=codedeploy_bucket_name
+                      )
+                      if 'Versions' in object_versions:
+                          for obj in object_versions['Versions']:
+                              print(f"[VERSIONED BUCKET] Deleting object version {obj}")
+                              s3_client.delete_object(
+                                  Bucket=codedeploy_bucket_name,
+                                  Key=obj['Key'],
+                                  VersionId=obj['VersionId']
+                              )
+                      if 'DeleteMarkers' in object_versions:
+                          for obj in object_versions['DeleteMarkers']:
+                              print(f"[VERSIONED BUCKET] Deleting object delete marker {obj}")
+                              s3_client.delete_object(
+                                  Bucket=codedeploy_bucket_name,
+                                  Key=obj['Key'],
+                                  VersionId=obj['VersionId']
+                              )
+                  print(f"{event_type} operation successful! Sending the signal back to cfn.")
+                  cfnresponse.send(
+                      event, context, cfnresponse.SUCCESS, response_data, resource_id
+                  )
+
+              except Exception as excpt:
+                  print(f"Execution failed... {excpt}")
+                  response_data['Data'] = f"Execution failed... {excpt}"
+                  cfnresponse.send(
+                      event, context, cfnresponse.FAILED, response_data, resource_id
+                  )
+
+  # IAM
+  LambdaRoleCustomResourceForS3:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Join ['-', [!Ref 'AWS::StackName', LambdaRoleCustomS3]]
+      AssumeRolePolicyDocument:
+        # Allow Lambda service to assume the role
+        Version: '2012-10-17'
+        Statement:
+        - Action: [sts:AssumeRole]
+          Effect: Allow
+          Principal:
+            Service: [lambda.amazonaws.com]
+      Policies:
+        # Policy for Lambda to push logs to CloudWatch
+        - PolicyName: !Join ['-', [!Ref 'AWS::StackName', AWSLambdaCWPolicy]]
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Action:
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+              Effect: Allow
+              Resource: arn:aws:logs:*:*:*
+        # Policy for Lambda to manage S3 bucket resources and S3 objects
+        - PolicyName: !Join ['-', [!Ref 'AWS::StackName', AWSLambdaS3Policy]]
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Action: ['s3:PutObject', 's3:DeleteObject', 's3:List*']
+              Effect: Allow
+              Resource:
+                - !Join ['', [!GetAtt S3BucketForFailoverWebsite.Arn, '*']]
+                - !Join ['', [!GetAtt S3BucketCodeDeployArtifacts.Arn, '*']]
+                - !Join ['', [!GetAtt S3BucketWebappStaticFiles.Arn, '*']]
+
+Outputs:
+  OAIUserId:
+    Value: !Ref OriginAccessIdentity
+  S3BucketNameForFailoverWebsite:
+    Value: !Ref 'S3BucketForFailoverWebsite'
+  S3BucketNameWebappStaticFiles:
+    Value: !Ref 'S3BucketWebappStaticFiles'
+  S3BucketDomainNameWebappStaticFiles:
+    Value: !GetAtt 'S3BucketWebappStaticFiles.DomainName'
+  S3BucketArnWebappStaticFiles:
+    Value: !GetAtt 'S3BucketWebappStaticFiles.Arn'
+  S3BucketNameCodeDeployArtifacts:
+    Value: !Ref 'S3BucketCodeDeployArtifacts'
+  S3BucketArnCodeDeployArtifacts:
+    Value: !GetAtt 'S3BucketCodeDeployArtifacts.Arn'
+  S3BucketCFLoggingDomainName:
+    Value: !GetAtt 'S3BucketCFLogging.DomainName'
