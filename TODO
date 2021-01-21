@@ -1,9 +1,13 @@
-AWS Deployment
-- review all resources configurations, rename variables, consistency, simplify, add comments, descriptions, etc
+for each template, check:
+- quotes
+- names, order parameters alphabetically
+- formula consistency
+- simplify
+- add comments/descriptions
 
+AWS Deployment
 - define DR strategy (eg. S3 bucket SRR/CRR)
 - dev/prod var to be used to retain/snapshot resources: RDS, S3
-
 - when everything looks good, replace the sample apache server with the django app (docker)
 - codedeploy course + best practices (eg. customise deployment behavior with environment variables eg. DEPLOYMENT_GROUP_NAME==dev)
 - add django logs + metrics filtering to CW dashboard
@@ -28,35 +32,6 @@ Extras
 # https://aws.amazon.com/blogs/security/automatically-update-security-groups-for-amazon-cloudfront-ip-ranges-using-aws-lambda/
 
 
-
-Nested stack:
-
-Application
-- ASG resources + LC/Userdata/cfn-init + IAM (instance profile)
-- CodeDeploy + IAM
-
-S3/Static
-- S3 x3 + bucket policy x2
-- S3 Custom resource
-
-Serverless
-- Lambda x3 + IAM x3 + Event source mapping + permission
-- SNS, SQS
-
-Database
-- ElastiCache
-- RDS
-
-Network
-- Route 53
-- CF
-- ELB
-- SGs
-
-for each template, check:
-- quotes
-- names, order parameters alphabetically
-- remove TODOs
 
 
 
