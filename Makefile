@@ -29,7 +29,7 @@ TAG_EMAIL="gbournique.dev1@gmail.com"
 TAG_MODIFIED_DATE="$$(date +%F_%T)"
 
 # CodeDeploy
-APP_CODE=deployment/sample-app
+APP_CODE=deployment/codedeploy-app
 
 include utils/helpers.mk
 

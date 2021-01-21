@@ -1,10 +1,6 @@
 AWS Deployment
 - logging bucket for cloudfront/ALB access logs + cloudtrail + vpc flow log to s3/cw
 - review all resources configurations, rename variables, consistency, simplify, add comments, descriptions, etc
-- review all policies, ensure least priviledge
-- use of nested stack and best practices: eg: split R53 / ALB / CF-S3 / NETWORK+SGs?
-- Use StackPolicies to prevent accidental updates / deletes to stack resources
-- put cw log config within cfn template
 
 - define DR strategy (eg. S3 bucket SRR/CRR)
 - dev/prod var to be used to retain/snapshot resources: RDS, S3
