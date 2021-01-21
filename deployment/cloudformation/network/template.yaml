@@ -26,8 +26,11 @@ Parameters:
   R53Subdomain:
     Description: The subdomain of the dns entry. For example, app -> app.mydomain.com.
     Type: String
-  S3LoggingBucketDomainName:
-    Description: Domain Name for the S3 bucket to store CloudFront access logs
+  S3BucketDomainNameLogging:
+    Description: Domain Name for the S3 bucket to store CloudFront, ALB, VPC access logs
+    Type: String
+  S3BucketNameLogging:
+    Description: Name for the S3 bucket to store CloudFront, ALB, VPC access logs
     Type: String
   S3StaticContentBucketDomainName:
     Description: Domain Name for the S3 bucket which serve the webapp resources and static content through CF
@@ -108,7 +111,8 @@ Resources:
           AcmCertificateArn: !Ref CloudFrontExistingCertArn
           SslSupportMethod: sni-only
         Logging:
-          Bucket: !Ref S3LoggingBucketDomainName
+          Bucket: !Ref S3BucketDomainNameLogging
+          Prefix: 'cloudfront/'
 
   # Application Load Balancer
   ALBListener:
@@ -127,7 +131,11 @@ Resources:
         - Key: deletion_protection.enabled
           Value: 'false'
         - Key: access_logs.s3.enabled
-          Value: 'false'
+          Value: 'true'
+        - Key: access_logs.s3.bucket
+          Value: !Ref S3BucketNameLogging
+        - Key: access_logs.s3.prefix
+          Value: 'alb'
       Scheme: internet-facing
       Subnets: !Split [',', !Ref ALBSubnetsString ]
       SecurityGroups: [!GetAtt ALBSecurityGroup.GroupId]

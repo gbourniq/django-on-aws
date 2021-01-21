@@ -51,11 +51,11 @@ Resources:
         BlockPublicPolicy: true
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
-  S3BucketCFLogging:
+  S3BucketLogging:
     Type: AWS::S3::Bucket
     # Note: Stores CloudFront access logs
     Properties:
-      BucketName: !Join ['', [!Ref 'R53Subdomain', ., !Ref 'R53HostedZoneName', -, cf-logs]]
+      BucketName: !Join ['', [!Ref 'R53Subdomain', ., !Ref 'R53HostedZoneName', -, logging-bucket]]
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
         BlockPublicPolicy: true
@@ -63,18 +63,33 @@ Resources:
         RestrictPublicBuckets: true
 
   # S3 Bucket Policies
-  # BucketPolicyForCloudFrontAccessLogs:  
-  #   Type: AWS::S3::BucketPolicy
-  #   Properties:
-  #     Bucket: !Ref S3BucketCFLogging
-  #     PolicyDocument:
-  #       Statement:
-  #       - Sid: "AllowCloudFrontToPutLogs"
-  #         Action: ['s3:GetBucketAcl', 's3:PutBucketAcl']
-  #         Effect: Allow
-  #         Resource: !Join ['', [!GetAtt S3BucketCFLogging.Arn, '/*']]
-  #         Principal:
-  #           AWS: [arn:aws:iam::123456789012:root]
+  BucketPolicyForLoggingBucket:  
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref S3BucketLogging
+      PolicyDocument:
+        Statement:
+        - Sid: "AllowCFandALBToPutLogs"
+          Action: ['s3:PutObject']
+          Effect: Allow
+          Resource: !Join ['', [!GetAtt S3BucketLogging.Arn, '/*']]
+          # https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-access-logs.html
+          Principal:
+            AWS: ["arn:aws:iam::652711504416:root"]
+        - Sid: "AllowDeliveryLogsPutObjects"
+          Action: ['s3:PutObject']
+          Effect: Allow
+          Resource: !Join ['', [!GetAtt S3BucketLogging.Arn, '/*']]
+          Principal:
+            Service: ["delivery.logs.amazonaws.com"]
+        - Sid: "AllowDeliveryLogsGetBucketAcl"
+          Action: ['s3:GetBucketAcl']
+          Effect: Allow
+          Resource: !Join ['', [!GetAtt S3BucketLogging.Arn]]
+          Principal:
+            Service: ["delivery.logs.amazonaws.com"]
+
+
   BucketPolicyForFailoverWebsite:  
     Type: AWS::S3::BucketPolicy
     Properties:
@@ -118,6 +133,7 @@ Resources:
       codedeploy_bucket_name: !Ref S3BucketCodeDeployArtifacts
       website_bucket_name: !Ref S3BucketForFailoverWebsite
       static_assets_bucket_name: !Ref S3BucketWebappStaticFiles
+      logging_bucket_name: !Ref S3BucketLogging
       index_html_content: !Sub |
         <!doctype html>
         <html lang="en">
@@ -207,6 +223,7 @@ Resources:
               codedeploy_bucket_name = event['ResourceProperties']['codedeploy_bucket_name']
               website_bucket_name = event['ResourceProperties']['website_bucket_name']
               static_assets_bucket_name = event['ResourceProperties']['static_assets_bucket_name']
+              logging_bucket_name = event['ResourceProperties']['logging_bucket_name']
               try:
                   if event_type in ('Create', 'Update'):
                       s3_client.put_object(
@@ -225,6 +242,7 @@ Resources:
                       # Delete objects
                       s3_resource.Bucket(website_bucket_name).objects.all().delete()
                       s3_resource.Bucket(static_assets_bucket_name).objects.all().delete()
+                      s3_resource.Bucket(logging_bucket_name).objects.all().delete()
                       s3_resource.Bucket(codedeploy_bucket_name).objects.all().delete()
                       # Delete object versions and deletemarkers for versioned buckets
                       object_versions = s3_client.list_object_versions(
@@ -310,5 +328,7 @@ Outputs:
     Value: !Ref 'S3BucketCodeDeployArtifacts'
   S3BucketArnCodeDeployArtifacts:
     Value: !GetAtt 'S3BucketCodeDeployArtifacts.Arn'
-  S3BucketCFLoggingDomainName:
-    Value: !GetAtt 'S3BucketCFLogging.DomainName'
+  S3BucketDomainNameLogging:
+    Value: !GetAtt 'S3BucketLogging.DomainName'
+  S3BucketNameLogging:
+    Value: !Ref 'S3BucketLogging'

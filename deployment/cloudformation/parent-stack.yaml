@@ -73,7 +73,8 @@ Resources:
         OAIUserId: !GetAtt StorageStack.Outputs.OAIUserId
         R53HostedZoneName: !Ref R53HostedZoneName
         R53Subdomain: !Ref R53Subdomain
-        S3LoggingBucketDomainName: !GetAtt StorageStack.Outputs.S3BucketCFLoggingDomainName
+        S3BucketDomainNameLogging: !GetAtt StorageStack.Outputs.S3BucketDomainNameLogging
+        S3BucketNameLogging: !GetAtt StorageStack.Outputs.S3BucketNameLogging
         S3StaticContentBucketDomainName: !GetAtt StorageStack.Outputs.S3BucketDomainNameWebappStaticFiles
         S3WebsiteBucketName: !GetAtt StorageStack.Outputs.S3BucketNameForFailoverWebsite
         VpcId: !Ref VpcId

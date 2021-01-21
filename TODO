@@ -1,5 +1,4 @@
 AWS Deployment
-- logging bucket for cloudfront/ALB access logs + cloudtrail + vpc flow log to s3/cw
 - review all resources configurations, rename variables, consistency, simplify, add comments, descriptions, etc
 
 - define DR strategy (eg. S3 bucket SRR/CRR)

@@ -70,7 +70,7 @@ Resources:
   NetworkStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: https://s3.eu-west-2.amazonaws.com/gbournique-sam-artifacts/f4a1ad8345a2f1a23f6bad598635d2fa.template
+      TemplateURL: https://s3.eu-west-2.amazonaws.com/gbournique-sam-artifacts/afc3724068e10f0b624af91bcafa362a.template
       Parameters:
         ALBSubnetsString:
           Fn::Join:
@@ -86,10 +86,14 @@ Resources:
           Ref: R53HostedZoneName
         R53Subdomain:
           Ref: R53Subdomain
-        S3LoggingBucketDomainName:
+        S3BucketDomainNameLogging:
           Fn::GetAtt:
           - StorageStack
-          - Outputs.S3BucketCFLoggingDomainName
+          - Outputs.S3BucketDomainNameLogging
+        S3BucketNameLogging:
+          Fn::GetAtt:
+          - StorageStack
+          - Outputs.S3BucketNameLogging
         S3StaticContentBucketDomainName:
           Fn::GetAtt:
           - StorageStack
@@ -164,7 +168,7 @@ Resources:
   StorageStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: https://s3.eu-west-2.amazonaws.com/gbournique-sam-artifacts/a58a5e3c9dfedf3ba8f2ea8a005a9e33.template
+      TemplateURL: https://s3.eu-west-2.amazonaws.com/gbournique-sam-artifacts/2c2d88b190dbb0c2e0063cb07b49e9cf.template
       Parameters:
         R53HostedZoneName:
           Ref: R53HostedZoneName
