@@ -454,6 +454,9 @@ Resources:
     Type: AWS::CodeDeploy::DeploymentGroup
     Properties:
       ApplicationName: !Ref CodeDeployApplication
+      AutoRollbackConfiguration:
+        Enabled: true
+        Events: [DEPLOYMENT_FAILURE]
       ServiceRoleArn: !GetAtt CodeDeployRole.Arn
       DeploymentConfigName: !Ref WebappDeploymentConfig
       # CodeDeploy automatically deploys revisions to when new instances are created
@@ -467,7 +470,7 @@ Resources:
         TargetGroupInfoList: [Name: !Ref TargetGroupName]
       TriggerConfigurations:
         - TriggerName: MyTarget
-          TriggerEvents: [DeploymentSuccess, DeploymentRollback]
+          TriggerEvents: [DeploymentStart, DeploymentSuccess, DeploymentStop, DeploymentFailure, DeploymentRollback]
           TriggerTargetArn: !Ref SNSTopicArn
   WebappDeploymentConfig:
     Type: AWS::CodeDeploy::DeploymentConfig
