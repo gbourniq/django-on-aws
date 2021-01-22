@@ -1,7 +1,4 @@
 AWS Deployment
-- dev/prod var to be used to retain/snapshot resources: RDS, S3
-- define DR strategy (eg. S3 bucket SRR/CRR)
-
 - when everything looks good, replace the sample apache server with the django app (docker)
 - codedeploy course + best practices (eg. customise deployment behavior with environment variables eg. DEPLOYMENT_GROUP_NAME==dev)
 - add django logs + metrics filtering to CW dashboard

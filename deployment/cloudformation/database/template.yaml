@@ -4,7 +4,7 @@ Metadata:
 Description: |
   This CloudFormation template defines the databases backend for the stack.
   - RDS Postgres with Read Replica in another AZ
-  - ElastiCache Redis cluster with a master and child node spread across 2 AZ
+  - ElastiCache Redis cluster
 
 Parameters:
   AddRDSReadReplica:
@@ -15,10 +15,6 @@ Parameters:
   ElasticacheSecurityGroupId:
     Description: Security Group Id for ElastiCache to allow incoming request from EC2s
     Type: String
-  RDSDeletionUpdateReplacePolicy:
-    Description: Policy for when stack is deleted or update.
-    Type: String
-    AllowedValues: ['Delete', 'Snapshot', 'Retain']
   RDSSecurityGroupName:
     Description: Security Group Name for RDS to allow incoming request from EC2s
     Type: String
@@ -30,14 +26,12 @@ Parameters:
 
 Conditions:
   RDSReadReplica: !Equals [ !Ref AddRDSReadReplica, 'true' ]
-  IsProduction: !Equals [ !Ref RDSDeletionUpdateReplacePolicy, "true" ]
-  IsTest: !Equals [ !Ref RDSDeletionUpdateReplacePolicy, "false" ]
 
 Resources:
-  RDSPostgresDB: &queue-config
+  RDSPostgresDB:
     Type: AWS::RDS::DBInstance
-    DeletionPolicy: Delete
-    UpdateReplacePolicy: Delete
+    DeletionPolicy: Snapshot
+    UpdateReplacePolicy: Retain
     Properties:
       DeletionProtection: false
       Engine: postgres
@@ -56,12 +50,6 @@ Resources:
       StorageType: gp2
       StorageEncrypted: false
       VPCSecurityGroups: [!Ref RDSSecurityGroupName]
-      Condition: IsProduction
-  ProdRDSPostgresDB:
-    <<: *queue-config
-    UpdateReplacePolicy: Retain
-    Condition: IsTest
-
   ReadReplicaDB:
     Condition: RDSReadReplica
     Type: AWS::RDS::DBInstance
@@ -73,6 +61,7 @@ Resources:
         Value: Read Replica Database
   ElasticacheRedisCluster:
     Type: AWS::ElastiCache::CacheCluster
+    DeletionPolicy: Delete
     Properties:
       AZMode: single-az
       AutoMinorVersionUpgrade: true

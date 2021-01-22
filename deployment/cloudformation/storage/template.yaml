@@ -25,8 +25,10 @@ Resources:
   # S3 Buckets
   S3BucketForFailoverWebsite:
     Type: AWS::S3::Bucket
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Retain
     Properties:
-      # S3 website bucket name must match the DNS Name served by the CloudFront distribution custom origin
+      # S3 website bucket name must match the DNS Name served by the CF distribution custom origin
       BucketName: !Join ['', [!Ref R53Subdomain, ., !Ref R53HostedZoneName]]
       AccessControl: PublicRead
       WebsiteConfiguration:
@@ -34,6 +36,8 @@ Resources:
         ErrorDocument: error.html
   S3BucketCodeDeployArtifacts:
     Type: AWS::S3::Bucket
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Retain
     Properties:
       BucketName: !Join ['', [!Ref R53Subdomain, ., !Ref R53HostedZoneName, -, codedeploy-artifacts]]
       PublicAccessBlockConfiguration:
@@ -45,7 +49,8 @@ Resources:
         Status: Enabled
   S3BucketWebappStaticFiles:
     Type: AWS::S3::Bucket
-    # Note: Private S3 files served through CloudFront OAI are defined by the CF Caching behaviours, eg. 'staticfiles/*', '*.png'
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Retain
     Properties:
       BucketName: !Join ['', [!Ref R53Subdomain, ., !Ref R53HostedZoneName, -, static-files]]
       PublicAccessBlockConfiguration:
@@ -55,7 +60,8 @@ Resources:
         RestrictPublicBuckets: true
   S3BucketLogging:
     Type: AWS::S3::Bucket
-    # Note: Stores CloudFront access logs
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Retain
     Properties:
       BucketName: !Join ['', [!Ref R53Subdomain, ., !Ref R53HostedZoneName, -, logging-bucket]]
       PublicAccessBlockConfiguration:
