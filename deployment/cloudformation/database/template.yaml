@@ -15,6 +15,10 @@ Parameters:
   ElasticacheSecurityGroupId:
     Description: Security Group Id for ElastiCache to allow incoming request from EC2s
     Type: String
+  Environment:
+    Description: Stage environment name to determine RDS DeletionPolicy
+    Type: String
+    AllowedValues: [dev, prod]
   RDSSecurityGroupName:
     Description: Security Group Name for RDS to allow incoming request from EC2s
     Type: String
@@ -23,12 +27,37 @@ Parameters:
     Description: SSM Parameter Name for the RDS password SecureString.
     Type: String
 
-
 Conditions:
-  RDSReadReplica: !Equals [ !Ref AddRDSReadReplica, 'true' ]
+  RDSReadReplica: !And [!Equals [ !Ref AddRDSReadReplica, 'true' ], !Equals [ !Ref Environment, prod]]
+  DevEnvironment: !Equals [ !Ref Environment, dev]
+  ProdEnvironment: !Equals [ !Ref Environment, prod]
 
 Resources:
-  RDSPostgresDB:
+  DevRDSPostgresDB:
+    Condition: DevEnvironment
+    Type: AWS::RDS::DBInstance
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Retain
+    Properties:
+      DeletionProtection: false
+      Engine: postgres
+      EngineVersion: '12.4'
+      DBInstanceClass: db.t2.micro
+      AllocatedStorage: '5'
+      DBName: portfoliodb
+      MasterUsername: postgres
+      MasterUserPassword:
+        !Sub
+          - "{{resolve:ssm-secure:${paramName}:1}}"
+          - { paramName: !Ref SSMParamNameRdsPostgresPassword }
+      Port: '5432'
+      MultiAZ: false
+      PubliclyAccessible: true
+      StorageType: gp2
+      StorageEncrypted: false
+      VPCSecurityGroups: [!Ref RDSSecurityGroupName]
+  ProdRDSPostgresDB:
+    Condition: ProdEnvironment
     Type: AWS::RDS::DBInstance
     DeletionPolicy: Snapshot
     UpdateReplacePolicy: Retain
@@ -54,7 +83,7 @@ Resources:
     Condition: RDSReadReplica
     Type: AWS::RDS::DBInstance
     Properties:
-      SourceDBInstanceIdentifier: !Ref RDSPostgresDB
+      SourceDBInstanceIdentifier: !Ref ProdRDSPostgresDB
       DBInstanceClass: db.t2.micro
       Tags:
       - Key: Description
@@ -74,4 +103,4 @@ Outputs:
   RedisEndpoint:
     Value: !GetAtt ElasticacheRedisCluster.RedisEndpoint.Address
   PostgresEndpoint:
-    Value: !GetAtt RDSPostgresDB.Endpoint.Address
+    Value: !If [DevEnvironment, !GetAtt DevRDSPostgresDB.Endpoint.Address, !GetAtt ProdRDSPostgresDB.Endpoint.Address]

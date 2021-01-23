@@ -19,7 +19,7 @@ RDS_POSTGRES_HOST=$$(echo "$$($(call get_stack_output, PostgresRdsEndpoint))")
 
 # Cloudformation
 AWS_DEFAULT_PROFILE=myaws
-ENVIRONMENT=dev
+ENVIRONMENT=prod
 STACK_NAME=$(ENVIRONMENT)
 S3_BUCKET_NAME_CFN_TEMPLATES=gbournique-sam-artifacts
 CFN_PARENT_TEMPLATE_FILE="deployment/cloudformation/parent-stack.yaml"

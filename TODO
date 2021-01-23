@@ -1,6 +1,5 @@
 AWS Deployment
-- add dev/prod variable (to be route53 subdomain? [dev, prod]) to delete/retain postgres database and s3 buckets - add it to the makefile with the stackdeletion security flag if prod
-- use codedeploy environment variables just to print "dev" or "prod" on the html page
+- dashboard to show codedeploy logs
 - use case for scheduled lambda AWS::Events::Rule ? (eg. terminate instance randomly for dev stack)
 - use the Well Architected Tool
 - test rds snapshots when deleting stack and then restore it
