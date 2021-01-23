@@ -7,25 +7,20 @@ Parameters:
   ASGCPUTargetValue:
     Description: Average CPU Target for each instance (eg. 60%)
     Type: Number
-    MinValue: 0
-    MaxValue: 100
-    Default: 0
+    MinValue: 20
+    MaxValue: 80
   ASGDesiredCapacity:
     Description: Auto Scaling Group Desired Capacity
     Type: String
-    Default: '2'
   CloudFrontExistingCertArn:
     Description: SSL Cert Arn stored in ACM with the same region CloudFront (us-east-1)
     Type: String
-    Default: arn:aws:acm:us-east-1:164045463835:certificate/26654aed-53fe-4033-9866-9b072ad88ed8
   EC2LatestLinuxAmiId:
     Description: AWS managed SSM parameter to retrieve the latest Amazon Linux 2 AMI Id
     Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
-    Default: /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2
   EC2InstanceType:
     Description: WebServer EC2 instance type
     Type: String
-    Default: t2.micro
     AllowedValues: [t2.micro]
     ConstraintDescription: Must be a valid EC2 instance type.
   EC2VolumeSize:
@@ -33,33 +28,29 @@ Parameters:
     Type: Number
     MinValue: 8
     MaxValue: 20
-    Default: 8
+  Environment:
+    Description: Stage name which is used as the R53 DNS subdomain, the CodeDeploy deployment group, and to determine RDS DeletePolicy
+    Type: String
+    AllowedValues: [dev, prod]
   R53HostedZoneName:
     Description: The DNS name of an existing Amazon Route 53 hosted zone. For example, "mydomain.com" 
     AllowedPattern: (?!-)[a-zA-Z0-9-.]{1,63}(?<!-)
     Type: String
-    Default: bournique.fr
     ConstraintDescription: Must be an existing DNS zone name.
-  R53Subdomain:
-    Description: The subdomain of the dns entry. For example, app -> app.mydomain.com.
-    Type: String
-    Default: app
   SSMParamSlackWebhookUrl:
     NoEcho: 'true'
     Description: SSM Parameter Name for the Slack WebHook Url used for ASG/CodeDeploy notifications. Create an empty SSM variable to disable.
     Type: AWS::SSM::Parameter::Value<String>
-    Default: /SLACK/INCOMING_WEBHOOK_URL
   SSMParamNameRdsPostgresPassword:
     Description: SSM Parameter Name for the RDS password SecureString.
     Type: String
-    Default: /RDS/POSTGRES_PASSWORD/SECURE
-  SubnetList:
-    Type: List<AWS::EC2::Subnet::Id>
+  SubnetListStr:
+    # Type: List<AWS::EC2::Subnet::Id>
+    Type: String
     Default: subnet-103a1a79,subnet-28219264
   VpcId:
     Description: VpcId of the existing Virtual Private Cloud (VPC)
     Type: AWS::EC2::VPC::Id
-    Default: vpc-e82c7280
 
 Resources:
   NetworkStack:
@@ -67,11 +58,11 @@ Resources:
     Properties:
       TemplateURL: network/template.yaml
       Parameters:
-        ALBSubnetsString: !Join [',', !Ref SubnetList ]
+        ALBSubnetsString: !Ref SubnetListStr
         CloudFrontExistingCertArn: !Ref CloudFrontExistingCertArn
         OAIUserId: !GetAtt StorageStack.Outputs.OAIUserId
         R53HostedZoneName: !Ref R53HostedZoneName
-        R53Subdomain: !Ref R53Subdomain
+        R53Subdomain: !Ref Environment
         S3BucketDomainNameLogging: !GetAtt StorageStack.Outputs.S3BucketDomainNameLogging
         S3BucketNameLogging: !GetAtt StorageStack.Outputs.S3BucketNameLogging
         S3BucketDomainNameWebappStaticFiles: !GetAtt StorageStack.Outputs.S3BucketDomainNameWebappStaticFiles
@@ -84,7 +75,8 @@ Resources:
       Parameters:
         ASGCPUTargetValue: !Ref ASGCPUTargetValue
         ASGDesiredCapacity: !Ref ASGDesiredCapacity
-        ASGSubnetsString: !Join [',', !Ref SubnetList ]
+        ASGSubnetsString: !Ref SubnetListStr
+        CodeDeployDeploymentGroupName: !Ref Environment
         EC2SecurityGroupId: !GetAtt NetworkStack.Outputs.EC2SecurityGroupId
         EC2InstanceType: !Ref EC2InstanceType
         EC2AmiId: !Ref EC2LatestLinuxAmiId
@@ -105,7 +97,7 @@ Resources:
       TemplateURL: storage/template.yaml
       Parameters:
         R53HostedZoneName: !Ref R53HostedZoneName
-        R53Subdomain: !Ref R53Subdomain
+        R53Subdomain: !Ref Environment
   ServerlessStack:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -119,6 +111,7 @@ Resources:
       Parameters:
         AddRDSReadReplica: 'false'
         ElasticacheSecurityGroupId: !GetAtt NetworkStack.Outputs.ElastiCacheSecurityGroupId
+        Environment: !Ref Environment
         RDSSecurityGroupName: !GetAtt NetworkStack.Outputs.RDSSecurityGroupName
         SSMParamNameRdsPostgresPassword: !Ref SSMParamNameRdsPostgresPassword
   DashboardStack:

@@ -18,8 +18,9 @@ RDS_POSTGRES_HOST=$$(echo "$$($(call get_stack_output, PostgresRdsEndpoint))")
 # RDS_POSTGRES_HOST=to be defined securely
 
 # Cloudformation
-STACK_NAME=myapp
 AWS_DEFAULT_PROFILE=myaws
+ENVIRONMENT=dev
+STACK_NAME=$(ENVIRONMENT)
 S3_BUCKET_NAME_CFN_TEMPLATES=gbournique-sam-artifacts
 CFN_PARENT_TEMPLATE_FILE="deployment/cloudformation/parent-stack.yaml"
 CFN_PACKAGED_TEMPLATE_FILE="deployment/cloudformation/nested-stacks.yaml"
@@ -146,8 +147,21 @@ cfn-create: cfn-validate
 	@ aws cloudformation create-stack \
 		--stack-name=${STACK_NAME} \
 		--template-body=file://"${CFN_PACKAGED_TEMPLATE_FILE}" \
-		--parameters=file://"${CFN_PARAMETERS_FILE}" \
-		--tags "Key"="Name","Value"=\"${TAG_NAME}\" "Key"="Modified_Date","Value"="${TAG_MODIFIED_DATE}" "Key"="Email","Value"="${TAG_EMAIL}" \
+		--parameters ParameterKey=ASGCPUTargetValue,ParameterValue=60 \
+					 ParameterKey=ASGDesiredCapacity,ParameterValue=2 \
+					 ParameterKey=CloudFrontExistingCertArn,ParameterValue=arn:aws:acm:us-east-1:164045463835:certificate/26654aed-53fe-4033-9866-9b072ad88ed8 \
+					 ParameterKey=EC2LatestLinuxAmiId,ParameterValue=/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2 \
+					 ParameterKey=EC2InstanceType,ParameterValue=t2.micro \
+					 ParameterKey=EC2VolumeSize,ParameterValue=8 \
+					 ParameterKey=Environment,ParameterValue=${ENVIRONMENT} \
+					 ParameterKey=R53HostedZoneName,ParameterValue=bournique.fr \
+					 ParameterKey=SSMParamSlackWebhookUrl,ParameterValue=/SLACK/INCOMING_WEBHOOK_URL \
+					 ParameterKey=SSMParamNameRdsPostgresPassword,ParameterValue=/RDS/POSTGRES_PASSWORD/SECURE \
+					 ParameterKey=SubnetListStr,ParameterValue=\"subnet-103a1a79\,subnet-28219264\" \
+					 ParameterKey=VpcId,ParameterValue=vpc-e82c7280 \
+		--tags "Key"="Name","Value"=\"${TAG_NAME}\" \
+			   "Key"="Modified_Date","Value"="${TAG_MODIFIED_DATE}" \
+			   "Key"="Email","Value"="${TAG_EMAIL}" \
 		--profile=${AWS_DEFAULT_PROFILE} \
 		--capabilities=CAPABILITY_NAMED_IAM
 	@ echo "$$($(call wait_for_stack_creation_status))"
@@ -157,8 +171,10 @@ cfn-update: cfn-validate
 	@ aws cloudformation update-stack \
 		--stack-name=${STACK_NAME} \
 		--template-body=file://"${CFN_PACKAGED_TEMPLATE_FILE}" \
-		--parameters=file://"${CFN_PARAMETERS_FILE}" \
-		--tags "Key"="Name","Value"=\"${TAG_NAME}\" "Key"="Modified_Date","Value"="${TAG_MODIFIED_DATE}" "Key"="Email","Value"="${TAG_EMAIL}" \
+		--parameters UsePreviousValue=True \
+		--tags "Key"="Name","Value"=\"${TAG_NAME}\" \
+			   "Key"="Modified_Date","Value"="${TAG_MODIFIED_DATE}" \
+			   "Key"="Email","Value"="${TAG_EMAIL}" \
 		--profile=${AWS_DEFAULT_PROFILE} \
 		--capabilities=CAPABILITY_NAMED_IAM
 	@ echo "$$($(call wait_for_stack_update_status))"

@@ -12,14 +12,18 @@ Parameters:
   ASGCPUTargetValue:
     Description: Average CPU Target for each instance (eg. 60%)
     Type: Number
-    MinValue: 0
-    MaxValue: 100
+    MinValue: 20
+    MaxValue: 80
   ASGDesiredCapacity:
     Description: Desired number of instances at stack creation
     Type: String
   ASGSubnetsString:
     Description: List of subnets the auto scaling group of EC2s will be spread across
     Type: String
+  CodeDeployDeploymentGroupName:
+    Description: Name for the CodeDeploy Deployment Group
+    Type: String
+    AllowedValues: [dev, prod]
   EC2SecurityGroupId:
     Type: String 
   EC2InstanceType:
@@ -337,6 +341,11 @@ Resources:
                             "file_path": "/var/log/cfn-init.log",
                             "log_group_name": "cfn-init.log",
                             "log_stream_name": "{instance_id}"
+                          },
+                          {
+                            "file_path": "/opt/codedeploy-agent/deployment-root/deployment-logs/codedeploy-agent-deployments.log",
+                            "log_group_name": "codedeploy-agent-deployments.log",
+                            "log_stream_name": "{instance_id}"
                           }
                         ]
                       }
@@ -453,6 +462,7 @@ Resources:
   CodeDeployDeploymentGroup:
     Type: AWS::CodeDeploy::DeploymentGroup
     Properties:
+      DeploymentGroupName: !Ref CodeDeployDeploymentGroupName
       ApplicationName: !Ref CodeDeployApplication
       AutoRollbackConfiguration:
         Enabled: true
