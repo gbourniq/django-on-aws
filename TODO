@@ -22,8 +22,3 @@ Extras
 - Use CodeDeploy blue/green deployment types to "replace" the whole TG with new fresh instances instead of in_place deployment
 - Remove open CidrIPs below - and have Lambda to dynamically update with CF public IPs
 # https://aws.amazon.com/blogs/security/automatically-update-security-groups-for-amazon-cloudfront-ip-ranges-using-aws-lambda/
-
-
-
-
-
