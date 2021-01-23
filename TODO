@@ -1,5 +1,5 @@
 AWS Deployment
-- replace the sample apache server with the django app (docker)
+- fix static files rendering / use s3
 - add django logs + metrics filtering to CW dashboard
 - codedeploy deployment with docker compose so that can mount files?
 - review failover html page
@@ -11,7 +11,7 @@ Application features
 - Use the DynamoDB streams + SNS/SQS queue for email/slack notifications on new posts, and user welcome email
 - Worker tier: push data from django app to an SQS Queue with Lambda workers defined with AWS SAM
 - Session data: Configure Django app to work with ElastiCache
-
+- Django DEBUG docker env var?m
 - Update README
 
 

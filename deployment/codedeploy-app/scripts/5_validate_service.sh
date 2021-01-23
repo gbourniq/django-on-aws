@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -x
+
 # Source instance environment variables set in cfn-init
 source /root/.bashrc
 

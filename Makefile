@@ -12,7 +12,7 @@ TAG=$(shell poetry version | awk '{print $$NF}')
 
 # Cloudformation
 AWS_DEFAULT_PROFILE=myaws
-ENVIRONMENT=dev
+ENVIRONMENT=prod
 STACK_NAME=$(ENVIRONMENT)
 S3_BUCKET_NAME_CFN_TEMPLATES=gbournique-sam-artifacts
 CFN_PARENT_TEMPLATE_FILE="deployment/cloudformation/parent-stack.yaml"
@@ -26,8 +26,8 @@ TAG_MODIFIED_DATE="$$(date +%F_%T)"
 APP_CODE=deployment/codedeploy-app
 
 # AWS RDS Postgres as a DB backend (Note password must be stored securely)
-# POSTGRES_HOST=localhost
-# POSTGRES_PASSWORD=postgres
+POSTGRES_HOST=localhost
+POSTGRES_PASSWORD=postgres
 RDS_POSTGRES_HOST=$$(echo "$$($(call get_stack_output, PostgresRdsEndpoint))")
 
 include utils/helpers.mk
@@ -207,7 +207,7 @@ deploy-push:
 
 deploy-create:
 	@ ${INFO} "Create deployment from the latest CodeDeploy application revision"
-	@ aws deploy create-deployment \
+	aws deploy create-deployment \
 		--application-name "$$($(call get_stack_output, CodeDeployApplicationName))" \
 		--deployment-group-name "$$($(call get_stack_output, CodeDeployDeploymentGroupName))" \
 		--s3-location "$$($(call codedeploy_s3_artifact))" \

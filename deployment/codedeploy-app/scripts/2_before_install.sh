@@ -1,6 +1,8 @@
 #!/bin/bash
 # This script is to install dependencies and any cleanup before copying new files (Install Hook)
 
+set -x
+
 # Install apache
 # yum install -y httpd
 
