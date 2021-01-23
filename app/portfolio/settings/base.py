@@ -25,7 +25,7 @@ SECRET_KEY = config.SECRET_KEY
 # To be set in child settings files
 DEBUG = None
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 TINYMCE_DEFAULT_CONFIG = {
     "height": 360,
