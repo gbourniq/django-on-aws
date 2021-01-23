@@ -1,12 +1,12 @@
 AWS Deployment
-- dashboard to show codedeploy logs
-- use case for scheduled lambda AWS::Events::Rule ? (eg. terminate instance randomly for dev stack)
-- use the Well Architected Tool
-- test rds snapshots when deleting stack and then restore it
+- run dev and prod stack at the same time
+- link codedeploy and cfn init
 
 - when everything looks good, replace the sample apache server with the django app (docker)
 - add django logs + metrics filtering to CW dashboard
+- codedeploy deployment with docker compose so that can mount files?
 - review failover html page
+- test rds snapshots when deleting stack and then restore it
 
 Application features
 - use of metric filter - eg. if too many 404 over 5mn -> trigger alarm (devops alarm)

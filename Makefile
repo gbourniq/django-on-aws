@@ -10,16 +10,9 @@ DOCKER_USER=gbournique
 IMAGE_REPOSITORY=${DOCKER_USER}/django-on-aws
 TAG=$(shell poetry version | awk '{print $$NF}')
 
-# AWS RDS Postgres as a DB backend (Note password must be stored securely)
-POSTGRES_HOST=localhost
-POSTGRES_PASSWORD=postgres
-# RDS_POSTGRES_HOST=portfoliodb.cwr5v77jgf3a.eu-west-2.rds.amazonaws.com
-RDS_POSTGRES_HOST=$$(echo "$$($(call get_stack_output, PostgresRdsEndpoint))")
-# RDS_POSTGRES_HOST=to be defined securely
-
 # Cloudformation
 AWS_DEFAULT_PROFILE=myaws
-ENVIRONMENT=prod
+ENVIRONMENT=dev
 STACK_NAME=$(ENVIRONMENT)
 S3_BUCKET_NAME_CFN_TEMPLATES=gbournique-sam-artifacts
 CFN_PARENT_TEMPLATE_FILE="deployment/cloudformation/parent-stack.yaml"
@@ -31,6 +24,11 @@ TAG_MODIFIED_DATE="$$(date +%F_%T)"
 
 # CodeDeploy
 APP_CODE=deployment/codedeploy-app
+
+# AWS RDS Postgres as a DB backend (Note password must be stored securely)
+# POSTGRES_HOST=localhost
+# POSTGRES_PASSWORD=postgres
+RDS_POSTGRES_HOST=$$(echo "$$($(call get_stack_output, PostgresRdsEndpoint))")
 
 include utils/helpers.mk
 
@@ -89,21 +87,12 @@ image:
 	poetry build
 	docker build -t ${IMAGE_REPOSITORY}:$(TAG) .
 
-up-with-local-db: rundb
-	@ ${INFO} "Running app as a standalone container on docker local network"
+up-local-db: rundb
+	@ ${INFO} "Running app container, with local Postgres as a DB backend"
 	@ docker run -d -p 8080:8080 --restart=no --network django-on-aws_backend ${IMAGE_REPOSITORY}:$(TAG)
 
-check-rds-vars:
-	@ [[ ! -z "${RDS_POSTGRES_HOST}" ]] || ${WARNING} "RDS_POSTGRES_HOST not set"
-	@ [[ ! -z "${RDS_POSTGRES_PASSWORD}" ]] || ${WARNING} "RDS_POSTGRES_PASSWORD not set"
-
-check-db-connection: check-rds-vars
-	@ echo "Check DB connection..."
-	@ echo "User: postgres, Password: **** , Host: ${RDS_POSTGRES_HOST}, Database: portfoliodb"
-	@ psql -d "postgresql://postgres:${RDS_POSTGRES_PASSWORD}@${RDS_POSTGRES_HOST}/portfoliodb" -c "select now()" > /dev/null
-
-up: check-db-connection
-	@ ${INFO} "Running app as a standalone container"
+up-rds-db: check-rds-connection
+	@ ${INFO} "Running app container, with AWS RDS Postgres as a DB backend"
 	@ ${INFO} "RDS postgres host: ${RDS_POSTGRES_HOST}"
 	@ docker run -d \
 				-p 8080:8080 \
@@ -111,6 +100,13 @@ up: check-db-connection
 				--env POSTGRES_HOST=${RDS_POSTGRES_HOST} \
 				--env POSTGRES_PASSWORD=${RDS_POSTGRES_PASSWORD} \
 				${IMAGE_REPOSITORY}:$(TAG)
+
+check-rds-connection:
+	@ [[ ! -z "${RDS_POSTGRES_HOST}" ]] || ${WARNING} "RDS_POSTGRES_HOST not set"
+	@ [[ ! -z "${RDS_POSTGRES_PASSWORD}" ]] || ${WARNING} "RDS_POSTGRES_PASSWORD not set"
+	@ echo "Check DB connection..."
+	@ echo "User: postgres, Password: **** , Host: ${RDS_POSTGRES_HOST}, Database: portfoliodb"
+	@ psql -d "postgresql://postgres:${RDS_POSTGRES_PASSWORD}@${RDS_POSTGRES_HOST}/portfoliodb" -c "select now()" > /dev/null
 
 healthcheck:
 	@ ${INFO} "Checking Django application container health"
@@ -171,7 +167,18 @@ cfn-update: cfn-validate
 	@ aws cloudformation update-stack \
 		--stack-name=${STACK_NAME} \
 		--template-body=file://"${CFN_PACKAGED_TEMPLATE_FILE}" \
-		--parameters UsePreviousValue=True \
+		--parameters ParameterKey=ASGCPUTargetValue,ParameterValue=60 \
+					 ParameterKey=ASGDesiredCapacity,ParameterValue=2 \
+					 ParameterKey=CloudFrontExistingCertArn,ParameterValue=arn:aws:acm:us-east-1:164045463835:certificate/26654aed-53fe-4033-9866-9b072ad88ed8 \
+					 ParameterKey=EC2LatestLinuxAmiId,ParameterValue=/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2 \
+					 ParameterKey=EC2InstanceType,ParameterValue=t2.micro \
+					 ParameterKey=EC2VolumeSize,ParameterValue=8 \
+					 ParameterKey=Environment,ParameterValue=${ENVIRONMENT} \
+					 ParameterKey=R53HostedZoneName,ParameterValue=bournique.fr \
+					 ParameterKey=SSMParamSlackWebhookUrl,ParameterValue=/SLACK/INCOMING_WEBHOOK_URL \
+					 ParameterKey=SSMParamNameRdsPostgresPassword,ParameterValue=/RDS/POSTGRES_PASSWORD/SECURE \
+					 ParameterKey=SubnetListStr,ParameterValue=\"subnet-103a1a79\,subnet-28219264\" \
+					 ParameterKey=VpcId,ParameterValue=vpc-e82c7280 \
 		--tags "Key"="Name","Value"=\"${TAG_NAME}\" \
 			   "Key"="Modified_Date","Value"="${TAG_MODIFIED_DATE}" \
 			   "Key"="Email","Value"="${TAG_EMAIL}" \

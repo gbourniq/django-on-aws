@@ -34,14 +34,29 @@ Resources:
             "widgets": [
                 {
                     "type": "log",
-                    "x": 9,
+                    "x": 3,
                     "y": 14,
-                    "width": 15,
+                    "width": 12,
                     "height": 6,
                     "properties": {
                         "query": "SOURCE 'cfn-init.log' | fields @timestamp | parse @message \"[*] *\" as level, details | limit 100",
                         "region": "${AWS::Region}",
-                        "title": "CloudFormation cfn-init logs",
+                        "stacked": false,
+                        "title": "CloudFormation cfn-init Logs",
+                        "view": "table"
+                    }
+                },
+                {
+                    "type": "log",
+                    "x": 15,
+                    "y": 14,
+                    "width": 9,
+                    "height": 6,
+                    "properties": {
+                        "query": "SOURCE 'codedeploy-agent-deployments.log' | parse @message \"[*] [*]*\" as timestamp, deploymentGroup, details | limit 100",
+                        "region": "${AWS::Region}",
+                        "stacked": false,
+                        "title": "CodeDeploy Deployment Logs",
                         "view": "table"
                     }
                 },
@@ -208,8 +223,8 @@ Resources:
                             [ ".", "HTTPCode_Target_2XX_Count", ".", ".", ".", "." ],
                             [ ".", "HTTPCode_Target_5XX_Count", ".", ".", ".", "." ]
                         ],
-                        "view": "singleValue",
-                        "region": "eu-west-2",
+                        "view": "pie",
+                        "region": "${AWS::Region}",
                         "period": 86400,
                         "stat": "Sum",
                         "title": "HTTP status codes count"
@@ -300,21 +315,7 @@ Resources:
                     "width": 3,
                     "height": 6,
                     "properties": {
-                        "markdown": "\n# cfn-init\n\n[button:primary:Go To CloudFormation](https://${AWS::Region}.console.aws.amazon.com/cloudformation/home?region=${AWS::Region})\n"
-                    }
-                },
-                {
-                    "type": "log",
-                    "x": 3,
-                    "y": 14,
-                    "width": 6,
-                    "height": 6,
-                    "properties": {
-                        "query": "SOURCE 'cfn-init.log' | stats count(*) by bin(30s) | fields @timestamp | parse @message \"[*] *\" as level, details | filter level = \"ERROR\"",
-                        "region": "${AWS::Region}",
-                        "stacked": false,
-                        "view": "bar",
-                        "title": "CloudFormation cfn-init errors count"
+                        "markdown": "\n# cfn-init & CodeDeploy\n\n[button:primary:Go To CloudFormation](https://${AWS::Region}.console.aws.amazon.com/cloudformation/home?region=${AWS::Region})\n\n[button:primary:Go To CodeDeploy](https://${AWS::Region}.console.aws.amazon.com/codesuite/codedeploy/deployments?region=${AWS::Region})\n"
                     }
                 },
                 {

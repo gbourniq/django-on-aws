@@ -96,8 +96,6 @@ Resources:
           Resource: !Join ['', [!GetAtt S3BucketLogging.Arn]]
           Principal:
             Service: [delivery.logs.amazonaws.com]
-
-
   BucketPolicyForFailoverWebsite:  
     Type: AWS::S3::BucketPolicy
     Properties:
@@ -198,7 +196,7 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       Description: Lambda function to manage S3 buckets lifecycle
-      FunctionName: !Sub ${AWS::StackName}-lambda-s3
+      FunctionName: !Join ['', [!Ref R53Subdomain, -, StorageStack, -, lambda-s3]]
       Handler: index.handler
       Role: !GetAtt LambdaRoleCustomResourceForS3.Arn
       Timeout: 30
@@ -314,7 +312,7 @@ Resources:
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
-            - Action: [s3:PutObject, s3:DeleteObject, s3:List*]
+            - Action: [s3:PutObject, s3:DeleteObject*, s3:List*]
               Effect: Allow
               Resource:
                 - !Join ['', [!GetAtt S3BucketForFailoverWebsite.Arn, '*']]
