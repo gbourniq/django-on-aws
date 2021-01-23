@@ -205,6 +205,17 @@ Resources:
               - Action: [sqs:SendMessage, sqs:SendMessageBatch]
                 Resource: !Ref SQSQueueArn
                 Effect: Allow
+        # Policy for EC2 to send an SSM command
+        - PolicyName: !Join ['-', [!Ref AWS::StackName, EC2ToRunSSMCommands]]
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: [ssm:SendCommand]
+                Resource: arn:aws:ec2:*:*:instance/*
+              - Effect: Allow
+                Action: [ssm:SendCommand]
+                Resource: arn:aws:ssm:*::document/AWS-ConfigureDocker
   CodeDeployRole:
     Type: AWS::IAM::Role
     Properties:
@@ -250,6 +261,7 @@ Resources:
           #!/bin/bash -xe
 
           # Set environment variables for cfn-init scripts
+          export INSTANCE_ID=$(curl http://169.254.169.254/latest/meta-data/instance-id)
           export ELASTICACHE_REDIS_HOST=${ElasticacheRedisEndpoint}
           export ELASTICACHE_REDIS_PORT=6379
           export RDS_POSTGRES_HOST=${RDSPostgresEndpoint}
@@ -287,48 +299,14 @@ Resources:
       AWS::CloudFormation::Init:
         configSets:
           InstallAndRun:
-            - InstallPackages
-            - ConfigureCfnHup
             - InstallCloudWatchAgent
+            - InstallPackages
+            - InstallDockerWithSSMRunCommand
+            - ConfigureCfnHup
             - InstallTemporaryApacheServer
             - CheckRdsPostgresConnection
             - CheckEslatiCacheConnection
             - InstallCodeDeployAgent
-        InstallPackages:
-          packages:
-            yum:
-              jq: []
-        ConfigureCfnHup:
-          files:
-            # The cfn-hup.conf file stores the stack name and the AWS credentials that the cfn-hup daemon targets.
-            /etc/cfn/cfn-hup.conf:
-              content: !Sub |
-                [main]
-                stack=${AWS::StackId}
-                region=${AWS::Region}
-                # The interval used to check for changes to the resource metadata in minutes. Default is 15
-                interval=2
-              mode: '000400'
-              owner: root
-              group: root
-            # The user actions that the cfn-hup daemon calls periodically are defined in the hooks.conf config file.
-            # To support composition of several applications deploying change notification hooks, cfn-hup supports a
-            # directory named hooks.d that is located in the hooks configuration directory to place additional hooks.
-            # The additional hooks files must use the same layout as the hooks.conf file.
-            /etc/cfn/hooks.d/cfn-auto-reloader.conf:
-              content: !Sub |
-                [cfn-auto-reloader-hook]
-                triggers=post.update
-                path=Resources.LaunchConfig.Metadata.AWS::CloudFormation::Init
-                action=/opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource LaunchConfig --region ${AWS::Region}
-              mode: "000400"
-              owner: root
-              group: root
-          services:
-              cfn-hup:
-                enabled: true
-                ensureRunning: true
-                files: [/etc/cfn/cfn-hup.conf, /etc/cfn/hooks.d/cfn-auto-reloader.conf]
         InstallCloudWatchAgent:
           files:
             /opt/aws/cw-logs-config.json:
@@ -413,6 +391,55 @@ Resources:
                   -a fetch-config \
                   -m ec2 \
                   -c file:/opt/aws/cw-logs-config.json -s
+        InstallPackages:
+          packages:
+            yum:
+              jq: []
+        InstallDockerWithSSMRunCommand:
+          commands:
+            00_ssm_run_command_configure_docker:
+              command: !Sub |
+                aws ssm send-command \
+                  --document-name "AWS-ConfigureDocker" \
+                  --document-version "1" \
+                  --targets Key=InstanceIds,Values=$INSTANCE_ID \
+                  --parameters action=Install \
+                  --timeout-seconds 600 \
+                  --max-concurrency "50" \
+                  --max-errors "0" \
+                  --cloud-watch-output-config CloudWatchOutputEnabled=false \
+                  --region ${AWS::Region}
+        ConfigureCfnHup:
+          files:
+            # The cfn-hup.conf file stores the stack name and the AWS credentials that the cfn-hup daemon targets.
+            /etc/cfn/cfn-hup.conf:
+              content: !Sub |
+                [main]
+                stack=${AWS::StackId}
+                region=${AWS::Region}
+                # The interval used to check for changes to the resource metadata in minutes. Default is 15
+                interval=2
+              mode: '000400'
+              owner: root
+              group: root
+            # The user actions that the cfn-hup daemon calls periodically are defined in the hooks.conf config file.
+            # To support composition of several applications deploying change notification hooks, cfn-hup supports a
+            # directory named hooks.d that is located in the hooks configuration directory to place additional hooks.
+            # The additional hooks files must use the same layout as the hooks.conf file.
+            /etc/cfn/hooks.d/cfn-auto-reloader.conf:
+              content: !Sub |
+                [cfn-auto-reloader-hook]
+                triggers=post.update
+                path=Resources.LaunchConfig.Metadata.AWS::CloudFormation::Init
+                action=/opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource LaunchConfig --region ${AWS::Region}
+              mode: "000400"
+              owner: root
+              group: root
+          services:
+              cfn-hup:
+                enabled: true
+                ensureRunning: true
+                files: [/etc/cfn/cfn-hup.conf, /etc/cfn/hooks.d/cfn-auto-reloader.conf]
         InstallCodeDeployAgent:
           packages:
             yum:
