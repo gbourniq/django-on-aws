@@ -1,7 +1,8 @@
 AWS Deployment
-- fix static files rendering / use s3
+- fix static files rendering / use s3 as storage backend
 - add django logs + metrics filtering to CW dashboard
 - codedeploy deployment with docker compose so that can mount files?
+- clean up all deployment scripts
 - review failover html page
 - test rds snapshots when deleting stack and then restore it
 
@@ -13,7 +14,6 @@ Application features
 - Session data: Configure Django app to work with ElastiCache
 - Django DEBUG docker env var?m
 - Update README
-
 
 Extras
 - create custom metrics for failed/successful deployment and create pie chart in cw dashboard

@@ -207,7 +207,7 @@ deploy-push:
 
 deploy-create:
 	@ ${INFO} "Create deployment from the latest CodeDeploy application revision"
-	aws deploy create-deployment \
+	@ aws deploy create-deployment \
 		--application-name "$$($(call get_stack_output, CodeDeployApplicationName))" \
 		--deployment-group-name "$$($(call get_stack_output, CodeDeployDeploymentGroupName))" \
 		--s3-location "$$($(call codedeploy_s3_artifact))" \
