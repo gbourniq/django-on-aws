@@ -1,8 +1,5 @@
 AWS Deployment
-- run dev and prod stack at the same time
-- link codedeploy and cfn init
-
-- when everything looks good, replace the sample apache server with the django app (docker)
+- replace the sample apache server with the django app (docker)
 - add django logs + metrics filtering to CW dashboard
 - codedeploy deployment with docker compose so that can mount files?
 - review failover html page
@@ -10,14 +7,17 @@ AWS Deployment
 
 Application features
 - use of metric filter - eg. if too many 404 over 5mn -> trigger alarm (devops alarm)
+- use S3 event for notifications on new image / object created + sqs & put metadata to dynamodb?
 - Use the DynamoDB streams + SNS/SQS queue for email/slack notifications on new posts, and user welcome email
 - Worker tier: push data from django app to an SQS Queue with Lambda workers defined with AWS SAM
 - Session data: Configure Django app to work with ElastiCache
-- Try AWS Cognito for Users management and SSO
-- use S3 event for notifications on new image / object created + sqs & put metadata to dynamodb?
+
+- Update README
+
 
 Extras
 - create custom metrics for failed/successful deployment and create pie chart in cw dashboard
+- Try AWS Cognito for Users management and SSO
 - define/refine Cloudfront caching strategy: Check/update cache based on Headers, Cookies, or Query string parameters
 - Use CodeDeploy blue/green deployment types to "replace" the whole TG with new fresh instances instead of in_place deployment
 - Remove open CidrIPs below - and have Lambda to dynamically update with CF public IPs
