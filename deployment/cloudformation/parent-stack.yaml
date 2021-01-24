@@ -86,6 +86,7 @@ Resources:
         SSMParamNameRdsPostgresPassword: !Ref SSMParamNameRdsPostgresPassword
         S3BucketArnCodeDeployArtifacts: !GetAtt StorageStack.Outputs.S3BucketArnCodeDeployArtifacts
         S3BucketArnStaticFiles: !GetAtt StorageStack.Outputs.S3BucketArnStaticFiles
+        S3BucketNameStaticFiles: !GetAtt StorageStack.Outputs.S3BucketNameWebappStaticFiles
         SNSTopicArn: !GetAtt ServerlessStack.Outputs.SNSTopicArn
         SQSQueueArn: !GetAtt ServerlessStack.Outputs.SQSQueueArn
         SQSQueueUrl: !GetAtt ServerlessStack.Outputs.SQSQueueUrl

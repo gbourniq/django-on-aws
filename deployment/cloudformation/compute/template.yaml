@@ -51,6 +51,9 @@ Parameters:
   S3BucketArnStaticFiles:
     Description: S3 Bucket Arn for EC2 to put Webapp resources and static files
     Type: String
+  S3BucketNameStaticFiles:
+    Description: S3 Bucket Name to store as an EC2 environment variable
+    Type: String
   SNSTopicArn:
     Description: SNS Topic Arn for ASG and CodeDeploy to send event notifications
     Type: String
@@ -288,6 +291,7 @@ Resources:
           echo "export ELASTICACHE_REDIS_PORT=6379" >> /root/.bashrc
           echo "export RDS_POSTGRES_HOST=${RDSPostgresEndpoint}" >> /root/.bashrc
           echo "export RDS_POSTGRES_PASSWORD=$(aws ssm get-parameter --name ${SSMParamNameRdsPostgresPassword} --with-decryption --query "Parameter.Value" --output text --region ${AWS::Region})" >> /root/.bashrc
+          echo "export S3_BUCKET_NAME_STATICFILES=${S3BucketNameStaticFiles}" >> /root/.bashrc
 
           # Send used-defined message to Slack via the SQS queue and Lambda
           aws sqs send-message --queue-url ${SQSQueueUrl} --message-body "Cfn init successful🙌" --region ${AWS::Region}

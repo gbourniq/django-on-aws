@@ -68,8 +68,10 @@ recreatedb: rundb
 	docker exec -it --user=postgres postgres createdb portfoliodb
 
 runserver: rundb
-	@ python app/manage.py migrate --run-syncdb
-	@ python app/manage.py runserver 0.0.0.0:8080
+	python app/manage.py collectstatic --no-input -v 0
+	python app/manage.py makemigrations main
+	python app/manage.py migrate --run-syncdb
+	python app/manage.py runserver 0.0.0.0:8080
 
 tests: rundb
 	@ ${INFO} "Running Django tests using the postgres container"

@@ -1,8 +1,8 @@
 AWS Deployment
-- fix static files rendering / use s3 as storage backend
 - add django logs + metrics filtering to CW dashboard
 - codedeploy deployment with docker compose so that can mount files?
 - clean up all deployment scripts
+- add instance/AZ details to the django frontend
 - review failover html page
 - test rds snapshots when deleting stack and then restore it
 

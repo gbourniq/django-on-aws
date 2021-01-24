@@ -1,7 +1,7 @@
 """Main configuration parameters for FastAPI and Lambda powertools"""
 from os import getenv
 from pathlib import Path
-
+from distutils.util import strtobool
 from starlette.config import Config
 from starlette.datastructures import Secret
 
@@ -14,8 +14,10 @@ config = Config(env_file=ENV_PATH)
 # ======================= SETTINGS.PY =========================
 
 # General settings
+DEBUG: bool = bool(strtobool(getenv("DEBUG", "True")))
 SECRET_KEY: Secret = getenv("SECRET_KEY", config("SECRET_KEY", cast=Secret))
-MEDIA_URL: str = getenv("MEDIA_URL", config("MEDIA_URL", default="mediafiles"))
+STATIC_FILES_PATH: str = "staticfiles/"
+MEDIA_FILES_PATH: str = "mediafiles/"
 
 # Postgres
 POSTGRES_HOST: str = getenv(
@@ -32,7 +34,6 @@ POSTGRES_USER: str = getenv(
     "POSTGRES_USER", config("POSTGRES_USER", default="postgres")
 )
 
-
-# ==================== AWS ======================
-# AWS_STORAGE_BUCKET_NAME: str = config("AWS_STORAGE_BUCKET_NAME")
-# AWS_DEFAULT_REGION: str = config("AWS_DEFAULT_REGION")
+# Static files served from AWS S3 Bucket
+STATICFILES_BUCKET: str = getenv("STATICFILES_BUCKET")
+AWS_REGION: str = getenv("AWS_REGION", "eu-west-2")
