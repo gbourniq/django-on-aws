@@ -15,15 +15,15 @@ AWS_DEFAULT_PROFILE=myaws
 ENVIRONMENT=dev
 STACK_NAME=$(ENVIRONMENT)
 S3_BUCKET_NAME_CFN_TEMPLATES=gbournique-sam-artifacts
-CFN_PARENT_TEMPLATE_FILE="deployment/cloudformation/parent-stack.yaml"
-CFN_PACKAGED_TEMPLATE_FILE="deployment/cloudformation/nested-stacks.yaml"
-CFN_PARAMETERS_FILE="deployment/cloudformation/cfn-parameters.json"
+CFN_PARENT_TEMPLATE_FILE="deployment/aws/cloudformation/parent-stack.yaml"
+CFN_PACKAGED_TEMPLATE_FILE="deployment/aws/cloudformation/nested-stacks.yaml"
+CFN_PARAMETERS_FILE="deployment/aws/cloudformation/cfn-parameters.json"
 TAG_NAME="Guillaume Bournique"
 TAG_EMAIL="gbournique.dev1@gmail.com"
 TAG_MODIFIED_DATE="$$(date +%F_%T)"
 
 # CodeDeploy
-APP_CODE=deployment/codedeploy-app
+APP_CODE=deployment/aws/codedeploy-app
 
 # AWS RDS Postgres as a DB backend (Note password must be stored securely)
 POSTGRES_HOST=localhost

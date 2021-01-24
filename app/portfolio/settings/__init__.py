@@ -28,14 +28,14 @@ DATABASES = {
 
 # FILE STORAGE - s3 static settings & s3 public media settings
 if not config.STATICFILES_BUCKET:
-    print("Using local filesystem for static files")
+    print("Using local filesystem to serve static files")
     STATIC_URL = config.STATIC_FILES_PATH
     STATIC_ROOT = os.path.join(BASE_DIR, STATIC_URL)
     MEDIA_URL = config.MEDIA_FILES_PATH
     MEDIA_ROOT = os.path.join(BASE_DIR, MEDIA_URL)
     STATICFILES_DIRS = (os.path.join(BASE_DIR, "static"),)
 else:
-    print(f"Using S3 Bucket {config.STATICFILES_BUCKET} for static files")
+    print(f"Using S3 Bucket {config.STATICFILES_BUCKET} to serve static files")
     # Extra variables for AWS
     AWS_STORAGE_BUCKET_NAME = config.STATICFILES_BUCKET
     AWS_DEFAULT_REGION = config.AWS_REGION

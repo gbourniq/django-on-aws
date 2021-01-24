@@ -1,10 +1,9 @@
 AWS Deployment
+- clean up all deployment scripts / remove hardcoded variables in scripts
 - fix /admin path - CloudFront The request could not be satisfied
 - add django logs + metrics filtering to CW dashboard
-- codedeploy deployment with docker compose so that can mount files?
-- clean up all deployment scripts
 - add instance/AZ details to the django frontend
-- review failover html page
+- review failover html page (with variables for static content)
 - test rds snapshots when deleting stack and then restore it
 
 Application features
@@ -17,6 +16,7 @@ Application features
 - Update README
 
 Extras
+- codedeploy deployment with docker compose so that can mount files?
 - create custom metrics for failed/successful deployment and create pie chart in cw dashboard
 - Try AWS Cognito for Users management and SSO
 - define/refine Cloudfront caching strategy: Check/update cache based on Headers, Cookies, or Query string parameters
