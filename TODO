@@ -1,4 +1,5 @@
 AWS Deployment
+- fix /admin path - CloudFront The request could not be satisfied
 - add django logs + metrics filtering to CW dashboard
 - codedeploy deployment with docker compose so that can mount files?
 - clean up all deployment scripts

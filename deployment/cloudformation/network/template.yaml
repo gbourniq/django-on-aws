@@ -66,22 +66,30 @@ Resources:
         Aliases: [!Join ['', [!Ref R53Subdomain, ., !Ref R53HostedZoneName]]]
         Enabled: true
         DefaultCacheBehavior:
+          AllowedMethods: [GET, HEAD, OPTIONS, PUT, PATCH, POST, DELETE]
+          CachedMethods: [GET, HEAD]
           # Managed-CachingDisabled
           CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
           TargetOriginId: origin-group-id
           ViewerProtocolPolicy: redirect-to-https
         CacheBehaviors:
           - PathPattern: '/staticfiles/*'
+            AllowedMethods: [GET, HEAD]
+            CachedMethods: [GET, HEAD]
             # Managed-CachingDisabled
             CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
             TargetOriginId: s3-oai-origin
             ViewerProtocolPolicy: redirect-to-https
           - PathPattern: '/mediafiles/*'
+            AllowedMethods: [GET, HEAD]
+            CachedMethods: [GET, HEAD]
             # Managed-CachingDisabled
             CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
             TargetOriginId: s3-oai-origin
             ViewerProtocolPolicy: redirect-to-https
           - PathPattern: '*.png'
+            AllowedMethods: [GET, HEAD]
+            CachedMethods: [GET, HEAD]
             # Managed-CachingDisabled
             CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
             TargetOriginId: s3-oai-origin

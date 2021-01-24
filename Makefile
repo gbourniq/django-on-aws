@@ -12,7 +12,7 @@ TAG=$(shell poetry version | awk '{print $$NF}')
 
 # Cloudformation
 AWS_DEFAULT_PROFILE=myaws
-ENVIRONMENT=prod
+ENVIRONMENT=dev
 STACK_NAME=$(ENVIRONMENT)
 S3_BUCKET_NAME_CFN_TEMPLATES=gbournique-sam-artifacts
 CFN_PARENT_TEMPLATE_FILE="deployment/cloudformation/parent-stack.yaml"
