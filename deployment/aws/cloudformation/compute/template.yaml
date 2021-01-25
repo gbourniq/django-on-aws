@@ -179,7 +179,7 @@ Resources:
             Version: "2012-10-17"
             Statement:
               - Effect: Allow
-                Action: [s3:Put*]
+                Action: [s3:PutObject*, s3:PutBucketPublicAccessBlock]
                 Resource: !Join ['', [!Ref S3BucketArnStaticFiles, '/*']]
         # Policy for EC2 to interact with the CloudWatch service
         - PolicyName: !Join ['-', [!Ref AWS::StackName, EC2CWAgentPolicy]]

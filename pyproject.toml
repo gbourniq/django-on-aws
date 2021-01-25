@@ -8,6 +8,7 @@ readme = "README.md"
 keywords = ["portfolio"]
 
 [tool.poetry.dependencies]
+awscli = "^1.18.197"                                # Apache 2.0
 boto3 = "^1.12.39"                                  # Apache 2.0
 django = "^3"                                       # BSD
 django-filter = "^2.3.0"                            # MIT
@@ -22,9 +23,9 @@ python = "^3.8.0"                                   # PSF
 requests = "^2.22"                                  # Apache 2.0
 starlette = "^0.14.1"                               # BSD 3
 
+
 [tool.poetry.dev-dependencies]
 autoflake = "^1.4"                                  # MIT
-awscli = "^1.18.197"                                # Apache 2.0
 black = "19.10b0"                                   # MIT
 cfn-lint = "^0.43.0"                                # MIT
 chevron = "^0.13.1"                                 # MIT

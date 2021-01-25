@@ -66,8 +66,6 @@ Resources:
         Aliases: [!Join ['', [!Ref R53Subdomain, ., !Ref R53HostedZoneName]]]
         Enabled: true
         DefaultCacheBehavior:
-          AllowedMethods: [GET, HEAD, OPTIONS, PUT, PATCH, POST, DELETE]
-          CachedMethods: [GET, HEAD]
           # Managed-CachingDisabled
           CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
           TargetOriginId: origin-group-id
@@ -94,6 +92,13 @@ Resources:
             CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
             TargetOriginId: s3-oai-origin
             ViewerProtocolPolicy: redirect-to-https
+          # - PathPattern: '*'
+          #   AllowedMethods: [GET, HEAD, OPTIONS, PUT, PATCH, POST, DELETE]
+          #   CachedMethods: [GET, HEAD]
+          #   # Managed-CachingDisabled
+          #   CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
+          #   TargetOriginId: elb-origin
+          #   ViewerProtocolPolicy: redirect-to-https
         # DefaultRootObject: index.html
         OriginGroups:
           Quantity: 2
