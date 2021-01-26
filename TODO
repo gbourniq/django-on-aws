@@ -1,16 +1,9 @@
 AWS Deployment
-fix https://forums.aws.amazon.com/thread.jspa?threadID=294006
+- clean up all deployment scripts / remove hardcoded variables in scripts
+- fix POST request (/admin) - CloudFront The request could not be satisfied
+https://forums.aws.amazon.com/thread.jspa?threadID=294006
 https://gist.github.com/singledigit/a8031b9bd20ffc5a86a02b30e5949e3a#file-infrastructure-yaml-L42
 https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/high_availability_origin_failover.html
-
-- install aws for docker container to upload files to static s3? 
-- mount the static file instead of recreating image
-- create log group with cfn and pipe docker logs into CW + cw dashboard
-- clean up all deployment scripts / remove hardcoded variables in scripts
-- add django logs + metrics filtering to CW dashboard
-- add instance/AZ details to the django frontend
-
-- fix POST request (/admin) - CloudFront The request could not be satisfied
 - review failover html page (with variables for static content)
 - test rds snapshots when deleting stack and then restore it
 

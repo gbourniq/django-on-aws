@@ -125,6 +125,7 @@ Resources:
         ALBFullName: !GetAtt NetworkStack.Outputs.ALBFullName
         AutoScalingGroupName: !GetAtt ComputeStack.Outputs.AutoScalingGroupName
         CloudFrontDistributionId: !GetAtt NetworkStack.Outputs.CloudFrontDistributionId
+        DockerLogGroupName: !Join ['', ["'", !GetAtt ComputeStack.Outputs.DockerLogGroupName, "'"]]
         TargetGroupFullName: !GetAtt NetworkStack.Outputs.TargetGroupFullName
         WebsiteUrl: !Join ['', [https://, !GetAtt NetworkStack.Outputs.Route53RecordSetDomainName]]
 

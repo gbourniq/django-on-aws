@@ -18,6 +18,8 @@ Parameters:
     Type: String
   CloudFrontDistributionId:
     Type: String
+  DockerLogGroupName:
+    Type: String
   TargetGroupFullName:
     Type: String
   WebsiteUrl:
@@ -42,7 +44,7 @@ Resources:
                         "query": "SOURCE 'cfn-init.log' | fields @timestamp | parse @message \"[*] *\" as level, details | limit 100",
                         "region": "${AWS::Region}",
                         "stacked": false,
-                        "title": "CloudFormation cfn-init Logs",
+                        "title": "CloudFormation cfn-init logs",
                         "view": "table"
                     }
                 },
@@ -56,8 +58,36 @@ Resources:
                         "query": "SOURCE 'codedeploy-agent-deployments.log' | parse @message \"[*] [*]*\" as timestamp, deploymentGroup, details | limit 100",
                         "region": "${AWS::Region}",
                         "stacked": false,
-                        "title": "CodeDeploy Deployment Logs",
+                        "title": "CodeDeploy Deployment logs",
                         "view": "table"
+                    }
+                },
+                {
+                    "type": "log",
+                    "x": 0,
+                    "y": 20,
+                    "width": 12,
+                    "height": 6,
+                    "properties": {
+                        "query": "SOURCE ${DockerLogGroupName} | fields @timestamp, @message | sort @timestamp desc | limit 25",
+                        "region": "${AWS::Region}",
+                        "stacked": false,
+                        "title": "Docker container logs",
+                        "view": "table"
+                    }
+                },
+                {
+                    "type": "log",
+                    "x": 12,
+                    "y": 20,
+                    "width": 12,
+                    "height": 6,
+                    "properties": {
+                        "query": "SOURCE 'django-application.log' | parse @message \"* * * *\" as date, time, level, message | limit 25",
+                        "region": "${AWS::Region}",
+                        "stacked": false,
+                        "view": "table",
+                        "title": "Django application logs"
                     }
                 },
                 {
@@ -129,7 +159,7 @@ Resources:
                 {
                     "type": "metric",
                     "x": 3,
-                    "y": 26,
+                    "y": 32,
                     "width": 21,
                     "height": 6,
                     "properties": {
@@ -315,13 +345,13 @@ Resources:
                     "width": 3,
                     "height": 6,
                     "properties": {
-                        "markdown": "\n# cfn-init & CodeDeploy\n\n[button:primary:Go To CloudFormation](https://${AWS::Region}.console.aws.amazon.com/cloudformation/home?region=${AWS::Region})\n\n[button:primary:Go To CodeDeploy](https://${AWS::Region}.console.aws.amazon.com/codesuite/codedeploy/deployments?region=${AWS::Region})\n"
+                        "markdown": "\n# All Logs\n\n[button:primary:Go To CloudFormation](https://${AWS::Region}.console.aws.amazon.com/cloudformation/home?region=${AWS::Region})\n\n[button:primary:Go To CodeDeploy](https://${AWS::Region}.console.aws.amazon.com/codesuite/codedeploy/deployments?region=${AWS::Region})\n"
                     }
                 },
                 {
                     "type": "text",
                     "x": 0,
-                    "y": 26,
+                    "y": 32,
                     "width": 3,
                     "height": 6,
                     "properties": {
@@ -331,7 +361,7 @@ Resources:
                 {
                     "type": "text",
                     "x": 0,
-                    "y": 20,
+                    "y": 26,
                     "width": 3,
                     "height": 6,
                     "properties": {
@@ -341,7 +371,7 @@ Resources:
                 {
                     "type": "metric",
                     "x": 3,
-                    "y": 20,
+                    "y": 26,
                     "width": 21,
                     "height": 6,
                     "properties": {
