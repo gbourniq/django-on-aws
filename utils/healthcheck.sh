@@ -35,6 +35,6 @@ function check_service_health() {
 }
 
 # Start script
-echo "Checking health for container running from $1:$2..."
+echo "Checking health for container running from $1:$2"
 check_service_health "$1" "$2"
 echo "✅  All services are up and healthy!"

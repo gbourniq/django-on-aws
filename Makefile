@@ -120,6 +120,8 @@ down:
 	@ docker-compose down || true
 
 publish:
+	@ [[ ! -z "${DOCKER_PASSWORD}" ]] || ${WARNING} "DOCKER_PASSWORD not set"
+	@ [[ ! -z "${DOCKER_USER}" ]] || ${WARNING} "DOCKER_USER not set"
 	@ echo "${DOCKER_PASSWORD}" | docker login --username "${DOCKER_USER}" --password-stdin 2>&1
 	@ docker push ${IMAGE_REPOSITORY}:$(TAG)
 

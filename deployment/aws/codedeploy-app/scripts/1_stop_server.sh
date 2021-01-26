@@ -13,5 +13,5 @@ if [[ -n  $isExistApp ]]; then
 fi
 
 # Clean up any existing containers
-docker stop $(docker ps -a -q)
-docker rm $(docker ps -a -q)
+docker stop $(docker ps -a -q) || true
+docker rm $(docker ps -a -q) || true

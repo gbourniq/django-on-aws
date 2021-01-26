@@ -92,6 +92,7 @@ Resources:
         SQSQueueUrl: !GetAtt ServerlessStack.Outputs.SQSQueueUrl
         TargetGroupArn: !GetAtt NetworkStack.Outputs.TargetGroupArn
         TargetGroupName: !GetAtt NetworkStack.Outputs.TargetGroupName
+        WebsiteDomain: !GetAtt NetworkStack.Outputs.Route53RecordSetDomainName
   StorageStack:
     Type: AWS::CloudFormation::Stack
     Properties:

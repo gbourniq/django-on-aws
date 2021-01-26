@@ -69,6 +69,9 @@ Parameters:
   TargetGroupName:
     Description: Target Group Name
     Type: String
+  WebsiteDomain:
+    Description: Website domain, eg. my.domain.com, used by Django S3 storage backend
+    Type: String
 
 Resources:
   # Auto Scaling Group
@@ -179,8 +182,10 @@ Resources:
             Version: "2012-10-17"
             Statement:
               - Effect: Allow
-                Action: [s3:PutObject*, s3:PutBucketPublicAccessBlock]
-                Resource: !Join ['', [!Ref S3BucketArnStaticFiles, '/*']]
+                Action: [s3:PutObject*, s3:PutBucketPublicAccessBlock, s3:DeleteObject]
+                Resource:
+                  - !Join ['', [!Ref S3BucketArnStaticFiles, '/*']]
+                  - !Join ['', [!Ref S3BucketArnStaticFiles]]
         # Policy for EC2 to interact with the CloudWatch service
         - PolicyName: !Join ['-', [!Ref AWS::StackName, EC2CWAgentPolicy]]
           PolicyDocument:
@@ -291,7 +296,9 @@ Resources:
           echo "export ELASTICACHE_REDIS_PORT=6379" >> /root/.bashrc
           echo "export RDS_POSTGRES_HOST=${RDSPostgresEndpoint}" >> /root/.bashrc
           echo "export RDS_POSTGRES_PASSWORD=$(aws ssm get-parameter --name ${SSMParamNameRdsPostgresPassword} --with-decryption --query "Parameter.Value" --output text --region ${AWS::Region})" >> /root/.bashrc
-          echo "export S3_BUCKET_NAME_STATICFILES=${S3BucketNameStaticFiles}" >> /root/.bashrc
+          echo "export STATICFILES_BUCKET=${S3BucketNameStaticFiles}" >> /root/.bashrc
+          echo "export WEBAPP_DOMAIN=${WebsiteDomain}" >> /root/.bashrc
+          echo "export DOCKER_LOGS_LOG_GROUP_NAME=${AWS::StackName}-DockerLogs" >> /root/.bashrc
 
           # Send used-defined message to Slack via the SQS queue and Lambda
           aws sqs send-message --queue-url ${SQSQueueUrl} --message-body "Cfn init successful🙌" --region ${AWS::Region}
@@ -337,6 +344,11 @@ Resources:
                           {
                             "file_path": "/opt/codedeploy-agent/deployment-root/deployment-logs/codedeploy-agent-deployments.log",
                             "log_group_name": "codedeploy-agent-deployments.log",
+                            "log_stream_name": "{instance_id}"
+                          },
+                          {
+                            "file_path": "/var/lib/docker/volumes/app-logs/_data/info.log",
+                            "log_group_name": "django-application.log",
                             "log_stream_name": "{instance_id}"
                           }
                         ]
@@ -529,6 +541,12 @@ Resources:
       MinimumHealthyHosts:
         Type: FLEET_PERCENT
         Value: 50
+
+  DockerLogGroup: 
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Join ['-', [!Ref AWS::StackName, DockerLogs]]
+      RetentionInDays: 7
 
 Outputs:
   AutoScalingGroupName:

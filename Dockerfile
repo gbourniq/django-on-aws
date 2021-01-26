@@ -5,6 +5,7 @@ SHELL ["/bin/bash", "-e", "-o", "pipefail", "-c"]
 
 ARG APP_WHEEL=dist/*.whl
 ARG APP_DIR=app
+ARG MOUNT_DIR=mounts
 ARG STARTUP_SCRIPT=deployment/local/app/startup_server.sh
 ARG USERNAME="portfoliouser"
 
@@ -15,7 +16,8 @@ ENV PATH="/opt/venv/bin:${PATH}" \
     POSTGRES_PASSWORD="postgres"
     
 # Copy application code, startup script, and dependencies
-COPY ${APP_DIR}/ ${STARTUP_SCRIPT} /home/${USERNAME}/${APP_DIR}/
+COPY ${APP_DIR}/ /home/${USERNAME}/${APP_DIR}
+COPY ${STARTUP_SCRIPT} /home/${USERNAME}/${MOUNT_DIR}/
 # hadolint ignore=DL3020
 ADD $APP_WHEEL /tmp
 
@@ -46,6 +48,6 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=30s --retries=3 CMD curl --fail http://localhost:8080 || exit 1
 
 # hadolint ignore=DL3000
-WORKDIR "/home/${USERNAME}/${APP_DIR}/"
+WORKDIR "/home/${USERNAME}/"
 
-CMD ["./startup_server.sh"]
+CMD ["./mounts/startup_server.sh"]

@@ -38,10 +38,10 @@ else:
     print(f"Using S3 Bucket {config.STATICFILES_BUCKET} to serve static files")
     # Extra variables for AWS
     AWS_STORAGE_BUCKET_NAME = config.STATICFILES_BUCKET
+    AWS_S3_CUSTOM_DOMAIN = config.AWS_S3_CUSTOM_DOMAIN
     AWS_DEFAULT_REGION = config.AWS_REGION
     AWS_DEFAULT_ACL = None
     AWS_S3_OBJECT_PARAMETERS = {"CacheControl": "max-age=86400"}
-    AWS_S3_CUSTOM_DOMAIN = f"s3.{config.AWS_REGION}.amazonaws.com/{AWS_STORAGE_BUCKET_NAME}"
     # Django variables
     STATIC_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/{config.STATIC_FILES_PATH}/"
     STATICFILES_STORAGE = "main.storage_backends.StaticStorage"

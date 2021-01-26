@@ -11,7 +11,7 @@ https://docs.djangoproject.com/en/3.0/ref/settings/
 """
 
 import os
-
+from pathlib import Path
 from app import config
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
@@ -145,6 +145,10 @@ STATICFILES_DIRS = None
 
 
 # Write logging from the django logger to a local file
+APP_DIR = Path(__file__).resolve().parent.parent.parent
+LOG_DIR_PATH = APP_DIR / "logs"
+LOG_INFO_FILE_PATH = LOG_DIR_PATH / "info.log"
+print(f"logfile path {LOG_INFO_FILE_PATH}")
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -155,7 +159,7 @@ LOGGING = {
         "file": {
             "level": "INFO",
             "class": "logging.FileHandler",
-            "filename": "info.log",
+            "filename": LOG_INFO_FILE_PATH,
             "formatter": "standard",
         },
     },

@@ -1,9 +1,9 @@
 # CodeDeploy troubleshooting: https://docs.aws.amazon.com/codedeploy/latest/userguide/troubleshooting-general.html
 version: 0.0
 os: linux
-# files:
-#   - source: /index.html
-#     destination: /var/www/html/
+files:
+  - source: /startup_server.sh
+    destination: /home/ec2-user/mounts/startup_server.sh
 hooks:
   ApplicationStop:
     - location: scripts/1_stop_server.sh

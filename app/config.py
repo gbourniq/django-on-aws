@@ -37,3 +37,4 @@ POSTGRES_USER: str = getenv(
 # Static files served from AWS S3 Bucket
 STATICFILES_BUCKET: str = getenv("STATICFILES_BUCKET")
 AWS_REGION: str = getenv("AWS_REGION", "eu-west-2")
+AWS_S3_CUSTOM_DOMAIN: str = getenv("AWS_S3_CUSTOM_DOMAIN", f"s3.{AWS_REGION}.amazonaws.com/{STATICFILES_BUCKET}")

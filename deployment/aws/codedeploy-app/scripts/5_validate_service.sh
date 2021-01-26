@@ -1,25 +1,6 @@
 #!/bin/bash
 
-set -x
-
-# Source environment variables set from cfn-init
-source /root/.bashrc
-
-# Verify DB connection
-[[ ! -z "${RDS_POSTGRES_HOST}" ]] || echo "RDS_POSTGRES_HOST not set"
-[[ ! -z "${RDS_POSTGRES_PASSWORD}" ]] || echo "RDS_POSTGRES_PASSWORD not set"
-psql -d "postgresql://postgres:${RDS_POSTGRES_PASSWORD}@${RDS_POSTGRES_HOST}/portfoliodb" -c "select now()"
-
-# Verify Redis connection 
-/redis-stable/src/redis-cli -c -h ${ELASTICACHE_REDIS_HOST} -p ${ELASTICACHE_REDIS_PORT} ping
-
-# Verify the containers is healthy: TODO: remove hardcoded vars
-IMAGE_REPOSITORY=gbournique/django-on-aws
-TAG=1.0.0
-echo "Checking health for container running from $IMAGE_REPOSITORY:$TAG..."
-check_service_health "$IMAGE_REPOSITORY" "$TAG"
-echo "✅  All services are up and healthy!"
-
+set -ex
 
 # Helper functions
 function check_service_health() {
@@ -44,4 +25,24 @@ function check_service_health() {
 function get_service_health() {
   echo "$1" | xargs -I ID docker inspect -f '{{if .State.Running}}{{ .State.Health.Status }}{{end}}' ID
 }
+
+# Source environment variables set from cfn-init
+source /root/.bashrc
+
+# Verify DB connection
+[[ ! -z "${RDS_POSTGRES_HOST}" ]] || echo "RDS_POSTGRES_HOST not set"
+[[ ! -z "${RDS_POSTGRES_PASSWORD}" ]] || echo "RDS_POSTGRES_PASSWORD not set"
+psql -d "postgresql://postgres:${RDS_POSTGRES_PASSWORD}@${RDS_POSTGRES_HOST}/portfoliodb" -c "select now()"
+
+# Verify Redis connection 
+/redis-stable/src/redis-cli -c -h ${ELASTICACHE_REDIS_HOST} -p ${ELASTICACHE_REDIS_PORT} ping
+
+# Verify the containers is healthy: TODO: remove hardcoded vars
+IMAGE_REPOSITORY=gbournique/django-on-aws
+TAG=1.0.0
+echo "Checking health for container running from $IMAGE_REPOSITORY:$TAG"
+check_service_health "$IMAGE_REPOSITORY" "$TAG"
+echo "✅  All services are up and healthy!"
+
+
 
