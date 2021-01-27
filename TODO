@@ -1,24 +1,25 @@
 AWS Deployment
-- fix 500 error when uploading image - can be reproduced locally
 - test rds snapshots when deleting stack and then restore it
-
-Application features
-- use S3 event for notifications on new image / object created + sqs & put metadata to dynamodb?
-- Use the DynamoDB streams + SNS/SQS queue for email/slack notifications on new posts, and user welcome email
-- Worker tier: push data from django app to an SQS Queue with Lambda workers defined with AWS SAM
-- Session data: Configure Django app to work with ElastiCache
-- Update README
-- update ci/cd pipeline
-
-Extras
 - create custom metrics for failed/successful deployment and create pie chart in cw dashboard
-- Try AWS Cognito for Users management and SSO
-- define/refine Cloudfront caching strategy: Check/update cache based on Headers, Cookies, or Query string parameters
-- Use CodeDeploy blue/green deployment types to "replace" the whole TG with new fresh instances instead of in_place deployment
-- Remove open CidrIPs below - and have Lambda to dynamically update with CF public IPs
-# https://aws.amazon.com/blogs/security/automatically-update-security-groups-for-amazon-cloudfront-ip-ranges-using-aws-lambda/
+- fix Lambda functions
+- fix static files - https://django-storages.readthedocs.io/en/latest/backends/amazon-S3.html
 - fix CF failover page (failover at the R53 level instead?)
 https://forums.aws.amazon.com/thread.jspa?threadID=294006
 https://gist.github.com/singledigit/a8031b9bd20ffc5a86a02b30e5949e3a#file-infrastructure-yaml-L42
 https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/high_availability_origin_failover.html
 - review failover html page (with variables for static content)
+
+Application features
+- use S3 event for notifications on new image / object created + sqs & put metadata to dynamodb?
+- Use the DynamoDB streams + SNS/SQS queue for email/slack notifications on new posts, and user welcome email
+- Worker tier: push data from django app to an SQS Queue with Lambda workers defined with AWS SAM
+- Session data: Configure Django app to work with ElastiCache - find out more about how django manages session data
+- Update README (with screenshots of eg, the dashboard)
+- update ci/cd pipeline
+
+Extras
+- Try AWS Cognito for Users management and SSO
+- define/refine Cloudfront caching strategy: Check/update cache based on Headers, Cookies, or Query string parameters
+- Use CodeDeploy blue/green deployment types to "replace" the whole TG with new fresh instances instead of in_place deployment
+- Remove open CidrIPs below - and have Lambda to dynamically update with CF public IPs
+# https://aws.amazon.com/blogs/security/automatically-update-security-groups-for-amazon-cloudfront-ip-ranges-using-aws-lambda/

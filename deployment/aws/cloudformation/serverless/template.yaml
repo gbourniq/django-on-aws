@@ -6,6 +6,7 @@ Description: |
   - SNS Topic for AutoScaling and CodeDeploy to send notifications
   - SQS Queue to send user-defined notifications to Slack via Lambda
   - Lambda functions to send Slack notifications from SNS and SQS triggers
+  - CloudWatch Event Rule with CodeDeploy source to push custom metrics for deployment state change
 
 Parameters:
   Environment:
@@ -18,13 +19,48 @@ Parameters:
     Type: String
 
 Resources:
+
+  # CloudWatch Event Rules
+  EventRule: 
+    Type: AWS::Events::Rule
+    Properties: 
+      Description: EventRule triggered by CodeDeploy deployment state changes
+      EventPattern: 
+        source: [aws.codedeploy]
+        detail-type: ["CodeDeploy Deployment State-change Notification"]
+        detail: 
+          state: [FAILURE, SUCCESS]
+      State: "ENABLED"
+      Targets: 
+        - Arn: !GetAtt LambdaPushMetricCodeDeployDeploymentState.Arn
+          Id: "TargetFunctionV1"
+
+
   # Lambda functions
+  LambdaPushMetricCodeDeployDeploymentState:
+    Type: AWS::Lambda::Function
+    Properties:
+      Description: Push custom metrics for CodeDeploy deployment event state changes
+      FunctionName: !Join ['', [!Ref Environment, -, ServerlessStack, -, lambda-codedeploy]]
+      Handler: codedeploy_lambda_handler.handler
+      Role: !GetAtt LambdaRoleForwardMessagesToSlack.Arn
+      Timeout: 30
+      MemorySize: 128
+      Runtime: python3.6
+      Code: src/
+  PermissionForEventsToInvokeLambda: 
+    Type: AWS::Lambda::Permission
+    Properties: 
+      FunctionName: !Ref LambdaPushMetricCodeDeployDeploymentState
+      Action: "lambda:InvokeFunction"
+      Principal: "events.amazonaws.com"
+      SourceArn: !GetAtt EventRule.Arn
   LambdaForwardSNSToSlack:
     Type: AWS::Lambda::Function
     Properties:
       Description: Forward messages from Amazon SNS to Slack.
       FunctionName: !Join ['', [!Ref Environment, -, ServerlessStack, -, lambda-sns]]
-      Handler: sns_lambda_handler.py
+      Handler: sns_lambda_handler.handler
       Role: !GetAtt LambdaRoleForwardMessagesToSlack.Arn
       Timeout: 30
       MemorySize: 128
@@ -45,7 +81,7 @@ Resources:
     Properties:
       Description: Forward messages from Amazon SQS to Slack.
       FunctionName: !Join ['', [!Ref Environment, -, ServerlessStack, -, lambda-sqs]]
-      Handler: sqs_lambda_handler.py
+      Handler: sqs_lambda_handler.handler
       Role: !GetAtt LambdaRoleForwardMessagesToSlack.Arn
       Timeout: 30
       MemorySize: 128
@@ -128,6 +164,14 @@ Resources:
               - sqs:GetQueueAttributes
               - sqs:ChangeMessageVisibility
               Resource: !GetAtt SQSQueue.Arn
+        # Policy for Lambda to push custom metrics to CW
+        - PolicyName: LambdaToPutMetricsToCW
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Action: [cloudwatch:PutMetricData]
+              Resource: ['*']
 
 Outputs:
   SNSTopicArn:
