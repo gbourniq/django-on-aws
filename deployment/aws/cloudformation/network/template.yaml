@@ -58,6 +58,24 @@ Resources:
         EvaluateTargetHealth: false
 
   # CloudFront Distribution
+  WebsiteCachePolicy:
+    Type: AWS::CloudFront::CachePolicy
+    Properties:
+      CachePolicyConfig:
+        Name: !Join ['-', [!Ref 'AWS::StackName', WebsiteCachePolicy]]
+        Comment: Cache Policy to forward cookies for Django CSRF security
+        DefaultTTL: 3600
+        MaxTTL: 31536000
+        MinTTL: 1
+        ParametersInCacheKeyAndForwardedToOrigin:
+          CookiesConfig:
+            CookieBehavior: all
+          EnableAcceptEncodingBrotli: true
+          EnableAcceptEncodingGzip: true
+          HeadersConfig:
+            HeaderBehavior: none
+          QueryStringsConfig:
+            QueryStringBehavior: all
   WebsiteCDN:
     Type: AWS::CloudFront::Distribution
     Properties:
@@ -92,13 +110,16 @@ Resources:
             CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
             TargetOriginId: s3-oai-origin
             ViewerProtocolPolicy: redirect-to-https
-          # - PathPattern: '*'
-          #   AllowedMethods: [GET, HEAD, OPTIONS, PUT, PATCH, POST, DELETE]
-          #   CachedMethods: [GET, HEAD]
-          #   # Managed-CachingDisabled
-          #   CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
-          #   TargetOriginId: elb-origin
-          #   ViewerProtocolPolicy: redirect-to-https
+          # The below Cache behavior will allow POST on ELB - but
+          # will also make the origin group failover obsolete.
+          # TODO: find a fix, eg failover with R53 
+          # https://forums.aws.amazon.com/thread.jspa?threadID=294006
+          - PathPattern: '*'
+            AllowedMethods: [GET, HEAD, OPTIONS, PUT, PATCH, POST, DELETE]
+            CachedMethods: [GET, HEAD]
+            CachePolicyId: !Ref WebsiteCachePolicy
+            TargetOriginId: elb-origin
+            ViewerProtocolPolicy: redirect-to-https
         # DefaultRootObject: index.html
         OriginGroups:
           Quantity: 2

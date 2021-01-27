@@ -1,20 +1,31 @@
 #!/bin/bash
-
-set -x
-
-# Variables - TODO: remove hardcoded vars
-IMAGE_REPOSITORY=gbournique/django-on-aws
-TAG=1.0.0
-CONTAINER_NAME=myapp
+set -ex
+# Script to restart services that were stopped during ApplicationStop
 
 # Source environment variables set from cfn-init
 source /root/.bashrc
 
-# should be in stop_server.sh only.. TODO: try to get rid of it
-systemctl stop httpd.service
+# Stop the sample Apache server if it's running
+# Stopping here because the ApplicationStop lifecycle hook
+# is never run on a new instance from a scale out event
+systemctl stop httpd.service || true
 
-# Start application
-docker pull ${IMAGE_REPOSITORY}:${TAG}
+
+echo "Get the image name and debug bool from the SSM Parameter service"
+IMAGE_NAME=$(aws ssm get-parameter \
+                --name "/CODEDEPLOY/DOCKER_IMAGE_NAME" \
+                --query "Parameter.Value" \
+                --output text \
+                --region "${AWS_REGION}")
+DEBUG=$(aws ssm get-parameter \
+                --name "/CODEDEPLOY/DEBUG" \
+                --query "Parameter.Value" \
+                --output text \
+                --region "${AWS_REGION}")          
+CONTAINER_NAME=myapp
+
+echo "Pulling and running docker container for ${IMAGE_NAME}"
+docker pull ${IMAGE_NAME}
 docker run -d \
     -p 80:8080 \
     --name=${CONTAINER_NAME} \
@@ -27,10 +38,10 @@ docker run -d \
     --env POSTGRES_PASSWORD=${RDS_POSTGRES_PASSWORD} \
     --env STATICFILES_BUCKET=${STATICFILES_BUCKET} \
     --env AWS_S3_CUSTOM_DOMAIN=${WEBAPP_DOMAIN} \
-    --env DEBUG=True \
-    ${IMAGE_REPOSITORY}:${TAG}
+    --env DEBUG=${DEBUG} \
+    ${IMAGE_NAME}
 
-# Write some instance details to the footer.html file
+echo "Write instance details to the footer.html file"
 EC2_INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
 EC2_AZ=$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone)
 HTML_PAGE=/home/portfoliouser/app/main/templates/main/includes/footer.html

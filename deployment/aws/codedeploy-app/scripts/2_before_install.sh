@@ -1,10 +1,7 @@
 #!/bin/bash
+set -e
+# Preinstall tasks, such as decrypting files and creating a backup of the current version
+# or any cleanup tasks before copying new files to the host (Install Hook)
 
-set -x
-
-# This script is to install dependencies and any cleanup logic
-# before copying new files, at the Install Hook
-
-# Remove the index.html created from cfn-init
-sudo rm /var/www/html/index.html || true
-
+echo "Clean up existing files"
+sudo rm -rf /home/ec2-user/mounts

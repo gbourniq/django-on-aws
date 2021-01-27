@@ -1,10 +1,9 @@
 AWS Deployment
-- clean up all deployment scripts / remove hardcoded variables in scripts
-- fix POST request (/admin) - CloudFront The request could not be satisfied
-https://forums.aws.amazon.com/thread.jspa?threadID=294006
-https://gist.github.com/singledigit/a8031b9bd20ffc5a86a02b30e5949e3a#file-infrastructure-yaml-L42
-https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/high_availability_origin_failover.html
-- review failover html page (with variables for static content)
+- clean up all deployment scripts, remove unecssary step
+- remove hardcoded variables in scripts - use SSM parameter store to push 1 var = IMAGE_REPOSITORY:TAG
+- fix admin panel CSRF issue
+- fix: need POST AND failover capabilities - remove origin group?
+- use Django DEBUG docker env var at runtime for codedeploy?
 - test rds snapshots when deleting stack and then restore it
 
 Application features
@@ -13,7 +12,6 @@ Application features
 - Use the DynamoDB streams + SNS/SQS queue for email/slack notifications on new posts, and user welcome email
 - Worker tier: push data from django app to an SQS Queue with Lambda workers defined with AWS SAM
 - Session data: Configure Django app to work with ElastiCache
-- Django DEBUG docker env var?m
 - Update README
 
 Extras
@@ -24,3 +22,8 @@ Extras
 - Use CodeDeploy blue/green deployment types to "replace" the whole TG with new fresh instances instead of in_place deployment
 - Remove open CidrIPs below - and have Lambda to dynamically update with CF public IPs
 # https://aws.amazon.com/blogs/security/automatically-update-security-groups-for-amazon-cloudfront-ip-ranges-using-aws-lambda/
+- fix CF failover page (failover at the R53 level instead?)
+https://forums.aws.amazon.com/thread.jspa?threadID=294006
+https://gist.github.com/singledigit/a8031b9bd20ffc5a86a02b30e5949e3a#file-infrastructure-yaml-L42
+https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/high_availability_origin_failover.html
+- review failover html page (with variables for static content)

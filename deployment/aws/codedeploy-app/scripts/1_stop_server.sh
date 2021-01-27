@@ -1,17 +1,9 @@
 #!/bin/bash
+set -e
+# Gracefully stop the application or remove currently installed packages in preparation for a deployment.
+# Note the ApplicationStop lifecycle event runs the script from last successful revision,
+# while all other lifecycle events run scripts from the current revision.
 
-set -x
-
-# Note the ApplicationStop lifecycle event runs the script from last successful revision
-# (All other lifecycle events run scripts from the current revision.)
-# To run the latest revision anyway, run: cd /opt/codedeploy-agent/deployment-root && rm -rf *, sudo service codedeploy-agent restart
-
-# Stop the sample Apache server if it's running
-isExistApp=$(pgrep httpd)
-if [[ -n  $isExistApp ]]; then
-    systemctl stop httpd.service
-fi
-
-# Clean up any existing containers
+echo "Clean up any running containers"
 docker stop $(docker ps -a -q) || true
 docker rm $(docker ps -a -q) || true

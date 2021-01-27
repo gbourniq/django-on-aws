@@ -5,11 +5,6 @@ SHELL=/bin/bash -e -o pipefail
 CONDA_ENV_NAME=django-on-aws
 CONDA_ACTIVATE=source $$(conda info --base)/etc/profile.d/conda.sh ; conda activate
 
-# Docker
-DOCKER_USER=gbournique
-IMAGE_REPOSITORY=${DOCKER_USER}/django-on-aws
-TAG=$(shell poetry version | awk '{print $$NF}')
-
 # Cloudformation
 AWS_DEFAULT_PROFILE=myaws
 ENVIRONMENT=dev
@@ -22,8 +17,12 @@ TAG_NAME="Guillaume Bournique"
 TAG_EMAIL="gbournique.dev1@gmail.com"
 TAG_MODIFIED_DATE="$$(date +%F_%T)"
 
-# CodeDeploy
-APP_CODE=deployment/aws/codedeploy-app
+# Deployment
+DOCKER_USER=gbournique
+IMAGE_REPOSITORY=${DOCKER_USER}/django-on-aws
+TAG=$(shell poetry version | awk '{print $$NF}')
+DEBUG=False
+CODEDEPLOY_APP_DIR=deployment/aws/codedeploy-app
 
 # AWS RDS Postgres as a DB backend (Note password must be stored securely)
 POSTGRES_HOST=localhost
@@ -91,7 +90,12 @@ image:
 
 up-local-db: rundb
 	@ ${INFO} "Running app container, with local Postgres as a DB backend"
-	@ docker run -d -p 8080:8080 --restart=no --network django-on-aws_backend ${IMAGE_REPOSITORY}:$(TAG)
+	@ docker run -d \
+				-p 8080:8080 \
+				--restart=no \
+				--network django-on-aws_backend \
+				--env DEBUG=${DEBUG} \
+				${IMAGE_REPOSITORY}:$(TAG)
 
 up-rds-db: check-rds-connection
 	@ ${INFO} "Running app container, with AWS RDS Postgres as a DB backend"
@@ -101,6 +105,7 @@ up-rds-db: check-rds-connection
 				--restart=no \
 				--env POSTGRES_HOST=${RDS_POSTGRES_HOST} \
 				--env POSTGRES_PASSWORD=${RDS_POSTGRES_PASSWORD} \
+				--env DEBUG=${DEBUG} \
 				${IMAGE_REPOSITORY}:$(TAG)
 
 check-rds-connection:
@@ -199,14 +204,27 @@ cfn-delete:
 ### Deployment ###
 .PHONY: deploy deploy-push deploy-create deploy-get-status
 
-deploy: deploy-push deploy-create deploy-get-status
+deploy: put-image-name-to-ssm deploy-push deploy-create deploy-get-status
+
+put-image-name-to-ssm:
+	@ ${INFO} "Starting deployment of docker image ${IMAGE_REPOSITORY}:$(TAG) (DEBUG=${DEBUG})"
+	@ aws ssm put-parameter \
+		--name "/CODEDEPLOY/DOCKER_IMAGE_NAME" \
+		--type "String" \
+		--value "${IMAGE_REPOSITORY}:$(TAG)" \
+		--overwrite >/dev/null
+	@ aws ssm put-parameter \
+		--name "/CODEDEPLOY/DEBUG" \
+		--type "String" \
+		--value "${DEBUG}" \
+		--overwrite >/dev/null
 
 deploy-push:
 	@ ${INFO} "Push code to S3 and create a CodeDeploy application revision"
 	@ aws deploy push \
 		--application-name "$$($(call get_stack_output, CodeDeployApplicationName))" \
 		--s3-location "s3://$$($(call get_stack_output, CodeDeployS3BucketName))/$$($(call codedeploy_app_name)).zip" \
-		--source "${APP_CODE}" \
+		--source "${CODEDEPLOY_APP_DIR}" \
 		--ignore-hidden-files
 
 deploy-create:
