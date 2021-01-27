@@ -1,21 +1,16 @@
 AWS Deployment
-- clean up all deployment scripts, remove unecssary step
-- remove hardcoded variables in scripts - use SSM parameter store to push 1 var = IMAGE_REPOSITORY:TAG
-- fix admin panel CSRF issue
-- fix: need POST AND failover capabilities - remove origin group?
-- use Django DEBUG docker env var at runtime for codedeploy?
+- fix 500 error when uploading image - can be reproduced locally
 - test rds snapshots when deleting stack and then restore it
 
 Application features
-- use of metric filter - eg. if too many 404 over 5mn -> trigger alarm (devops alarm)
 - use S3 event for notifications on new image / object created + sqs & put metadata to dynamodb?
 - Use the DynamoDB streams + SNS/SQS queue for email/slack notifications on new posts, and user welcome email
 - Worker tier: push data from django app to an SQS Queue with Lambda workers defined with AWS SAM
 - Session data: Configure Django app to work with ElastiCache
 - Update README
+- update ci/cd pipeline
 
 Extras
-- codedeploy deployment with docker compose so that can mount files?
 - create custom metrics for failed/successful deployment and create pie chart in cw dashboard
 - Try AWS Cognito for Users management and SSO
 - define/refine Cloudfront caching strategy: Check/update cache based on Headers, Cookies, or Query string parameters

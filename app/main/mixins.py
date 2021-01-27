@@ -52,7 +52,7 @@ class BaseModelMixin:
         bottom = (height + CROP_SIZE.height) / 2
 
         img_temp = img_temp.crop((left, top, right, bottom))
-
+        img_temp = img_temp.convert("RGB")
         img_temp.save(output_io_stream := BytesIO(), format="JPEG", quality=90)
         output_io_stream.seek(0)
         uploaded_image = InMemoryUploadedFile(
