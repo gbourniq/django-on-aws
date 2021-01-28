@@ -54,10 +54,10 @@ Resources:
     Properties:
       BucketName: !Join ['', [!Ref R53Subdomain, ., !Ref R53HostedZoneName, -, static-files]]
       PublicAccessBlockConfiguration:
-        BlockPublicAcls: true
-        BlockPublicPolicy: true
-        IgnorePublicAcls: true
-        RestrictPublicBuckets: true
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
   S3BucketLogging:
     Type: AWS::S3::Bucket
     DeletionPolicy: Delete

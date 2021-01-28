@@ -15,6 +15,14 @@ Parameters:
   CloudFrontExistingCertArn:
     Description: SSL Cert Arn stored in ACM with the same region CloudFront (us-east-1)
     Type: String
+  CodeDeployDimensionName:
+    Description: Dimension Name for the Custom Metric API to push <FAILURE/SUCCESS> codedeploy deployment states to
+    Type: String
+    Default: DEPLOYMENT_STATE
+  CodeDeployMetricName:
+    Description: Metric Name for the Custom Metric API to push <FAILURE/SUCCESS> codedeploy deployment states to
+    Type: String
+    Default: CodeDeployDeploymentStates
   EC2LatestLinuxAmiId:
     Description: AWS managed SSM parameter to retrieve the latest Amazon Linux 2 AMI Id
     Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
@@ -105,6 +113,8 @@ Resources:
     Properties:
       TemplateURL: serverless/template.yaml
       Parameters:
+        CodeDeployDimensionName: !Ref CodeDeployDimensionName
+        CodeDeployMetricName: !Ref CodeDeployMetricName
         Environment: !Ref Environment
         SlackWebhookUrl: !Ref SSMParamSlackWebhookUrl
   DatabaseStack:
@@ -125,6 +135,8 @@ Resources:
         ALBFullName: !GetAtt NetworkStack.Outputs.ALBFullName
         AutoScalingGroupName: !GetAtt ComputeStack.Outputs.AutoScalingGroupName
         CloudFrontDistributionId: !GetAtt NetworkStack.Outputs.CloudFrontDistributionId
+        CodeDeployDimensionName: !Ref CodeDeployDimensionName
+        CodeDeployMetricName: !Ref CodeDeployMetricName
         DockerLogGroupName: !Join ['', ["'", !GetAtt ComputeStack.Outputs.DockerLogGroupName, "'"]]
         TargetGroupFullName: !GetAtt NetworkStack.Outputs.TargetGroupFullName
         WebsiteUrl: !Join ['', [https://, !GetAtt NetworkStack.Outputs.Route53RecordSetDomainName]]

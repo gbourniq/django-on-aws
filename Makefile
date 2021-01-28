@@ -21,7 +21,7 @@ TAG_MODIFIED_DATE="$$(date +%F_%T)"
 DOCKER_USER=gbournique
 IMAGE_REPOSITORY=${DOCKER_USER}/django-on-aws
 TAG=$(shell poetry version | awk '{print $$NF}')
-DEBUG=False
+DEBUG=True
 CODEDEPLOY_APP_DIR=deployment/aws/codedeploy-app
 
 # AWS RDS Postgres as a DB backend (Note password must be stored securely)

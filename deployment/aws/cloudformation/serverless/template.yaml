@@ -9,6 +9,12 @@ Description: |
   - CloudWatch Event Rule with CodeDeploy source to push custom metrics for deployment state change
 
 Parameters:
+  CodeDeployDimensionName:
+    Description: Dimension Name for the Custom Metric API to push the codedeploy deployment state to
+    Type: String
+  CodeDeployMetricName:
+    Description: Metric Name for the Custom Metric API to push the codedeploy deployment state to
+    Type: String
   Environment:
     Description: Stage environment name as a suffix to Lambda function names
     Type: String
@@ -48,6 +54,10 @@ Resources:
       MemorySize: 128
       Runtime: python3.6
       Code: src/
+      Environment:
+        Variables:
+          CODEDEPLOY_METRIC_NAME: !Ref CodeDeployMetricName
+          CODEDEPLOY_DIMENSION_NAME: !Ref CodeDeployDimensionName
   PermissionForEventsToInvokeLambda: 
     Type: AWS::Lambda::Permission
     Properties: 

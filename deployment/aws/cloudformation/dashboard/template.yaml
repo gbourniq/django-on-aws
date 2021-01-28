@@ -4,11 +4,12 @@ Metadata:
 Description: |
   This CloudFormation template defines a CloudWatch dashboard to monitor stack resources performance:
   - CloudFront requests and % error rate
-  - ALB requests and HTTP status codes
+  - ALB requests and HTTP status codes, time series and pie chart
   - AutoScaling Group Mix/Max/Desired size
   - Target Group heatlhy hosts
   - Average CPU utilization for EC2 instances
-  - CloudFormation cfn-init error logs
+  - Logs: CloudFormation cfn-init, CodeDeploy agent, Docker container, and Django application logs
+  - Custom Metrics to visualise recent deployment failure and successes on a pie chart
   - RDS and ElastiCache metrics
 
 Parameters:
@@ -17,6 +18,12 @@ Parameters:
   AutoScalingGroupName:
     Type: String
   CloudFrontDistributionId:
+    Type: String
+  CodeDeployDimensionName:
+    Description: Dimension Name for the Custom Metric API to push the codedeploy deployment state to
+    Type: String
+  CodeDeployMetricName:
+    Description: Metric Name for the Custom Metric API to push the codedeploy deployment state to
     Type: String
   DockerLogGroupName:
     Type: String
@@ -66,7 +73,7 @@ Resources:
                     "type": "log",
                     "x": 0,
                     "y": 20,
-                    "width": 12,
+                    "width": 9,
                     "height": 6,
                     "properties": {
                         "query": "SOURCE ${DockerLogGroupName} | fields @timestamp, @message | sort @timestamp desc | limit 25",
@@ -78,9 +85,9 @@ Resources:
                 },
                 {
                     "type": "log",
-                    "x": 12,
+                    "x": 9,
                     "y": 20,
-                    "width": 12,
+                    "width": 9,
                     "height": 6,
                     "properties": {
                         "query": "SOURCE 'django-application.log' | parse @message \"* * * *\" as date, time, level, message | limit 25",
@@ -88,6 +95,24 @@ Resources:
                         "stacked": false,
                         "view": "table",
                         "title": "Django application logs"
+                    }
+                },
+                {
+                    "type": "metric",
+                    "x": 18,
+                    "y": 20,
+                    "width": 6,
+                    "height": 6,
+                    "properties": {
+                        "metrics": [
+                            [ "${CodeDeployMetricName}", "${CodeDeployMetricName}", "${CodeDeployDimensionName}", "FAILURE" ],
+                            [ "...", "SUCCESS" ]
+                        ],
+                        "view": "pie",
+                        "region": "${AWS::Region}",
+                        "stat": "Sum",
+                        "period": 86400,
+                        "title": "Deployment State History"
                     }
                 },
                 {
