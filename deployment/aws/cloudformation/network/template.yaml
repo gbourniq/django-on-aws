@@ -64,9 +64,9 @@ Resources:
       CachePolicyConfig:
         Name: !Join ['-', [!Ref 'AWS::StackName', WebsiteCachePolicy]]
         Comment: Cache Policy to forward cookies for Django CSRF security
-        DefaultTTL: 3600
+        DefaultTTL: 0
         MaxTTL: 31536000
-        MinTTL: 1
+        MinTTL: 0
         ParametersInCacheKeyAndForwardedToOrigin:
           CookiesConfig:
             CookieBehavior: all
@@ -84,10 +84,16 @@ Resources:
         Aliases: [!Join ['', [!Ref R53Subdomain, ., !Ref R53HostedZoneName]]]
         Enabled: true
         DefaultCacheBehavior:
-          # Managed-CachingDisabled
-          CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
-          TargetOriginId: origin-group-id
+          AllowedMethods: [GET, HEAD, OPTIONS, PUT, PATCH, POST, DELETE]
+          CachedMethods: [GET, HEAD]
+          CachePolicyId: !Ref WebsiteCachePolicy
+          TargetOriginId: elb-origin
           ViewerProtocolPolicy: redirect-to-https
+        CustomErrorResponses:
+          - ErrorCachingMinTTL: 10
+            ErrorCode: 503
+            ResponseCode: 200
+            ResponsePagePath: /failover/index.html
         CacheBehaviors:
           - PathPattern: '/staticfiles/*'
             AllowedMethods: [GET, HEAD]
@@ -103,35 +109,12 @@ Resources:
             CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
             TargetOriginId: s3-oai-origin
             ViewerProtocolPolicy: redirect-to-https
-          - PathPattern: '*.png'
+          - PathPattern: '/failover/*'
             AllowedMethods: [GET, HEAD]
             CachedMethods: [GET, HEAD]
-            # Managed-CachingDisabled
-            CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
-            TargetOriginId: s3-oai-origin
-            ViewerProtocolPolicy: redirect-to-https
-          # The below Cache behavior will allow POST on ELB - but
-          # will also make the origin group failover obsolete.
-          # TODO: find a fix, eg failover with R53 
-          # https://forums.aws.amazon.com/thread.jspa?threadID=294006
-          - PathPattern: '*'
-            AllowedMethods: [GET, HEAD, OPTIONS, PUT, PATCH, POST, DELETE]
-            CachedMethods: [GET, HEAD]
             CachePolicyId: !Ref WebsiteCachePolicy
-            TargetOriginId: elb-origin
+            TargetOriginId: s3-web-origin
             ViewerProtocolPolicy: redirect-to-https
-        # DefaultRootObject: index.html
-        OriginGroups:
-          Quantity: 2
-          Items:
-            - Id: origin-group-id
-              FailoverCriteria:
-                StatusCodes:
-                  Items: [502, 503, 504]
-                  Quantity: 3
-              Members:
-                Items: [OriginId: elb-origin, OriginId: s3-web-origin]
-                Quantity: 2
         Origins:
           - CustomOriginConfig:
               HTTPPort: 80

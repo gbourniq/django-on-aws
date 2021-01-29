@@ -147,12 +147,11 @@ Resources:
           <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
           <meta name="viewport" content="width=device-width, initial-scale=1"/>
           <meta name="description" content="Failover page for ${R53Subdomain}.${R53HostedZoneName}">
-          <meta name="author" content="Guillaume Bournique">
           <title>Failover page</title>
-          <link href="https://s3.eu-west-2.amazonaws.com/tarikitchen/django_files/static/css/materialize.css" type="text/css" rel="stylesheet" media="screen,projection"/>
-          <link href="https://s3.eu-west-2.amazonaws.com/tarikitchen/django_files/static/css/style.css" type="text/css" rel="stylesheet" media="screen,projection"/>
-          <link rel="shortcut icon" href="https://s3.eu-west-2.amazonaws.com/tarikitchen/django_files/static/favicon.ico">
-          <link rel="apple-touch-icon" href="https://s3.eu-west-2.amazonaws.com/tarikitchen/django_files/static/apple-touch-icon.png">
+          <link href="https://s3.${AWS::Region}.amazonaws.com/${S3BucketWebappStaticFiles}/staticfiles/css/materialize.css" type="text/css" rel="stylesheet" media="screen,projection"/>
+          <link href="https://s3.${AWS::Region}.amazonaws.com/${S3BucketWebappStaticFiles}/staticfiles/css/style.css" type="text/css" rel="stylesheet" media="screen,projection"/>
+          <link rel="shortcut icon" href="https://s3.${AWS::Region}.amazonaws.com/${S3BucketWebappStaticFiles}/staticfiles/favicon.ico">
+          <link rel="apple-touch-icon" href="https://s3.${AWS::Region}.amazonaws.com/${S3BucketWebappStaticFiles}/staticfiles/apple-touch-icon.png">
         </head>
         <body>
           <header>
@@ -160,7 +159,7 @@ Resources:
               <nav style="background-color:white">
                 <div class="nav-wrapper container">
                   <a id="logo-container" href="/" class="brand-logo center">
-                    <img class="img-responsive" style="width:250px; height:32px; margin-top:14px" src="https://s3.eu-west-2.amazonaws.com/tarikitchen/django_files/static/Logo.png">
+                    <img class="img-responsive" style="width:60px; height:50px; margin-top:4px" src="https://s3.${AWS::Region}.amazonaws.com/${S3BucketWebappStaticFiles}/staticfiles/Logo.png">
                   </a>
                   <a href="#" data-target="nav-mobile" class="sidenav-trigger"><i class="material-icons">menu</i></a>
                 </div>
@@ -174,7 +173,7 @@ Resources:
                   <br><br><br><br><br>
                   <h5>Oops.. ${R53Subdomain}.${R53HostedZoneName} is currently unavailable. Please try again between 10AM-6PM (GMT).</h5>
                   <br>
-                  <a href="/" id="refresh-button" class="btn-large waves-effect waves-light brown lighten-1">Try again</a>
+                  <a href="/" id="refresh-button" class="btn-large waves-effect waves-light gray darken-1">Try again</a>
                 </center>
               </div>
             </div>
@@ -234,7 +233,7 @@ Resources:
                   if event_type in ('Create', 'Update'):
                       s3_client.put_object(
                           Bucket=website_bucket_name,
-                          Key="index.html",
+                          Key="failover/index.html",
                           Body=event['ResourceProperties']['index_html_content'].encode("utf-8"),
                           ContentType="text/html"
                       )
