@@ -4,6 +4,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path, re_path
+import debug_toolbar
 
 # from main.api_views import (
 #     CategoryCreate,
@@ -41,6 +42,7 @@ urlpatterns = [
     # path(f"{ITEMS_PREFIX}/new", ItemCreate.as_view()),
     # path(f"{ITEMS_PREFIX}/<int:id>/", ItemRetrieveUpdateDestroyAPIView.as_view()),
     # User management
+    path('__debug__/', include(debug_toolbar.urls)),
     path("register/", SignUpFormView.as_view(), name="register"),
     path("login/", LoginFormView.as_view(), name="login"),
     path("logout/", logout_request, name="logout"),

@@ -27,6 +27,11 @@ DEBUG = None
 
 ALLOWED_HOSTS = ['*']
 
+# django-debug-toolbar shows up only if Debug=True and request IP in INTERNAL_IPS
+INTERNAL_IPS = [
+    '127.0.0.1',
+]
+
 TINYMCE_DEFAULT_CONFIG = {
     "height": 360,
     "width": 1120,
@@ -67,6 +72,7 @@ INSTALLED_APPS = [
     "main",
     "tinymce",
     "materializecssform",
+    "debug_toolbar",
     "rest_framework",
     "django_filters",
 ]
@@ -79,6 +85,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    'debug_toolbar.middleware.DebugToolbarMiddleware',
 ]
 
 ROOT_URLCONF = "portfolio.urls"

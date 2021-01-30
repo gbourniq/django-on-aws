@@ -11,6 +11,7 @@ keywords = ["portfolio"]
 awscli = "^1.18.197"                                # Apache 2.0
 boto3 = "^1.12.39"                                  # Apache 2.0
 django = "^3"                                       # BSD
+django-debug-toolbar = "^3.2"                       # BSD
 django-filter = "^2.3.0"                            # MIT
 django-materializecss-form = "1.1.10"               # MIT
 djangorestframework = "^3.11.0"                     # MIT
@@ -31,6 +32,7 @@ cfn-lint = "^0.43.0"                                # MIT
 chevron = "^0.13.1"                                 # MIT
 coverage-badge = "^1.0.1"                           # MIT
 isort = "4.3.4"                                     # MIT
+locust = "^1.4.3"                                   # MIT
 pylint = "^2.6.0"                                   # GPL
 pytest = "6.0.0"                                    # MIT
 pytest-cov = "^2.10.1"                              # MIT
@@ -41,7 +43,6 @@ wrapt = "^1.12.1"                                   # MIT
 pylint-django = "^2.3.0"                            # GPLv2
 networkx = "^2.5"                                   # BSD-new
 yamllint = "^1.25.0"                                # GNU
-locust = "^1.4.3"                                   # MIT
 
 [tool.pytest.ini_options]
 testpaths = "tests"

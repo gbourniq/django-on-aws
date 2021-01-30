@@ -9,9 +9,8 @@ Here we define a basic application with
 
 from .base import *
 
-print("Loading Django settings")
-
 DEBUG = config.DEBUG
+print(f"Loading Django settings (DEBUG={DEBUG})")
 
 ENABLE_LOGIN_REQUIRED_MIXIN = False
 
