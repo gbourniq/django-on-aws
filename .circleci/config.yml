@@ -1,0 +1,113 @@
+version: 2.1
+workflows:
+  ci_cd_workflow:
+    jobs:
+      - ci-pipeline:
+          filters:
+            branches:
+              only:
+                - main
+      - cd-pipeline:
+          requires:
+              - ci-pipeline
+          filters:
+            branches:
+              only:
+                - main
+jobs:
+  ci-pipeline:
+    machine:
+      image: ubuntu-2004:202010-01
+    steps:
+      - checkout
+      - run:
+          name: Install Packages
+          command: sudo apt update; sudo apt-get install -y jq curl wget gcc libpq-dev python3-dev
+      - run:
+          name: Set Conda and Poetry paths
+          command: echo "export PATH=$HOME/miniconda/bin:$HOME/.poetry/bin:$PATH" >> $BASH_ENV
+      - restore_cache:
+          keys:
+            - libs-{{ checksum "poetry.lock" }}
+      - run:
+          name: Install Miniconda
+          command: |
+            make --version
+            sudo apt update
+            sudo apt-get install -y jq curl wget gcc libpq-dev python3-dev
+      - run:
+          name: Set Conda and Poetry paths
+          command: echo "export PATH=$HOME/miniconda/bin:$HOME/.poetry/bin:$PATH" >> $BASH_ENV
+      - restore_cache:
+          keys:
+            - libs-{{ checksum "poetry.lock" }}
+      - run:
+          name: Install Miniconda
+          command: |
+            if [ ! -d "$HOME/miniconda" ]; then
+              wget "https://repo.anaconda.com/miniconda/Miniconda3-4.7.10-Linux-x86_64.sh" -O $HOME/miniconda.sh
+              printf '%s' "8a324adcc9eaf1c09e22a992bb6234d91a94146840ee6b11c114ecadafc68121  miniconda.sh" | sha256sum -c
+              bash $HOME/miniconda.sh -b -p $HOME/miniconda
+            else
+                echo "Miniconda is already installed, continuing to build."
+            fi
+      - run:
+          name: Install Poetry
+          command: curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
+      - run:
+          name: Install dependencies
+          command: |
+            set -e
+            conda update -y conda
+            if ! conda info --envs | grep django-on-aws; then
+              make env
+            else
+              echo "conda environment django-on-aws already exists"
+            fi
+      - save_cache:
+          paths:
+            - /home/circleci/miniconda/
+          key: libs-{{ checksum "poetry.lock" }}
+      - run:
+          name: Run unit-tests
+          command: set -e; make tests
+      - run:
+          name: Build docker image
+          command: set -e; make image
+      - run:
+          name: Run containers
+          command: set -e; make up
+      - run:
+          name: Application healthcheck
+          command: set -e; make healthcheck
+      - run:
+          name: Remove containers
+          command: set -e; make down
+      - run:
+          name: Publish to Dockerhub
+          command: set -e; make publish
+  cd-pipeline:
+    machine:
+      image: ubuntu-2004:202010-01
+    steps:
+      - checkout
+      - run:
+          name: Set Conda path
+          command: echo "export PATH=$HOME/miniconda/bin:$PATH" >> $BASH_ENV
+      # Retrieve conda environment
+      - restore_cache:
+          keys:
+            - libs-{{ checksum "poetry.lock" }}
+      - run:
+          name: Create AWS infrastructure
+          no_output_timeout: 30m
+          command: make cfn-create
+      - run:
+          name: Deploy application to AWS
+          command: make deploy
+      - run:
+          name: Load Testing application
+          command: make load-testing
+      - run:
+          name: Delete AWS infrastructure
+          command: make cfn-delete

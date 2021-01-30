@@ -1,8 +1,5 @@
 # Makefile helpers
 
-# Set shell
-SHELL=/bin/bash -e -o pipefail
-
 
 #### CloudFormation helpers ####
 wait_for_stack_creation_status = { \
