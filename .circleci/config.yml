@@ -4,6 +4,7 @@ workflows: # https://circleci.com/docs/2.0/configuration-reference/#workflows
   main_workflow:
     jobs:
       - build-and-test
+      - another-job
 
 jobs:
   build-and-test:
@@ -50,13 +51,27 @@ jobs:
       - run:
           name: Check jq
           command: jq --help
+      # - run:
+      #     name: Check poetry
+      #     command: poetry --version
+      # - run:
+      #     name: Check conda
+      #     command: conda info -a
+  another-job:
+    machine: true
+    steps:
+      # Get the code
+      - checkout
+      # Checkcheck
+      - run:
+          name: Check docker compose
+          command: docker-compose --version
       - run:
           name: Check poetry
           command: poetry --version
       - run:
           name: Check conda
           command: conda info -a
-
       # # Cache can be tricky at first, but this means
       # # Please, restore my cache (what is actually on the cache will be defined later)
       # # if the text key `deps-{{ checksum "poetry.lock" }}` changes (and it WILL change everytime poetry.lock is updated since we rely on its checksum)
