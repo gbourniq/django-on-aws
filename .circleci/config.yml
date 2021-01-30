@@ -19,6 +19,11 @@ jobs:
       # Get the code
       - checkout
 
+      # Download and cache dependencies
+      - restore_cache:
+          keys:
+          - v2-dependencies
+
       # Cache can be tricky at first, but this means
       # Please, restore my cache (what is actually on the cache will be defined later)
       # if the text key `deps-{{ checksum "poetry.lock" }}` changes (and it WILL change everytime poetry.lock is updated since we rely on its checksum)
@@ -41,32 +46,37 @@ jobs:
           name: Check docker compose
           command: docker-compose --version
       - run:
-          name: Setup Miniconda
-          command: |
-            wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
-            bash miniconda.sh -b -p $HOME/miniconda
-            source "$HOME/miniconda/etc/profile.d/conda.sh"
-            hash -r
-            conda config --set always_yes yes --set changeps1 no
-            conda update -q conda
-            conda info -a
-            export PATH="$HOME/miniconda/bin:$PATH"
-            conda update -y conda
+          name: install dependencies
+          command: | 
+            ls $HOME
+            if [ ! -d "/home/circleci/conda" ]; then
+                wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
+                /bin/bash Miniconda3-latest-Linux-x86_64.sh -b -p $HOME/conda
+                export PATH=$HOME/conda/bin:$PATH
+                conda install -y -c defaults -c conda-forge sregistry
+            else
+                echo "Miniconda is already installed, continuing to build."
+            fi
+            chmod u+x ~/repo/.circleci/*.sh
       - run:
           name: Setup environment and run tests
           command: |
             export PATH="$HOME/miniconda/bin:$PATH"
             conda update -y conda
-            conda create -n myenv python=$PYTHON_VERSION -c conda-forge
-            source activate myenv
-            conda install -y numpy=$NUMPY_VERSION
             python --version
-            python -c "import numpy; print(numpy.__version__)"
             conda info -a
+      - save_cache:
+          paths:
+            - /home/circleci/conda
+          key: v2-dependencies
       - run:
           name: Check conda
           command: |
             export PATH="$HOME/miniconda/bin:$PATH"
+            conda info -a
+      - run:
+          name: Check conda2
+          command: |
             conda info -a
 
 # version: 2.1
