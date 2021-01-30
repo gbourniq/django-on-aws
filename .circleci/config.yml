@@ -50,13 +50,20 @@ jobs:
           command: | 
             ls $HOME
             if [ ! -d "/home/circleci/conda" ]; then
-                wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
-                /bin/bash Miniconda3-latest-Linux-x86_64.sh -b -p $HOME/conda
-                export PATH=$HOME/conda/bin:$PATH
-                conda install -y -c defaults -c conda-forge sregistry
+                wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+                bash miniconda.sh -b -p $HOME/miniconda
+                source "$HOME/miniconda/etc/profile.d/conda.sh"
+                hash -r
+                conda config --set always_yes yes --set changeps1 no
+                conda update -q conda
+                conda info -a
             else
                 echo "Miniconda is already installed, continuing to build."
             fi
+      - save_cache:
+          paths:
+            - /home/circleci/miniconda
+          key: v2-dependencies
       - run:
           name: Setup environment and run tests
           command: |
@@ -64,10 +71,6 @@ jobs:
             conda update -y conda
             python --version
             conda info -a
-      - save_cache:
-          paths:
-            - /home/circleci/conda
-          key: v2-dependencies
       - run:
           name: Check conda
           command: |
