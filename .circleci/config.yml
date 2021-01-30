@@ -70,7 +70,13 @@ jobs:
           command: docker-compose --version
       - run:
           name: Check poetry
-          command: poetry --version
+          command: |
+            export PATH="$HOME/.poetry/env:$PATH"
+            poetry --version
+      - run:
+          name: Check poetry2
+          command: |
+            poetry --version
       - run:
           name: Check conda
           command: conda info -a
