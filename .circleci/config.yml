@@ -15,9 +15,7 @@ jobs:
       # Get the code
       - checkout
       # Checkcheck
-      - run:
-          name: Check docker
-          command: docker --version
+      - run: docker --version
       - run:
           name: Install packages
           command: |
@@ -34,15 +32,8 @@ jobs:
             conda update -q conda
             conda info -a
       - run:
-          name: Setup environment and run tests
-          command: |
-            export PATH="$HOME/miniconda/bin:$PATH"
-            conda update -y conda
-            conda create -n myenv python=$PYTHON_VERSION -c conda-forge
-            source activate myenv
-            conda install -y numpy=$NUMPY_VERSION
-            python --version
-            python -c "import numpy; print(numpy.__version__)"
+          name: Install poetry
+          command: pip install poetry
       - run:
           name: Install Docker Compose
           command: |
@@ -56,12 +47,11 @@ jobs:
           name: Check jq
           command: jq --help
       - run:
-          name: Check conda
-          command: conda --version
-      - run:
           name: Check poetry
           command: poetry --version
-
+      - run:
+          name: Check conda
+          command: conda info -a
 
       # # Cache can be tricky at first, but this means
       # # Please, restore my cache (what is actually on the cache will be defined later)
