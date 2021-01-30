@@ -103,6 +103,7 @@ up: rundb
 				--env POSTGRES_HOST=postgres \
 				--env POSTGRES_PASSWORD=postgres \
 				--env REDIS_ENDPOINT=redis:6379 \
+				--env SNS_TOPIC_ARN="" \
 				${IMAGE_REPOSITORY}:$(TAG)
 
 healthcheck:

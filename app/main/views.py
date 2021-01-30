@@ -17,9 +17,11 @@ from .forms import ContactForm, NewUserForm
 from .mixins import RequireLoginMixin
 from .models import Category, Item
 
+import json
+import boto3
+from app.config import SNS_TOPIC_ARN
+
 logger = logging.getLogger(__name__)
-
-
 class IndexView(generic.base.TemplateView):
     """View for home page, /"""
 
@@ -204,7 +206,17 @@ class ContactUsFormView(RequireLoginMixin, View):
             messages.error(request, strings.INVALID_FORM)
             return render(request, self.template_name, {"form": form})
 
-        messages.success(request, strings.CONTACTUS_FORM)
+        if not SNS_TOPIC_ARN:
+            logger.warning(strings.SNS_TOPIC_NOT_CONFIGURED)
+            messages.warning(request, strings.SNS_TOPIC_NOT_CONFIGURED_USER_FRIENDLY)
+            return render(request, self.template_name, {"form": form})
+
+        client = boto3.client('sns')
+        response = client.publish(
+            TargetArn=SNS_TOPIC_ARN,
+            Message=json.dumps({'default': json.dumps(form.cleaned_data)}),
+        )
+        logger.info(strings.SNS_SERVICE_RESPONSE, response)
 
         return render(
             request,

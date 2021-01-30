@@ -55,7 +55,7 @@ Parameters:
     Description: S3 Bucket Name to store as an EC2 environment variable
     Type: String
   SNSTopicArn:
-    Description: SNS Topic Arn for ASG and CodeDeploy to send event notifications
+    Description: SNS Topic Arn for ASG and CodeDeploy to send event notifications. This is also used by the Django webapp.
     Type: String
   SQSQueueArn:
     Description: SQS Queue Arn used to forward messages to Lambda for user-defined Slack notifications
@@ -297,6 +297,7 @@ Resources:
           echo "export RDS_POSTGRES_HOST=${RDSPostgresEndpoint}" >> /root/.bashrc
           echo "export RDS_POSTGRES_PASSWORD=$(aws ssm get-parameter --name ${SSMParamNameRdsPostgresPassword} --with-decryption --query "Parameter.Value" --output text --region ${AWS::Region})" >> /root/.bashrc
           echo "export STATICFILES_BUCKET=${S3BucketNameStaticFiles}" >> /root/.bashrc
+          echo "export DJANGO_APP_SNS_TOPIC_ARN=${SNSTopicArn}" >> /root/.bashrc
           echo "export WEBAPP_DOMAIN=${WebsiteDomain}" >> /root/.bashrc
           echo "export DOCKER_LOGS_LOG_GROUP_NAME=${DockerLogGroup}" >> /root/.bashrc
 

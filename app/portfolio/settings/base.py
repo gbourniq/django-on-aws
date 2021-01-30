@@ -148,9 +148,6 @@ MEDIA_ROOT = None
 STATICFILES_DIRS = None
 
 
-# Email parameters - To be set in child settings files
-
-
 # Write logging from the django logger to a local file
 APP_DIR = Path(__file__).resolve().parent.parent.parent
 LOG_DIR_PATH = APP_DIR / "logs"

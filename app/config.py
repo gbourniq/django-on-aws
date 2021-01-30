@@ -48,3 +48,8 @@ AWS_REGION: str = getenv("AWS_REGION", "eu-west-2")
 AWS_S3_CUSTOM_DOMAIN: str = getenv(
     "AWS_S3_CUSTOM_DOMAIN", f"s3.{AWS_REGION}.amazonaws.com/{STATICFILES_BUCKET}"
 )
+
+# Forward ContactForm emails to AWS SNS Topic
+SNS_TOPIC_ARN: str = getenv(
+    "SNS_TOPIC_ARN", config("SNS_TOPIC_ARN", default=None)
+)
