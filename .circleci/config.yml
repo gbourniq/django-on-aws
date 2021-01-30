@@ -31,9 +31,11 @@ jobs:
             conda config --set always_yes yes --set changeps1 no
             conda update -q conda
             conda info -a
+            export PATH="$HOME/miniconda/bin:$PATH"
+            conda update -y conda
       - run:
           name: Install poetry
-          command: pip install poetry
+          command: curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
       - run:
           name: Install Docker Compose
           command: |
