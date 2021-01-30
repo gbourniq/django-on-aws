@@ -3,9 +3,9 @@ This module defines additional Django configurations and can be used
 to override settings from setting/base.py.
 """
 
-from .base import *
 import logging.config
 import logging
+from .base import *
 
 
 # So that we can log from within Django settings.py
