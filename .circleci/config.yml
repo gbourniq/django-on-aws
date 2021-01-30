@@ -18,7 +18,10 @@ jobs:
     steps:
       # Get the code
       - checkout
-
+      - run:
+          name: Setup Environment Variables
+          command: |
+            echo "export PATH=$HOME/miniconda/bin:$PATH" >> $BASH_ENV
       # Download and cache dependencies
       - restore_cache:
           keys:
@@ -67,14 +70,12 @@ jobs:
       - run:
           name: Setup environment and run tests
           command: |
-            export PATH="$HOME/miniconda/bin:$PATH"
             conda update -y conda
             python --version
             conda info -a
       - run:
           name: Check conda
           command: |
-            source "$HOME/miniconda/etc/profile.d/conda.sh"
             conda info -a
       - run:
           name: Check conda2
