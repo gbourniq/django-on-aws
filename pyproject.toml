@@ -41,6 +41,7 @@ wrapt = "^1.12.1"                                   # MIT
 pylint-django = "^2.3.0"                            # GPLv2
 networkx = "^2.5"                                   # BSD-new
 yamllint = "^1.25.0"                                # GNU
+locust = "^1.4.3"                                   # MIT
 
 [tool.pytest.ini_options]
 testpaths = "tests"

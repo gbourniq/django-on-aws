@@ -24,10 +24,16 @@ TAG=$(shell poetry version | awk '{print $$NF}')
 DEBUG=True
 CODEDEPLOY_APP_DIR=deployment/aws/codedeploy-app
 
-# AWS RDS Postgres as a DB backend (Note password must be stored securely)
+# Database
 POSTGRES_HOST=localhost
 POSTGRES_PASSWORD=postgres
 RDS_POSTGRES_HOST=$$(echo "$$($(call get_stack_output, PostgresRdsEndpoint))")
+
+# Load testing
+WEBSERVER_URL=https://${STACK_NAME}.bournique.fr
+USERS=100
+SPAWN_RATE=50
+RUN_TIME=1mn
 
 include utils/helpers.mk
 
@@ -80,6 +86,7 @@ tests: rundb
 
 open-cov-report:
 	@ open htmlcov/index.html
+
 
 ### Docker image ###
 .PHONY: image up-with-local-db up healthcheck down publish
@@ -239,3 +246,15 @@ deploy-create:
 deploy-get-status:
 	@ ${INFO} "Check deployment status..."
 	@ echo "$$($(call wait_for_codedeploy_deployment_status))"
+
+
+# Load Testing
+load-testing:
+	@ ${INFO} "Load testing ${WEBSERVER_URL} by spawning ${USERS} users (${SPAWN_RATE}/s) for ${RUN_TIME} minutes."
+	@ locust -f utils/locustfile.py \
+		--host ${WEBSERVER_URL} \
+		--headless --users ${USERS} --spawn-rate ${SPAWN_RATE} --run-time ${RUN_TIME} --only-summary
+
+load-testing-ui:
+	@ ${INFO} "Starting load testing UI"
+	@ locust -f utils/locustfile.py --host ${WEBSERVER_URL}
