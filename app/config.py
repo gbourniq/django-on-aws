@@ -4,11 +4,15 @@ from pathlib import Path
 from distutils.util import strtobool
 from starlette.config import Config
 from starlette.datastructures import Secret
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Paths
 APP_DIR = Path(__file__).resolve().parent
 ENV_PATH = APP_DIR / ".env"
-print(f"Loading configs from {ENV_PATH}")
+logger.info(f"Loading Django configs environment variables from {ENV_PATH}")
+
 config = Config(env_file=ENV_PATH)
 
 # ======================= SETTINGS.PY =========================

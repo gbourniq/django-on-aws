@@ -1,7 +1,4 @@
 TODOs
-- Configure Django app to work with ElastiCache
-- email contact form via sns? mock for local
-- remove all prints?
 - format all files
 - update ci/cd pipeline - use everything from makefile basically
 - Update README (with screenshots of eg, the dashboard), update architecture diagram?

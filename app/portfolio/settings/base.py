@@ -152,7 +152,6 @@ STATICFILES_DIRS = None
 APP_DIR = Path(__file__).resolve().parent.parent.parent
 LOG_DIR_PATH = APP_DIR / "logs"
 LOG_INFO_FILE_PATH = LOG_DIR_PATH / "info.log"
-print(f"logfile path {LOG_INFO_FILE_PATH}")
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
