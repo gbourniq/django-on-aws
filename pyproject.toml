@@ -67,7 +67,7 @@ addopts = '''
   --no-cov-on-fail
   --cov-fail-under=95
 '''
-env = ["DJANGO_SETTINGS_MODULE=portfolio.settings"]
+env = ["DJANGO_SETTINGS_MODULE=portfolio.settings", "CACHE_TTL=0"]
 
 [build-system]
 requires = ["wheel", "tomlkit", "poetry>=1.1.3"] # PEP 518

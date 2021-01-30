@@ -18,6 +18,9 @@ logger.info(f"Loading Django settings (DEBUG={DEBUG})")
 
 ENABLE_LOGIN_REQUIRED_MIXIN = False
 
+# Forward ContactForm emails to AWS SNS Topic
+SNS_TOPIC_ARN = config.SNS_TOPIC_ARN
+
 # DATABASE
 logger.info(f"DB backend config: Host={config.POSTGRES_HOST}")
 DATABASES = {

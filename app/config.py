@@ -45,7 +45,7 @@ POSTGRES_USER: str = getenv(
 REDIS_ENDPOINT: str = getenv(
     "REDIS_ENDPOINT", config("REDIS_ENDPOINT", default="localhost:6379")
 )
-CACHE_TTL: int = 60
+CACHE_TTL: int = int(getenv("CACHE_TTL", "60"))
 
 # Static files served from AWS S3 Bucket
 STATICFILES_BUCKET: str = getenv("STATICFILES_BUCKET")

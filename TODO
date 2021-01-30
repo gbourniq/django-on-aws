@@ -1,5 +1,4 @@
 TODOs
-- format all files
 - update ci/cd pipeline - use everything from makefile basically
 - Update README (with screenshots of eg, the dashboard), update architecture diagram?
 
@@ -12,4 +11,3 @@ TODOS
 - CodeDeploy blue/green deployment types to replace the whole TG instead of EC2 in_place deployment
 - Remove open CidrIPs below - and have Lambda to dynamically update with CF public IPs
 # https://aws.amazon.com/blogs/security/automatically-update-security-groups-for-amazon-cloudfront-ip-ranges-using-aws-lambda/
-

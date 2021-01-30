@@ -5,6 +5,7 @@ import logging
 from typing import Union
 
 import boto3
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.forms import AuthenticationForm
@@ -12,7 +13,6 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views import View, generic
 
-from app.config import SNS_TOPIC_ARN
 from helpers import strings
 from helpers.constants import TemplateNames
 
@@ -207,15 +207,15 @@ class ContactUsFormView(RequireLoginMixin, View):
             messages.error(request, strings.INVALID_FORM)
             return render(request, self.template_name, {"form": form})
 
-        if not SNS_TOPIC_ARN:
+        if not settings.SNS_TOPIC_ARN:
             logger.warning(strings.SNS_TOPIC_NOT_CONFIGURED)
             messages.warning(request, strings.SNS_TOPIC_NOT_CONFIGURED_USER_FRIENDLY)
             return render(request, self.template_name, {"form": form})
 
-        client = boto3.client("sns")
-        response = client.publish(
-            TargetArn=SNS_TOPIC_ARN,
-            Message=json.dumps({"default": json.dumps(form.cleaned_data)}),
+        sns_client = boto3.client("sns")
+        response = sns_client.publish(
+            TargetArn=settings.SNS_TOPIC_ARN,
+            Message=json.dumps({"default": form.cleaned_data}),
         )
         logger.info(strings.SNS_SERVICE_RESPONSE, response)
 

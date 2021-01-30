@@ -1,6 +1,8 @@
 """This module defines tests for the contact us page"""
 
+import json
 from http import HTTPStatus
+from unittest.mock import Mock
 
 import pytest
 from django.conf import settings
@@ -40,14 +42,39 @@ class TestViewContactUs:
             assert isinstance(response.context["form"], ContactForm)
 
     @pytest.mark.integration
+    @pytest.mark.parametrize("sns_topic_arn", ["mock_sns_topic_arn", ""])
     # pylint: disable=no-self-use
-    def test_post_valid_form(self, client, mock_contact_form: ContactForm):
+    def test_post_valid_form(
+        self, monkeypatch, client, mock_contact_form: ContactForm, sns_topic_arn: str
+    ):
         """Test the `Go Back Home` page is rendered when user submit valid form"""
+        # Given: Whether SNS_TOPIC_ARN is set or not
+        monkeypatch.setattr(
+            settings, "SNS_TOPIC_ARN", sns_topic_arn,
+        )
+        # Given: mock sns service client
+        monkeypatch.setattr("boto3.client", mock_sns_client := Mock())
         # When: POST request on the contact-us page
         response = client.post(reverse("contact_us"), data=mock_contact_form.json())
-        # Then: `go-back-home` template is rendered
-        assert TemplateNames.GO_BACK_HOME.value in [t.name for t in response.templates]
-        assert response.status_code == HTTPStatus.OK.value
+        if sns_topic_arn:
+            # Given: SNS_TOPIC_ARN is set
+            # Then: `go-back-home` template is rendered
+            assert TemplateNames.GO_BACK_HOME.value in [
+                t.name for t in response.templates
+            ]
+            assert response.status_code == HTTPStatus.OK.value
+            # Then: SNS client called with expected parameters
+            mock_sns_client("sns").publish.assert_called_once_with(
+                TargetArn="mock_sns_topic_arn",
+                Message=json.dumps({"default": mock_contact_form.json()}),
+            )
+        else:
+            # Given: SNS_TOPIC_ARN is NOT set
+            # Then: Email not sent and user stays on the same page
+            assert TemplateNames.CONTACT_US.value in [
+                t.name for t in response.templates
+            ]
+            assert response.status_code == HTTPStatus.OK.value
 
     @pytest.mark.integration
     # pylint: disable=no-self-use
