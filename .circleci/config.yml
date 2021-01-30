@@ -5,6 +5,8 @@ workflows: # https://circleci.com/docs/2.0/configuration-reference/#workflows
     jobs:
       - build-and-test
       - another-job
+          requires:
+            - build-and-test
 
 jobs:
   build-and-test:
