@@ -74,7 +74,7 @@ jobs:
       - run:
           name: Check conda
           command: |
-            export PATH="$HOME/miniconda/bin:$PATH"
+            source "$HOME/miniconda/etc/profile.d/conda.sh"
             conda info -a
       - run:
           name: Check conda2
