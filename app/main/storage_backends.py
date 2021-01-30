@@ -4,7 +4,9 @@ backend for static and media files
 """
 
 from storages.backends.s3boto3 import S3Boto3Storage
+
 from app.config import MEDIA_FILES_PATH, STATIC_FILES_PATH
+
 
 # pylint: disable=abstract-method
 class StaticStorage(S3Boto3Storage):

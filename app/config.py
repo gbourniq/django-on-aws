@@ -1,10 +1,11 @@
 """Main configuration parameters for FastAPI and Lambda powertools"""
+import logging
+from distutils.util import strtobool
 from os import getenv
 from pathlib import Path
-from distutils.util import strtobool
+
 from starlette.config import Config
 from starlette.datastructures import Secret
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +55,4 @@ AWS_S3_CUSTOM_DOMAIN: str = getenv(
 )
 
 # Forward ContactForm emails to AWS SNS Topic
-SNS_TOPIC_ARN: str = getenv(
-    "SNS_TOPIC_ARN", config("SNS_TOPIC_ARN", default=None)
-)
+SNS_TOPIC_ARN: str = getenv("SNS_TOPIC_ARN", config("SNS_TOPIC_ARN", default=None))

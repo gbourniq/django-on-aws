@@ -1,12 +1,12 @@
 """portfolio URL Configuration"""
 
+import debug_toolbar
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
-from django.urls import include, path, re_path
-import debug_toolbar
-from django.views.decorators.cache import cache_page
 from django.core.cache.backends.base import DEFAULT_TIMEOUT
+from django.urls import include, path, re_path
+from django.views.decorators.cache import cache_page
 
 # from main.api_views import (
 #     CategoryCreate,

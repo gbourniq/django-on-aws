@@ -2,8 +2,9 @@
 This file defines load testing behaviours for the web application
 """
 
-import time
-from locust import HttpUser, task, between
+
+from locust import HttpUser, between, task
+
 
 class QuickstartUser(HttpUser):
     wait_time = between(1, 2.5)

@@ -1,8 +1,10 @@
 """This module defines all the Django views"""
 
+import json
 import logging
 from typing import Union
 
+import boto3
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.forms import AuthenticationForm
@@ -10,6 +12,7 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views import View, generic
 
+from app.config import SNS_TOPIC_ARN
 from helpers import strings
 from helpers.constants import TemplateNames
 
@@ -17,11 +20,9 @@ from .forms import ContactForm, NewUserForm
 from .mixins import RequireLoginMixin
 from .models import Category, Item
 
-import json
-import boto3
-from app.config import SNS_TOPIC_ARN
-
 logger = logging.getLogger(__name__)
+
+
 class IndexView(generic.base.TemplateView):
     """View for home page, /"""
 
@@ -211,10 +212,10 @@ class ContactUsFormView(RequireLoginMixin, View):
             messages.warning(request, strings.SNS_TOPIC_NOT_CONFIGURED_USER_FRIENDLY)
             return render(request, self.template_name, {"form": form})
 
-        client = boto3.client('sns')
+        client = boto3.client("sns")
         response = client.publish(
             TargetArn=SNS_TOPIC_ARN,
-            Message=json.dumps({'default': json.dumps(form.cleaned_data)}),
+            Message=json.dumps({"default": json.dumps(form.cleaned_data)}),
         )
         logger.info(strings.SNS_SERVICE_RESPONSE, response)
 

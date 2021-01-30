@@ -8,7 +8,6 @@ import logging.config
 import logging
 
 
-
 # So that we can log from within Django settings.py
 logging.config.dictConfig(LOGGING)
 

@@ -2,9 +2,11 @@
 Lambda function to push custom metrics, FAILURE or SUCCESS,
 based on CodeDeploy deployment state change notification
 """
-from os import getenv
 import datetime
+from os import getenv
+
 import boto3
+
 
 # pylint: disable=unused-argument
 def handler(event, context):
@@ -18,24 +20,21 @@ def handler(event, context):
             return "CODEDEPLOY_DIMENSION_NAME or CODEDEPLOY_METRIC_NAME not set"
 
         # Get deployment state from CodeDeploy event
-        deployment_state = event['detail']['state']
+        deployment_state = event["detail"]["state"]
         print(f"Deployment state: {deployment_state}")
 
         # Pushing custom metric to CW
-        response = boto3.client('cloudwatch').put_metric_data(
-            MetricData = [
+        response = boto3.client("cloudwatch").put_metric_data(
+            MetricData=[
                 {
-                    'MetricName': metric_name,
-                    'Dimensions': [{
-                        'Name': dimension_name,
-                        'Value': deployment_state
-                    }],
-                    'Unit': 'None',
-                    'Value': 1,
-                    'Timestamp': datetime.datetime.now(),
+                    "MetricName": metric_name,
+                    "Dimensions": [{"Name": dimension_name, "Value": deployment_state}],
+                    "Unit": "None",
+                    "Value": 1,
+                    "Timestamp": datetime.datetime.now(),
                 },
             ],
-            Namespace = 'CodeDeployDeploymentStates'
+            Namespace="CodeDeployDeploymentStates",
         )
         print(f"Response from CW service: {response}")
         return response

@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/3.0/ref/settings/
 
 import os
 from pathlib import Path
+
 from app import config
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
@@ -25,11 +26,11 @@ SECRET_KEY = config.SECRET_KEY
 # To be set in child settings files
 DEBUG = None
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ["*"]
 
 # django-debug-toolbar shows up only if Debug=True and request IP in INTERNAL_IPS
 INTERNAL_IPS = [
-    '127.0.0.1',
+    "127.0.0.1",
 ]
 
 TINYMCE_DEFAULT_CONFIG = {
@@ -85,7 +86,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    'debug_toolbar.middleware.DebugToolbarMiddleware',
+    "debug_toolbar.middleware.DebugToolbarMiddleware",
 ]
 
 ROOT_URLCONF = "portfolio.urls"
