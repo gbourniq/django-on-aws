@@ -1,114 +1,152 @@
-version: 2.1
-
-workflows: # https://circleci.com/docs/2.0/configuration-reference/#workflows 
-  main_workflow:
-    jobs:
-      - build-and-test
-      - another-job:
-          requires:
-            - build-and-test
+version: 2
 
 jobs:
+
+  # Building and testing the project
+  # Useful when a PR is open, for example
   build-and-test:
-    machine: true
-    environment:
-      PYTHON_VERSION: 3.5.5
-      NUMPY_VERSION: 1.14.2
+    # Our environment, Python 3.6.8
+    docker:
+      - image: circleci/python:3.6.8
+
+    # The steps for our build-and-test
     steps:
       # Get the code
       - checkout
-      # Checkcheck
-      - run: docker --version
+
+      # Cache can be tricky at first, but this means
+      # Please, restore my cache (what is actually on the cache will be defined later)
+      # if the text key `deps-{{ checksum "poetry.lock" }}` changes (and it WILL change everytime poetry.lock is updated since we rely on its checksum)
+      # and poetry.lock is updated every time we add a new dependency to our project
+      - restore_cache:
+          keys: 
+            - deps-{{ checksum "poetry.lock" }}
+
+      # Let's install the dependencies
       - run:
-          name: Install packages
-          command: |
-            sudo apt update
-            sudo apt-get install -y jq curl wget
+          name: check poetry
+          command: poetry --version
       - run:
-          name: Setup Miniconda
-          command: |
-            wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
-            bash miniconda.sh -b -p $HOME/miniconda
-            source "$HOME/miniconda/etc/profile.d/conda.sh"
-            hash -r
-            conda config --set always_yes yes --set changeps1 no
-            conda update -q conda
-            conda info -a
-            export PATH="$HOME/miniconda/bin:$PATH"
-            conda update -y conda
-      - run:
-          name: Setup environment and run tests
-          command: |
-            export PATH="$HOME/miniconda/bin:$PATH"
-            conda update -y conda
-            conda create -n myenv python=$PYTHON_VERSION -c conda-forge
-            source activate myenv
-            conda install -y numpy=$NUMPY_VERSION
-            python --version
-            python -c "import numpy; print(numpy.__version__)"
-      - run:
-          name: Install poetry
-          command: |
-            curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
-            export PATH="$HOME/.poetry/env:$PATH"
-      - run:
-          name: Install Docker Compose
-          command: |
-            curl -L https://github.com/docker/compose/releases/download/1.25.3/docker-compose-`uname -s`-`uname -m` > ~/docker-compose
-            chmod +x ~/docker-compose
-            sudo mv ~/docker-compose /usr/local/bin/docker-compose
+          name: Check docker
+          command: docker --version
       - run:
           name: Check docker compose
           command: docker-compose --version
       - run:
-          name: Check jq
-          command: jq --help
-      # - run:
-      #     name: Check poetry
-      #     command: poetry --version
-      # - run:
-      #     name: Check conda
-      #     command: conda info -a
-  another-job:
-    machine: true
-    steps:
-      # Get the code
-      - checkout
-      # Checkcheck
-      - run:
-          name: Check docker compose
-          command: docker-compose --version
-      - run:
-          name: Check poetry2
-          command: |
-            pip install poetry
-      - run:
-          name: Check poetry2
-          command: |
-            poetry --version
-      # # Cache can be tricky at first, but this means
-      # # Please, restore my cache (what is actually on the cache will be defined later)
-      # # if the text key `deps-{{ checksum "poetry.lock" }}` changes (and it WILL change everytime poetry.lock is updated since we rely on its checksum)
-      # # and poetry.lock is updated every time we add a new dependency to our project
-      # - restore_cache:
-      #     keys: 
-      #       - deps-{{ checksum "poetry.lock" }}
+          name: Check conda
+          command: conda info -a
 
-      # # Let's install the dependencies
-      # - run:
-      #     name: Install Dependencies
-      #     command: |
-      #       poetry install
+# version: 2.1
 
-      # # Save's the specified path as a cache. This is the path Poetry uses to install the dependencies
-      # # So if you don't install anything new, this folder won't change and the cache will be effective
-      # - save_cache:
-      #     key: deps-{{ checksum "poetry.lock" }}
-      #     paths: 
-      #       - /home/circleci/.cache/pypoetry/virtualenvs
+# workflows: # https://circleci.com/docs/2.0/configuration-reference/#workflows 
+#   main_workflow:
+#     jobs:
+#       - build-and-test
+#       - another-job:
+#           requires:
+#             - build-and-test
 
-      # - run:
-      #     name: Run tests
-      #     # This assumes pytest is installed via the install-package step above
-      #     command: pytest
+# jobs:
+#   build-and-test:
+#     machine: true
+#     environment:
+#       PYTHON_VERSION: 3.5.5
+#       NUMPY_VERSION: 1.14.2
+#     steps:
+#       # Get the code
+#       - checkout
+#       # Checkcheck
+#       - run: docker --version
+#       - run:
+#           name: Install packages
+#           command: |
+#             sudo apt update
+#             sudo apt-get install -y jq curl wget
+#       - run:
+#           name: Setup Miniconda
+#           command: |
+#             wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+#             bash miniconda.sh -b -p $HOME/miniconda
+#             source "$HOME/miniconda/etc/profile.d/conda.sh"
+#             hash -r
+#             conda config --set always_yes yes --set changeps1 no
+#             conda update -q conda
+#             conda info -a
+#             export PATH="$HOME/miniconda/bin:$PATH"
+#             conda update -y conda
+#       - run:
+#           name: Setup environment and run tests
+#           command: |
+#             export PATH="$HOME/miniconda/bin:$PATH"
+#             conda update -y conda
+#             conda create -n myenv python=$PYTHON_VERSION -c conda-forge
+#             source activate myenv
+#             conda install -y numpy=$NUMPY_VERSION
+#             python --version
+#             python -c "import numpy; print(numpy.__version__)"
+#       - run:
+#           name: Install poetry
+#           command: |
+#             curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
+#             export PATH="$HOME/.poetry/env:$PATH"
+#       - run:
+#           name: Install Docker Compose
+#           command: |
+#             curl -L https://github.com/docker/compose/releases/download/1.25.3/docker-compose-`uname -s`-`uname -m` > ~/docker-compose
+#             chmod +x ~/docker-compose
+#             sudo mv ~/docker-compose /usr/local/bin/docker-compose
+#       - run:
+#           name: Check docker compose
+#           command: docker-compose --version
+#       - run:
+#           name: Check jq
+#           command: jq --help
+#       # - run:
+#       #     name: Check poetry
+#       #     command: poetry --version
+#       # - run:
+#       #     name: Check conda
+#       #     command: conda info -a
+#   another-job:
+#     machine: true
+#     steps:
+#       # Get the code
+#       - checkout
+#       # Checkcheck
+#       - run:
+#           name: Check docker compose
+#           command: docker-compose --version
+#       - run:
+#           name: Check poetry2
+#           command: |
+#             pip install poetry
+#       - run:
+#           name: Check poetry2
+#           command: |
+#             poetry --version
+#       # # Cache can be tricky at first, but this means
+#       # # Please, restore my cache (what is actually on the cache will be defined later)
+#       # # if the text key `deps-{{ checksum "poetry.lock" }}` changes (and it WILL change everytime poetry.lock is updated since we rely on its checksum)
+#       # # and poetry.lock is updated every time we add a new dependency to our project
+#       # - restore_cache:
+#       #     keys: 
+#       #       - deps-{{ checksum "poetry.lock" }}
+
+#       # # Let's install the dependencies
+#       # - run:
+#       #     name: Install Dependencies
+#       #     command: |
+#       #       poetry install
+
+#       # # Save's the specified path as a cache. This is the path Poetry uses to install the dependencies
+#       # # So if you don't install anything new, this folder won't change and the cache will be effective
+#       # - save_cache:
+#       #     key: deps-{{ checksum "poetry.lock" }}
+#       #     paths: 
+#       #       - /home/circleci/.cache/pypoetry/virtualenvs
+
+#       # - run:
+#       #     name: Run tests
+#       #     # This assumes pytest is installed via the install-package step above
+#       #     command: pytest
 
