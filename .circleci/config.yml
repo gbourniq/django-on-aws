@@ -35,7 +35,9 @@ jobs:
             conda update -y conda
       - run:
           name: Install poetry
-          command: curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
+          command: |
+            curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
+            export PATH="$HOME/.poetry/env:$PATH"
       - run:
           name: Install Docker Compose
           command: |
