@@ -1,6 +1,7 @@
 version: "3.5"
 
 services:
+
   postgres:
     image: postgres:12-alpine
     container_name: postgres
@@ -25,7 +26,24 @@ services:
     networks:
       - backend
 
+  redis:
+    image: redis:alpine
+    container_name: redis
+    restart: "no"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    ports:
+      - "6379:6379"
+    networks:
+      - backend
+
 volumes:
+  redisdata:
   pgdata:
   pglogs:
 

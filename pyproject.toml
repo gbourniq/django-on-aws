@@ -15,6 +15,7 @@ django-debug-toolbar = "^3.2"                       # BSD
 django-filter = "^2.3.0"                            # MIT
 django-materializecss-form = "1.1.10"               # MIT
 djangorestframework = "^3.11.0"                     # MIT
+django-redis = "^4.12.1"                            # BSD
 django-storages = "^1.9.1"                          # BSD 3
 django-tinymce4-lite = "1.7.5"                      # MIT
 gunicorn = "^19.9"                                  # MIT

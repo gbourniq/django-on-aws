@@ -21,12 +21,10 @@ TAG_MODIFIED_DATE="$$(date +%F_%T)"
 DOCKER_USER=gbournique
 IMAGE_REPOSITORY=${DOCKER_USER}/django-on-aws
 TAG=$(shell poetry version | awk '{print $$NF}')
-DEBUG=True
+DEBUG=False
 CODEDEPLOY_APP_DIR=deployment/aws/codedeploy-app
 
 # Database
-POSTGRES_HOST=localhost
-POSTGRES_PASSWORD=postgres
 RDS_POSTGRES_HOST=$$(echo "$$($(call get_stack_output, PostgresRdsEndpoint))")
 
 # Load testing
@@ -62,7 +60,7 @@ pre-commit:
 
 rundb:
 	@ echo "Starting postgres container"
-	@ docker-compose up -d postgres || true
+	@ docker-compose up -d || true
 
 stopdb:
 	@ docker-compose down || true
@@ -95,32 +93,17 @@ image:
 	poetry build
 	docker build -t ${IMAGE_REPOSITORY}:$(TAG) .
 
-up-local-db: rundb
-	@ ${INFO} "Running app container, with local Postgres as a DB backend"
+up: rundb
+	@ ${INFO} "Running app container, with local Postgres as a DB backend and Redis for Cache"
 	@ docker run -d \
 				-p 8080:8080 \
 				--restart=no \
 				--network django-on-aws_backend \
-				--env DEBUG=${DEBUG} \
+				--env DEBUG=True \
+				--env POSTGRES_HOST=postgres \
+				--env POSTGRES_PASSWORD=postgres \
+				--env REDIS_ENDPOINT=redis:6379 \
 				${IMAGE_REPOSITORY}:$(TAG)
-
-up-rds-db: check-rds-connection
-	@ ${INFO} "Running app container, with AWS RDS Postgres as a DB backend"
-	@ ${INFO} "RDS postgres host: ${RDS_POSTGRES_HOST}"
-	@ docker run -d \
-				-p 8080:8080 \
-				--restart=no \
-				--env POSTGRES_HOST=${RDS_POSTGRES_HOST} \
-				--env POSTGRES_PASSWORD=${RDS_POSTGRES_PASSWORD} \
-				--env DEBUG=${DEBUG} \
-				${IMAGE_REPOSITORY}:$(TAG)
-
-check-rds-connection:
-	@ [[ ! -z "${RDS_POSTGRES_HOST}" ]] || ${WARNING} "RDS_POSTGRES_HOST not set"
-	@ [[ ! -z "${RDS_POSTGRES_PASSWORD}" ]] || ${WARNING} "RDS_POSTGRES_PASSWORD not set"
-	@ echo "Check DB connection..."
-	@ echo "User: postgres, Password: **** , Host: ${RDS_POSTGRES_HOST}, Database: portfoliodb"
-	@ psql -d "postgresql://postgres:${RDS_POSTGRES_PASSWORD}@${RDS_POSTGRES_HOST}/portfoliodb" -c "select now()" > /dev/null
 
 healthcheck:
 	@ ${INFO} "Checking Django application container health"
@@ -128,7 +111,7 @@ healthcheck:
 
 down:
 	@ ${INFO} "Removing Django app container"
-	@ docker rm --force $$(docker ps --filter "ancestor=${IMAGE_REPOSITORY}:$(TAG)" -qa)
+	@ docker rm --force $$(docker ps --filter "ancestor=${IMAGE_REPOSITORY}:$(TAG)" -qa) || true
 	@ docker-compose down || true
 
 publish:

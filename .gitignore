@@ -23,6 +23,7 @@ dist/
 
 # Django static files
 *staticfiles/
+*mediafiles/
 
 # Generated documentation
 

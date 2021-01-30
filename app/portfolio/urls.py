@@ -5,6 +5,8 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path, re_path
 import debug_toolbar
+from django.views.decorators.cache import cache_page
+from django.core.cache.backends.base import DEFAULT_TIMEOUT
 
 # from main.api_views import (
 #     CategoryCreate,
@@ -28,7 +30,7 @@ from main.views import (
 )
 
 app_name = "main"  # here for namespacing of urls.
-
+CACHE_TTL = getattr(settings, "CACHE_TTL", DEFAULT_TIMEOUT)
 CAT_PREFIX = "api/v1/categories"
 ITEMS_PREFIX = "api/v1/items"
 
@@ -42,16 +44,32 @@ urlpatterns = [
     # path(f"{ITEMS_PREFIX}/new", ItemCreate.as_view()),
     # path(f"{ITEMS_PREFIX}/<int:id>/", ItemRetrieveUpdateDestroyAPIView.as_view()),
     # User management
-    path('__debug__/', include(debug_toolbar.urls)),
+    path("__debug__/", include(debug_toolbar.urls)),
     path("register/", SignUpFormView.as_view(), name="register"),
     path("login/", LoginFormView.as_view(), name="login"),
     path("logout/", logout_request, name="logout"),
     # Views
     path("", IndexView.as_view(), name="home"),
-    path("contact/", ContactUsFormView.as_view(), name="contact_us"),
-    path("items/", CategoriesView.as_view(), name="categories_view"),
-    path("items/<category_slug>/<item_slug>/", ItemsView.as_view(), name="item_view",),
-    path("items/<category_slug>/", RedirectToItemView.as_view(), name="items_view"),
+    path(
+        "contact/",
+        (cache_page(CACHE_TTL))(ContactUsFormView.as_view()),
+        name="contact_us",
+    ),
+    path(
+        "items/",
+        (cache_page(CACHE_TTL))(CategoriesView.as_view()),
+        name="categories_view",
+    ),
+    path(
+        "items/<category_slug>/<item_slug>/",
+        (cache_page(CACHE_TTL))(ItemsView.as_view()),
+        name="item_view",
+    ),
+    path(
+        "items/<category_slug>/",
+        (cache_page(CACHE_TTL))(RedirectToItemView.as_view()),
+        name="items_view",
+    ),
     # Extra apps
     path("admin/", admin.site.urls),
     path("tinymce/", include("tinymce.urls")),

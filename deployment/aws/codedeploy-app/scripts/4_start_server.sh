@@ -36,6 +36,7 @@ docker run -d \
     --mount type=volume,source=app-logs,target=/home/portfoliouser/app/logs/ \
     --env POSTGRES_HOST=${RDS_POSTGRES_HOST} \
     --env POSTGRES_PASSWORD=${RDS_POSTGRES_PASSWORD} \
+    --env REDIS_ENDPOINT=${ELASTICACHE_REDIS_HOST}:${ELASTICACHE_REDIS_PORT} \
     --env STATICFILES_BUCKET=${STATICFILES_BUCKET} \
     --env AWS_S3_CUSTOM_DOMAIN=${WEBAPP_DOMAIN} \
     --env DEBUG=${DEBUG} \

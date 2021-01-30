@@ -1,10 +1,6 @@
 """
-This module defines configurations on top on app/portfolio/settings/base.py.
-Here we define a basic application with
-- No Email backend configuration
-- No cache settings (redis)
-- No celery settings
-- Local storage for django files (media/static)
+This module defines additional Django configurations and can be used
+to override settings from setting/base.py.
 """
 
 from .base import *
@@ -14,6 +10,8 @@ print(f"Loading Django settings (DEBUG={DEBUG})")
 
 ENABLE_LOGIN_REQUIRED_MIXIN = False
 
+# DATABASE
+print(f"DB backend config: Host={config.POSTGRES_HOST}")
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
@@ -22,6 +20,18 @@ DATABASES = {
         "PASSWORD": config.POSTGRES_PASSWORD,
         "HOST": config.POSTGRES_HOST,
         "PORT": config.POSTGRES_PORT,
+    }
+}
+
+# CACHE
+# https://testdriven.io/blog/django-caching/
+CACHE_TTL = config.CACHE_TTL
+print(f"Redis Cache config: Endpoint={config.REDIS_ENDPOINT}, TTL={CACHE_TTL}s")
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": f"redis://{config.REDIS_ENDPOINT}",
+        "OPTIONS": {"CLIENT_CLASS": "django_redis.client.DefaultClient"},
     }
 }
 
