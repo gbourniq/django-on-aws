@@ -57,7 +57,6 @@ jobs:
             else
                 echo "Miniconda is already installed, continuing to build."
             fi
-            chmod u+x ~/repo/.circleci/*.sh
       - run:
           name: Setup environment and run tests
           command: |
