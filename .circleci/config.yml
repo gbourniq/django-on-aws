@@ -11,6 +11,8 @@ jobs:
   # Useful when a PR is open, for example
   build-and-test:
     # Our environment, Python 3.6.8
+    environment:
+      - BASH_ENV: $HOME/miniconda/etc/profile.d/conda.sh
     docker:
       - image: circleci/python:3.6.8
 
@@ -18,10 +20,6 @@ jobs:
     steps:
       # Get the code
       - checkout
-      - run:
-          name: Setup Environment Variables
-          command: |
-            echo "export PATH=$HOME/miniconda/bin:$PATH" >> $BASH_ENV
       # Download and cache dependencies
       - restore_cache:
           keys:
@@ -55,7 +53,6 @@ jobs:
             if [ ! -d "/home/circleci/miniconda" ]; then
                 wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
                 bash miniconda.sh -b -p $HOME/miniconda
-                source "$HOME/miniconda/etc/profile.d/conda.sh"
                 hash -r
                 conda config --set always_yes yes --set changeps1 no
                 conda update -q conda
