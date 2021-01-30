@@ -20,16 +20,19 @@ jobs:
           command: docker --version
       - run:
           name: Install packages
-          command: sudo apt-get install jq curl
+          command: |
+            sudo apt update
+            sudo apt-get install -y jq curl wget
       - run:
           name: Setup Miniconda
           command: |
-            apt update
-            apt install -y wget
-            cd $HOME
-            wget "https://repo.anaconda.com/miniconda/Miniconda3-4.7.10-Linux-x86_64.sh" -O miniconda.sh
-            printf '%s' "8a324adcc9eaf1c09e22a992bb6234d91a94146840ee6b11c114ecadafc68121  miniconda.sh" | sha256sum -c
+            wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
             bash miniconda.sh -b -p $HOME/miniconda
+            source "$HOME/miniconda/etc/profile.d/conda.sh"
+            hash -r
+            conda config --set always_yes yes --set changeps1 no
+            conda update -q conda
+            conda info -a
       - run:
           name: Setup environment and run tests
           command: |
