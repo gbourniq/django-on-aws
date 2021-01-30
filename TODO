@@ -1,3 +1,4 @@
 TODOs
+- redefine ci/cd with circleci - implement manual step? https://circleci.com/docs/2.0/sample-config/
 - update ci/cd pipeline - use everything from makefile basically
 - Update README (with screenshots of eg, the dashboard), update architecture diagram?

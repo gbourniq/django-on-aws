@@ -1,42 +1,88 @@
 version: 2.1
 
-orbs:
-  # The python orb contains a set of prepackaged circleci configuration you can use repeatedly in your configurations files
-  # Orb commands and jobs help you with common scripting around a language/tool
-  # so you dont have to copy and paste it everywhere.
-  # See the orb documentation here: https://circleci.com/developer/orbs/orb/circleci/python
-  python: circleci/python@1.2
-
-workflows:
-  sample:  # This is the name of the workflow, feel free to change it to better match your workflow.
-    # Inside the workflow, you define the jobs you want to run. 
-    # For more details on extending your workflow, see the configuration docs: https://circleci.com/docs/2.0/configuration-reference/#workflows 
+workflows: # https://circleci.com/docs/2.0/configuration-reference/#workflows 
+  main_workflow:
     jobs:
       - build-and-test
 
-
 jobs:
-  build-and-test:  # This is the name of the job, feel free to change it to better match what you're trying to do!
-    # These next lines defines a docker executors: https://circleci.com/docs/2.0/executor-types/
-    # You can specify an image from dockerhub or use one of the convenience images from CircleCI's Developer Hub
-    # A list of available CircleCI docker convenience images are available here: https://circleci.com/developer/images/image/cimg/python
-    # The executor is the environment in which the steps below will be executed - below will use a python 3.9 container
-    # Change the version below to your required version of python
-    docker:
-      - image: cimg/python:3.8
-    # Checkout the code as the first step. This is a dedicated CircleCI step.
-    # The python orb's install-packages step will install the dependencies from a Pipfile via Pipenv by default.
-    # Here we're making sure we use just use the system-wide pip. By default it uses the project root's requirements.txt.
-    # Then run your tests!
-    # CircleCI will report the results back to your VCS provider.
+  build-and-test:
+    machine: true
+    environment:
+      PYTHON_VERSION: 3.5.5
+      NUMPY_VERSION: 1.14.2
     steps:
+      # Get the code
       - checkout
-      - python/install-packages:
-          pkg-manager: pip
-          # app-dir: ~/project/package-directory/  # If you're requirements.txt isn't in the root directory.
-          # pip-dependency-file: test-requirements.txt  # if you have a different name for your requirements file, maybe one that combines your runtime and test requirements.
       - run:
-          name: Run tests
-          # This assumes pytest is installed via the install-package step above
-          command: pytest
+          name: Setup Miniconda
+          command: |
+            apt update
+            apt install -y wget
+            cd $HOME
+            wget "https://repo.anaconda.com/miniconda/Miniconda3-4.7.10-Linux-x86_64.sh" -O miniconda.sh
+            printf '%s' "8a324adcc9eaf1c09e22a992bb6234d91a94146840ee6b11c114ecadafc68121  miniconda.sh" | sha256sum -c
+            bash miniconda.sh -b -p $HOME/miniconda
+      - run:
+          name: Setup environment and run tests
+          command: |
+            export PATH="$HOME/miniconda/bin:$PATH"
+            conda update -y conda
+            conda create -n myenv python=$PYTHON_VERSION -c conda-forge
+            source activate myenv
+            conda install -y numpy=$NUMPY_VERSION
+            python --version
+            python -c "import numpy; print(numpy.__version__)"
+      # Checkcheck
+      - run:
+          name: Check docker
+          command: docker --version
+      - run:
+          name: Install packages
+          command: sudo apt-get install jq curl
+      - run:
+          name: Install Docker Compose
+          command: |
+            curl -L https://github.com/docker/compose/releases/download/1.25.3/docker-compose-`uname -s`-`uname -m` > ~/docker-compose
+            chmod +x ~/docker-compose
+            sudo mv ~/docker-compose /usr/local/bin/docker-compose
+      - run:
+          name: Check docker compose
+          command: docker-compose --version
+      - run:
+          name: Check jq
+          command: jq --help
+      - run:
+          name: Check conda
+          command: conda --version
+      - run:
+          name: Check poetry
+          command: poetry --version
+
+
+      # # Cache can be tricky at first, but this means
+      # # Please, restore my cache (what is actually on the cache will be defined later)
+      # # if the text key `deps-{{ checksum "poetry.lock" }}` changes (and it WILL change everytime poetry.lock is updated since we rely on its checksum)
+      # # and poetry.lock is updated every time we add a new dependency to our project
+      # - restore_cache:
+      #     keys: 
+      #       - deps-{{ checksum "poetry.lock" }}
+
+      # # Let's install the dependencies
+      # - run:
+      #     name: Install Dependencies
+      #     command: |
+      #       poetry install
+
+      # # Save's the specified path as a cache. This is the path Poetry uses to install the dependencies
+      # # So if you don't install anything new, this folder won't change and the cache will be effective
+      # - save_cache:
+      #     key: deps-{{ checksum "poetry.lock" }}
+      #     paths: 
+      #       - /home/circleci/.cache/pypoetry/virtualenvs
+
+      # - run:
+      #     name: Run tests
+      #     # This assumes pytest is installed via the install-package step above
+      #     command: pytest
 
