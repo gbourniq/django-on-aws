@@ -14,6 +14,13 @@ jobs:
     steps:
       # Get the code
       - checkout
+      # Checkcheck
+      - run:
+          name: Check docker
+          command: docker --version
+      - run:
+          name: Install packages
+          command: sudo apt-get install jq curl
       - run:
           name: Setup Miniconda
           command: |
@@ -33,13 +40,6 @@ jobs:
             conda install -y numpy=$NUMPY_VERSION
             python --version
             python -c "import numpy; print(numpy.__version__)"
-      # Checkcheck
-      - run:
-          name: Check docker
-          command: docker --version
-      - run:
-          name: Install packages
-          command: sudo apt-get install jq curl
       - run:
           name: Install Docker Compose
           command: |
