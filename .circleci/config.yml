@@ -60,24 +60,19 @@ jobs:
             else
                 echo "Miniconda is already installed, continuing to build."
             fi
-      - save_cache:
-          paths:
-            - /home/circleci/miniconda
-          key: v2-dependencies
       - run:
           name: Setup environment and run tests
           command: |
             conda update -y conda
             python --version
             conda info -a
-      - run:
-          name: Check conda
-          command: |
-            conda info -a
-      - run:
-          name: Check conda2
-          command: |
-            conda info -a
+      - run: make env
+      - save_cache:
+          paths:
+            - /home/circleci/miniconda
+          key: v2-dependencies
+      - run: conda activate django-on-aws
+      - run: conda info -a
 
 # version: 2.1
 
