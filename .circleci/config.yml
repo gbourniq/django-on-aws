@@ -14,7 +14,7 @@ jobs:
     environment:
       - BASH_ENV: $HOME/miniconda/etc/profile.d/conda.sh
     docker:
-      - image: circleci/python:3.6.8
+      - image: circleci/python:3.8.0
 
     # The steps for our build-and-test
     steps:
