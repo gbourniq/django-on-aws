@@ -1,5 +1,5 @@
 version: 2.1
-# /home/circleci/miniconda/envs/myenv
+
 workflows: # https://circleci.com/docs/2.0/configuration-reference/#workflows 
   main_workflow:
     jobs:
@@ -69,7 +69,7 @@ jobs:
       - run: make env
       - save_cache:
           paths:
-            - /home/circleci/miniconda
+            - /home/circleci/miniconda/envs/django-on-aws
           key: v2-dependencies
       - run: conda activate django-on-aws
       - run: conda info -a
