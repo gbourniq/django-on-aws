@@ -1,5 +1,5 @@
 version: 2.1
-
+# /home/circleci/miniconda/envs/myenv
 workflows: # https://circleci.com/docs/2.0/configuration-reference/#workflows 
   main_workflow:
     jobs:
@@ -65,7 +65,9 @@ jobs:
             conda info -a
       - run:
           name: Check conda
-          command: conda info -a
+          command: |
+            export PATH="$HOME/miniconda/bin:$PATH"
+            conda info -a
 
 # version: 2.1
 
