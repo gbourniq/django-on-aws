@@ -30,7 +30,7 @@ jobs:
       # Download and cache dependencies
       - restore_cache:
           keys:
-          - libs-{{ checksum "poetry.lock" }}-1
+          - libs-{{ checksum "poetry.lock" }}-2
 
       # Cache can be tricky at first, but this means
       # Please, restore my cache (what is actually on the cache will be defined later)
@@ -89,7 +89,7 @@ jobs:
       - save_cache:
           paths:
             - /home/circleci/miniconda/
-          key: libs-{{ checksum "poetry.lock" }}-1
+          key: libs-{{ checksum "poetry.lock" }}-2
       # - run:
       #     name: Activate conda environment for downstream steps
       #     command: |
