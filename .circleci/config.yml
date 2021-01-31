@@ -69,7 +69,7 @@ jobs:
             python --version
             conda info -a
       - run: |
-          if conda info --envs | grep django-on-aws; then
+          if ! conda info --envs | grep django-on-aws; then
             make env
           else
             echo "django-on-aws already exists"
