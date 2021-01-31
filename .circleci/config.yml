@@ -100,7 +100,7 @@ jobs:
 #   build-and-test:
 #     machine: true
 #     environment:
-#       PYTHON_VERSION: 3.5.5
+#       PYTHON_VERSION: 3.5.
 #       NUMPY_VERSION: 1.14.2
 #     steps:
 #       # Get the code
