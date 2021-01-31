@@ -10,9 +10,6 @@ jobs:
   # Building and testing the project
   # Useful when a PR is open, for example
   build-and-test:
-    # Our environment, Python 3.6.8
-    environment:
-      - BASH_ENV: $HOME/miniconda/etc/profile.d/conda.sh
     docker:
       - image: circleci/python:3.8.7
 
@@ -20,6 +17,10 @@ jobs:
     steps:
       # Get the code
       - checkout
+      - run:
+          name: Setup Environment Variables
+          command: |
+            echo "export PATH=$HOME/miniconda/bin:$PATH" >> $BASH_ENV
       # Download and cache dependencies
       - restore_cache:
           keys:
