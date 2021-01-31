@@ -85,7 +85,8 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          keys: [libs-{{ checksum "poetry.lock" }}]
+          keys:
+            - libs-{{ checksum "poetry.lock" }}
       - run:
           name: test
           command: |
