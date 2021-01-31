@@ -69,7 +69,6 @@ jobs:
       - run:
           name: Install poetry
           command: |
-            conda activate base
             curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
             source $HOME/.poetry/env
       - run:
@@ -77,6 +76,7 @@ jobs:
           command: |
             poetry --version
       - run: |
+          source "$HOME/miniconda/etc/profile.d/conda.sh"
           if ! conda info --envs | grep django-on-aws; then
             make env
           else
