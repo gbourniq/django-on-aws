@@ -56,6 +56,7 @@ jobs:
       - run:
           name: Activate conda environment for downstream steps
           command: |
+            export PATH="$HOME/miniconda/bin:$PATH"
             conda init bash
             source ~/.bashrc
             conda activate django-on-aws
