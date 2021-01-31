@@ -3,18 +3,11 @@ This module defines additional Django configurations and can be used
 to override settings from setting/base.py.
 """
 
-import logging.config
-import logging
 from .base import *
 
 
-# So that we can log from within Django settings.py
-logging.config.dictConfig(LOGGING)
-
-logger = logging.getLogger(__name__)
-
 DEBUG = config.DEBUG
-logger.info(f"Loading Django settings (DEBUG={DEBUG})")
+print(f"Loading Django settings (DEBUG={DEBUG})")
 
 ENABLE_LOGIN_REQUIRED_MIXIN = False
 
@@ -22,7 +15,7 @@ ENABLE_LOGIN_REQUIRED_MIXIN = False
 SNS_TOPIC_ARN = config.SNS_TOPIC_ARN
 
 # DATABASE
-logger.info(f"DB backend config: Host={config.POSTGRES_HOST}")
+print(f"DB backend config: Host={config.POSTGRES_HOST}")
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
@@ -37,7 +30,7 @@ DATABASES = {
 # CACHE
 # https://testdriven.io/blog/django-caching/
 CACHE_TTL = config.CACHE_TTL
-logger.info(f"Redis Cache config: Endpoint={config.REDIS_ENDPOINT}, TTL={CACHE_TTL}s")
+print(f"Redis Cache config: Endpoint={config.REDIS_ENDPOINT}, TTL={CACHE_TTL}s")
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
@@ -48,14 +41,14 @@ CACHES = {
 
 # FILE STORAGE - s3 static settings & s3 public media settings
 if not config.STATICFILES_BUCKET:
-    logger.info("Using local filesystem to serve static files")
+    print("Using local filesystem to serve static files")
     STATIC_URL = config.STATIC_FILES_PATH
     STATIC_ROOT = os.path.join(BASE_DIR, STATIC_URL)
     MEDIA_URL = config.MEDIA_FILES_PATH
     MEDIA_ROOT = os.path.join(BASE_DIR, MEDIA_URL)
     STATICFILES_DIRS = (os.path.join(BASE_DIR, "static"),)
 else:
-    logger.info(f"Using S3 Bucket {config.STATICFILES_BUCKET} to serve static files")
+    print(f"Using S3 Bucket {config.STATICFILES_BUCKET} to serve static files")
     # Extra variables for AWS
     AWS_STORAGE_BUCKET_NAME = config.STATICFILES_BUCKET
     AWS_S3_CUSTOM_DOMAIN = config.AWS_S3_CUSTOM_DOMAIN
