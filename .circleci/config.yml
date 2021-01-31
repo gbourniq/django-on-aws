@@ -81,7 +81,15 @@ jobs:
       - restore_cache:
           keys:
             - libs-{{ checksum "poetry.lock" }}
-      - run: make cfn-create
-      - run: make deploy
-      - run: make load-testing
-      - run: make cfn-delete
+      - run:
+          name: Create AWS infrastructure
+          command: make cfn-create
+      - run:
+          name: Deploy application to AWS
+          command: make deploy
+      - run:
+          name: Load Testing application
+          command: make load-testing
+      - run:
+          name: Delete AWS infrastructure
+          command: make cfn-delete
