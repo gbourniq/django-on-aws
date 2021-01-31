@@ -10,7 +10,8 @@ jobs:
   # Building and testing the project
   # Useful when a PR is open, for example
   build-and-test:
-    machine: true
+    machine: # executor type
+      image: ubuntu-2004:202010-01 # # recommended linux image - includes Ubuntu 20.04, docker 19.03.13, docker-compose 1.27.4
 
     # The steps for our build-and-test
     steps:
@@ -70,15 +71,15 @@ jobs:
           name: Install poetry
           command: |
             conda activate base
-            pip install poetry
+            curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
+            source $HOME/.poetry/env
       - run:
           name: check poetry
           command: |
-            conda activate base
+
             poetry --version
       - run: |
           if ! conda info --envs | grep django-on-aws; then
-            export PATH=$HOME/.poetry/env:$PATH
             make env
           else
             echo "django-on-aws already exists"
