@@ -84,8 +84,11 @@ jobs:
       #     name: Activate conda environment for downstream steps
       #     command: |
       #       echo "conda activate django-on-aws" >> $BASH_ENV
-      - run: conda activate django-on-aws && which conda && conda list
-      - run: conda info -a
+      - run: make tests
+      - run: make image
+      - run: make up
+      - run: make healthcheck
+      - run: make down
 
 # version: 2.1
 
