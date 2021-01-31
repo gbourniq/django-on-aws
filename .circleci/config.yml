@@ -50,7 +50,9 @@ jobs:
             poetry --version
       - run: |
           if ! conda info --envs | grep django-on-aws; then
-            PATH=$HOME/miniconda/bin:$PATH make env
+            PATH=$HOME/miniconda/bin:$PATH
+            source "$HOME/miniconda/etc/profile.d/conda.sh"
+            make env
           else
             echo "django-on-aws already exists"
           fi
