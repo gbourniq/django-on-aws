@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.com/gbourniq/django-on-aws.svg?branch=main)](https://travis-ci.com/gbourniq/django-on-aws)
+[![CircleCI](https://circleci.com/gh/circleci/circleci-docs.svg?style=shield)](https://circleci.com/gh/gbourniq/django-on-aws)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
 ![Pylint](.github/app.svg)
 ![Coverage](.github/coverage.svg)

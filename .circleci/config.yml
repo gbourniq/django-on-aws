@@ -41,6 +41,7 @@ jobs:
       - run:
           name: Install dependencies
           command: |
+            set -e
             conda update -y conda
             if ! conda info --envs | grep django-on-aws; then
               make env
@@ -53,22 +54,22 @@ jobs:
           key: libs-{{ checksum "poetry.lock" }}
       - run:
           name: Run unit-tests
-          command: make tests
+          command: set -e; make tests
       - run:
           name: Build docker image
-          command: make image
+          command: set -e; make image
       - run:
           name: Run containers
-          command: make up
+          command: set -e; make up
       - run:
           name: Application healthcheck
-          command: make healthcheck
+          command: set -e; make healthcheck
       - run:
           name: Remove containers
-          command: make down
+          command: set -e; make down
       - run:
           name: Publish to Dockerhub
-          command: make publish
+          command: set -e; make publish
   cd-pipeline:
     machine:
       image: ubuntu-2004:202010-01
