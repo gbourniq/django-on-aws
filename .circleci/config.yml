@@ -52,7 +52,7 @@ jobs:
           else
             echo "django-on-aws already exists"
           fi
-          echo "source activate django-on-aws" >> $BASH_ENV
+          echo "conda activate django-on-aws" >> $BASH_ENV
       - save_cache:
           paths:
             - /home/circleci/miniconda/
