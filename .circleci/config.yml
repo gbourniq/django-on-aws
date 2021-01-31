@@ -8,13 +8,13 @@ jobs:
   build-and-test:
     machine:
       image: ubuntu-2004:202010-01 # # recommended linux image - includes Ubuntu 20.04, docker 19.03.13, docker-compose 1.27.4
-      environment:
-        POETRY_PATH: $HOME/.poetry/env
-        MINICONDA: $HOME/miniconda
-        MINICONDA_PATH: $MINICONDA/bin
-        PATH: $MINICONDA_PATH:$POETRY_PATH:$PATH
-        CONDA: $MINICONDA_PATH/conda
-        CONDARC: $MINICONDA/condarc.none
+    environment:
+      POETRY_PATH: $HOME/.poetry/env
+      MINICONDA: $HOME/miniconda
+      MINICONDA_PATH: $MINICONDA/bin
+      PATH: $MINICONDA_PATH:$POETRY_PATH:$PATH
+      CONDA: $MINICONDA_PATH/conda
+      CONDARC: $MINICONDA/condarc.none
     steps:
       - checkout
       - run:
