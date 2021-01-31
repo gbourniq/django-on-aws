@@ -78,6 +78,7 @@ jobs:
             poetry --version
       - run: |
           if ! conda info --envs | grep django-on-aws; then
+            export PATH=$HOME/.poetry/env:$PATH
             make env
           else
             echo "django-on-aws already exists"
