@@ -50,8 +50,7 @@ jobs:
           conda create -n myenv python=$PYTHON_VERSION -c conda-forge
           source activate myenv
           python --version
-          python -c "import numpy; print(numpy.__version__)"
-
+          
           if ! conda info --envs | grep django-on-aws; then
             PATH=$HOME/miniconda/bin:$PATH
             source "$HOME/miniconda/etc/profile.d/conda.sh"
