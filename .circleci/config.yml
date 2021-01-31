@@ -4,15 +4,12 @@ workflows:
     jobs:
       - ci-pipeline
       - cd-pipeline:
-          type: approval
           requires:
               - ci-pipeline
 jobs:
   ci-pipeline:
     machine:
       image: ubuntu-2004:202010-01
-    environment:
-      AWS_DEPLOYMENT: "true"
     steps:
       - checkout
       - run:
@@ -50,27 +47,29 @@ jobs:
           paths:
             - /home/circleci/miniconda/
           key: libs-{{ checksum "poetry.lock" }}
-      - run:
-          name: Run unit-tests
-          command: make tests
-      - run:
-          name: Build docker image
-          command: make image
-      - run:
-          name: Run containers
-          command: make up
-      - run:
-          name: Application healthcheck
-          command: make healthcheck
-      - run:
-          name: Remove containers
-          command: make down
-      - run:
-          name: Publish to Dockerhub
-          command: make publish
+      # - run:
+      #     name: Run unit-tests
+      #     command: make tests
+      # - run:
+      #     name: Build docker image
+      #     command: make image
+      # - run:
+      #     name: Run containers
+      #     command: make up
+      # - run:
+      #     name: Application healthcheck
+      #     command: make healthcheck
+      # - run:
+      #     name: Remove containers
+      #     command: make down
+      # - run:
+      #     name: Publish to Dockerhub
+      #     command: make publish
   cd-pipeline:
     machine:
       image: ubuntu-2004:202010-01
+    environment:
+      AWS_DEPLOYMENT: "false"
     steps:
       - checkout
       - run:
@@ -82,15 +81,28 @@ jobs:
       - run:
           name: test
           command: make tests
-      # - run:
-      #     name: Deploy AWS infrastructure
-      #     command: if [[ $AWS_DEPLOYMENT == "true" ]]; then make cfn-create; else exit 0; fi
-      # - run:
-      #     name: Deploy application to AWS
-      #     command: if [[ $AWS_DEPLOYMENT == "true" ]]; then make deploy; else exit 0; fi
-      # - run:
-      #     name: Load test application running on AWS
-      #     command: if [[ $AWS_DEPLOYMENT == "true" ]]; then make load-testing; else exit 0; fi
-      # - run:
-      #     name: Delete AWS infrastructure
-      #     command: if [[ $AWS_DEPLOYMENT == "true" ]]; then make cfn-delete; else exit 0; fi
+      - when:
+          condition:
+            equal: [ $AWS_DEPLOYMENT, "false" ]
+          steps:
+            - run: make tests
+      - when:
+          condition:
+            equal: [ $AWS_DEPLOYMENT, "true" ]
+          steps:
+            - run: make cfn-create
+      - when:
+          condition:
+            equal: [ $AWS_DEPLOYMENT, "true" ]
+          steps:
+            - run: make deploy
+      - when:
+          condition:
+            equal: [ $AWS_DEPLOYMENT, "true" ]
+          steps:
+            - run: make load-testing
+      - when:
+          condition:
+            equal: [ $AWS_DEPLOYMENT, "true" ]
+          steps:
+            - run: make cfn-delete
