@@ -6,10 +6,10 @@ workflows: # https://circleci.com/docs/2.0/configuration-reference/#workflows
       - build-and-test
 jobs:
   build-and-test:
-    machine:
-      image: ubuntu-2004:202010-01
+    machine: true
     environment:
       POETRY_PATH: "$HOME/.poetry/env"
+      POETRY: "$HOME/.poetry/bin/poetry"
       MINICONDA: "$HOME/miniconda"
       MINICONDA_PATH: "$MINICONDA/bin"
       PATH: "$MINICONDA_PATH:$POETRY_PATH:$PATH"
@@ -41,9 +41,9 @@ jobs:
                 bash miniconda.sh -b -p $HOME/miniconda
                 source "$HOME/miniconda/etc/profile.d/conda.sh"
                 hash -r
-                conda config --set always_yes yes --set changeps1 no
-                conda update -q conda
-                conda info -a
+                $CONDA config --set always_yes yes --set changeps1 no
+                $CONDA update -q conda
+                $CONDA info -a
             else
                 echo "Miniconda is already installed, continuing to build."
             fi
@@ -55,7 +55,7 @@ jobs:
       - run:
           name: check poetry
           command: |
-            poetry --version
+            $POETRY --version
       - run: |
           source "$HOME/miniconda/etc/profile.d/conda.sh"
           export PATH=$HOME/miniconda/bin:$PATH
