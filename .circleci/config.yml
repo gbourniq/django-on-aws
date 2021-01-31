@@ -1,15 +1,15 @@
 version: 2.1
 workflows:
-  main_workflow:
+  ci_cd_workflow:
     jobs:
-      - ci-pipeline:
+      - ci-pipeline
       - cd-pipeline:
+          requires:
+              - ci-pipeline
           filters:
             branches:
               only:
                 - main
-          requires:
-              - ci-pipeline
 jobs:
   ci-pipeline:
     machine:
