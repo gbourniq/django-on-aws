@@ -75,12 +75,9 @@ jobs:
       - run:
           name: Set Conda path
           command: echo "export PATH=$HOME/miniconda/bin:$PATH" >> $BASH_ENV
-      # - restore_cache:
-      #     keys:
-      #       - libs-{{ checksum "poetry.lock" }}
-      - run:
-          name: test
-          command: make tests
+      - restore_cache:
+          keys:
+            - libs-{{ checksum "poetry.lock" }}
       - when:
           condition:
             equal: [ $AWS_DEPLOYMENT, "false" ]
