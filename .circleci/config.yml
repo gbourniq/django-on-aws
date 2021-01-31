@@ -6,15 +6,8 @@ workflows: # https://circleci.com/docs/2.0/configuration-reference/#workflows
       - build-and-test
 jobs:
   build-and-test:
-    machine: true
-    environment:
-      POETRY_PATH: "$HOME/.poetry/env"
-      POETRY: "$HOME/.poetry/bin/poetry"
-      MINICONDA: "$HOME/miniconda"
-      MINICONDA_PATH: "$MINICONDA/bin"
-      PATH: "$MINICONDA_PATH:$POETRY_PATH:$PATH"
-      CONDA: "$MINICONDA_PATH/conda"
-      CONDARC: "$MINICONDA/condarc.none"
+    machine:
+      image: ubuntu-2004:202010-01
     steps:
       - checkout
       - run:
