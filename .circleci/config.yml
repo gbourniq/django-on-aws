@@ -69,6 +69,10 @@ jobs:
       - run:
           name: Setup environment and run tests
           command: |
+            export PATH="$HOME/miniconda/bin:$PATH"
+            conda update -y conda
+            conda create -n myenv python=$PYTHON_VERSION -c conda-forge
+            source activate myenv
             conda update -y conda
             source activate base
             which python
