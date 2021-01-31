@@ -74,6 +74,8 @@ jobs:
       - run:
           name: check poetry
           command: |
+            env
+            source $HOME/.poetry/env
             poetry --version
       - run: |
           source "$HOME/miniconda/etc/profile.d/conda.sh"
