@@ -5,7 +5,7 @@
 # Set shell
 SHELL=/bin/bash -e -o pipefail
 
-### Environment variables ###
+### Conda environment
 CONDA_ENV_NAME=django-on-aws
 CONDA_CREATE=source $$(conda info --base)/etc/profile.d/conda.sh ; conda env create
 CONDA_ACTIVATE=source $$(conda info --base)/etc/profile.d/conda.sh ; conda activate
