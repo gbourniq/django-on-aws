@@ -2,11 +2,13 @@ version: 2.1
 workflows:
   main_workflow:
     jobs:
-      - build-and-test
+      - ci-cd-pipeline
 jobs:
-  build-and-test:
+  ci-cd-pipeline:
     machine:
       image: ubuntu-2004:202010-01
+    environment:
+      AWS_DEPLOYMENT: "true"
     steps:
       - checkout
       - run:
@@ -39,7 +41,6 @@ jobs:
               make env
             else
               echo "conda environment django-on-aws already exists"
-              make env-update
             fi
       - save_cache:
           paths:
@@ -51,8 +52,8 @@ jobs:
       - run: make healthcheck
       - run: make down
       - run: make publish
-      - run: make cfn-package
-      - run: make cfn-validate
+      - run: if [[ $AWS_DEPLOYMENT == "true" ]]; then make cfn-package; else exit 0; fi
+      - run: if [[ $AWS_DEPLOYMENT == "gewgwe" ]]; then make cfn-validate; else exit 0; fi
       # - run: make cfn-create
       # - run: make deploy
       # - run: make load-testing
