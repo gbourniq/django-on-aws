@@ -53,17 +53,17 @@ jobs:
           paths:
             - /home/circleci/miniconda/
           key: libs-{{ checksum "poetry.lock" }}-2
-      - run:
-          name: Activate conda environment for downstream steps
-          command: |
-            export PATH="$HOME/miniconda/bin:$PATH"
-            conda init bash
+      # - run:
+      #     name: Activate conda environment for downstream steps
+      #     command: |
+      #       export PATH="$HOME/miniconda/bin:$PATH"
+      #       conda init bash
       - run: |
-          source ~/.bashrc
-          conda activate django-on-aws
-          conda env list
+          source activate django-on-aws
           export PATH="$HOME/miniconda/bin:$PATH"
-          conda activate django-on-aws
+          conda env list
+          source activate django-on-aws
+          conda env list
           make tests
       - run: make image
       - run: make up
