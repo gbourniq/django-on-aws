@@ -60,7 +60,7 @@ jobs:
       #     name: Activate conda environment for downstream steps
       #     command: |
       #       echo "conda activate django-on-aws" >> $BASH_ENV
-      - run: make tests
+      - run: export PATH="$HOME/miniconda/bin:$PATH" && make tests
       - run: make image
       - run: make up
       - run: make healthcheck
