@@ -84,14 +84,12 @@ jobs:
       image: ubuntu-2004:202010-01
     steps:
       - checkout
-      - restore_cache:
-          keys:
-            - libs-{{ checksum "poetry.lock" }}
+      - run:
+          name: Set Conda path
+          command: echo "export PATH=$HOME/miniconda/bin:$PATH" >> $BASH_ENV
+      # - restore_cache:
+      #     keys:
+      #       - libs-{{ checksum "poetry.lock" }}
       - run:
           name: test
-          command: |
-            ls
-            pwd
-            conda --version
-            python --version
-            conda env list
+          command: make tests
