@@ -70,8 +70,8 @@ jobs:
           name: Setup environment and run tests
           command: |
             conda update -y conda
+            source activate base
             which python
-            $HOME/miniconda/envs/django-on-aws/bin/python --version
             python --version
             conda info -a
       - run:
