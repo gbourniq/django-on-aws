@@ -71,11 +71,11 @@ jobs:
           paths:
             - /home/circleci/miniconda/envs/django-on-aws
           key: v2-dependencies
-      - run:
-          name: Activate conda environment for downstream steps
-          command: |
-            echo "conda activate django-on-aws" >> $BASH_ENV
-      - run: conda activate django-on-aws
+      # - run:
+      #     name: Activate conda environment for downstream steps
+      #     command: |
+      #       echo "conda activate django-on-aws" >> $BASH_ENV
+      - run: conda activate django-on-aws && conda env list
       - run: conda info -a
 
 # version: 2.1
