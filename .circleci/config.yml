@@ -74,7 +74,7 @@ jobs:
       - run:
           name: check poetry
           command: |
-            export PATH=$HOME/.poetry/env:$PATH
+            source $HOME/.poetry/env
             poetry --version
       - run: |
           if ! conda info --envs | grep django-on-aws; then
