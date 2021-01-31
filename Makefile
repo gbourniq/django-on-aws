@@ -3,7 +3,8 @@ SHELL=/bin/bash -e -o pipefail
 
 ### Environment variables ###
 CONDA_ENV_NAME=django-on-aws
-CONDA_ACTIVATE=source ${HOME}/miniconda//etc/profile.d/conda.sh ; conda activate
+CONDA_CREATE=source ${HOME}/miniconda/etc/profile.d/conda.sh ; conda env create
+CONDA_ACTIVATE=source ${HOME}/miniconda/etc/profile.d/conda.sh ; conda activate
 
 # Cloudformation
 AWS_DEFAULT_PROFILE=myaws
@@ -39,6 +40,7 @@ include utils/helpers.mk
 .PHONY: env env-update pre-commit
 env:
 	@ ${INFO} "Creating ${CONDA_ENV_NAME} conda environment and poetry dependencies"
+	@ $(CONDA_CREATE) -f environment.yml -n $(CONDA_ENV_NAME)
 	@ ($(CONDA_ACTIVATE) $(CONDA_ENV_NAME); poetry install)
 	@ ${SUCCESS} "${CONDA_ENV_NAME} conda environment has been created and dependencies installed with Poetry."
 	@ ${MESSAGE} "Please activate the environment with: conda activate ${CONDA_ENV_NAME}"
