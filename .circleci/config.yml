@@ -26,16 +26,12 @@ jobs:
       # Let's install the dependencies
       - run:
           name: install dependencies
-          command: | 
-            ls $HOME
+          command: |
             if [ ! -d "$MINICONDA" ]; then
-                wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
-                bash miniconda.sh -b -p $HOME/miniconda
-                source "$HOME/miniconda/etc/profile.d/conda.sh"
-                hash -r
-                conda config --set always_yes yes --set changeps1 no
-                conda update -q conda
-                conda info -a
+              cd $HOME
+              wget "https://repo.anaconda.com/miniconda/Miniconda3-4.7.10-Linux-x86_64.sh" -O miniconda.sh
+              printf '%s' "8a324adcc9eaf1c09e22a992bb6234d91a94146840ee6b11c114ecadafc68121  miniconda.sh" | sha256sum -c
+              bash miniconda.sh -b -p $HOME/miniconda
             else
                 echo "Miniconda is already installed, continuing to build."
             fi
@@ -49,6 +45,13 @@ jobs:
           command: |
             poetry --version
       - run: |
+          export PATH="$HOME/miniconda/bin:$PATH"
+          conda update -y conda
+          conda create -n myenv python=$PYTHON_VERSION -c conda-forge
+          source activate myenv
+          python --version
+          python -c "import numpy; print(numpy.__version__)"
+
           if ! conda info --envs | grep django-on-aws; then
             PATH=$HOME/miniconda/bin:$PATH
             source "$HOME/miniconda/etc/profile.d/conda.sh"
