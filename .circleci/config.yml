@@ -3,6 +3,9 @@ workflows:
   main_workflow:
     jobs:
       - ci-cd-pipeline
+      - damn:
+          requires:
+              - ci-cd-pipeline
 jobs:
   ci-cd-pipeline:
     machine:
@@ -18,8 +21,7 @@ jobs:
           name: Set Conda and Poetry paths
           command: echo "export PATH=$HOME/miniconda/bin:$HOME/.poetry/bin:$PATH" >> $BASH_ENV
       - restore_cache:
-          keys:
-          - libs-{{ checksum "poetry.lock" }}-2
+          keys: [libs-{{ checksum "poetry.lock" }}]
       - run:
           name: Install Miniconda
           command: |
@@ -43,18 +45,50 @@ jobs:
               echo "conda environment django-on-aws already exists"
             fi
       - save_cache:
-          paths:
-            - /home/circleci/miniconda/
-          key: libs-{{ checksum "poetry.lock" }}-2
-      - run: make tests
-      - run: make image
-      - run: make up
-      - run: make healthcheck
-      - run: make down
-      - run: make publish
-      - run: if [[ $AWS_DEPLOYMENT == "true" ]]; then make cfn-package; else exit 0; fi
-      - run: if [[ $AWS_DEPLOYMENT == "gewgwe" ]]; then make cfn-validate; else exit 0; fi
-      # - run: make cfn-create
-      # - run: make deploy
-      # - run: make load-testing
-      # - run: make cfn-delete
+          paths: [/home/circleci/miniconda/]
+          key: libs-{{ checksum "poetry.lock" }}
+      # - run:
+      #     name: Run unit-tests
+      #     command: make tests
+      # - run:
+      #     name: Build docker image
+      #     command: make image
+      # - run:
+      #     name: Run containers
+      #     command: make up
+      # - run:
+      #     name: Application healthcheck
+      #     command: make healthcheck
+      # - run:
+      #     name: Remove containers
+      #     command: make down
+      # - run:
+      #     name: Publish to Dockerhub
+      #     command: make publish
+      # - run:
+      #     name: Deploy AWS infrastructure
+      #     command: if [[ $AWS_DEPLOYMENT == "true" ]]; then make cfn-create; else exit 0; fi
+      # - run:
+      #     name: Deploy application to AWS
+      #     command: if [[ $AWS_DEPLOYMENT == "true" ]]; then make deploy; else exit 0; fi
+      # - run:
+      #     name: Load test application running on AWS
+      #     command: if [[ $AWS_DEPLOYMENT == "true" ]]; then make load-testing; else exit 0; fi
+      # - run:
+      #     name: Delete AWS infrastructure
+      #     command: if [[ $AWS_DEPLOYMENT == "true" ]]; then make cfn-delete; else exit 0; fi
+  damn:
+    machine:
+      image: ubuntu-2004:202010-01
+    steps:
+      - checkout
+      - restore_cache:
+          keys: [libs-{{ checksum "poetry.lock" }}]
+      - run:
+          name: test
+          command: |
+            ls
+            pwd
+            conda --version
+            python --version
+            conda env list
