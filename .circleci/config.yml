@@ -11,6 +11,11 @@ jobs:
     steps:
       - checkout
       - run:
+          name: Rename project root dir
+          command: |
+            cd $HOME
+            mv project/ django-on-aws/
+      - run:
           name: Install packages
           command: |
             make --version
