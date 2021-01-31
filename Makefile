@@ -3,7 +3,7 @@ SHELL=/bin/bash -e -o pipefail
 
 ### Environment variables ###
 CONDA_ENV_NAME=django-on-aws
-CONDA_ACTIVATE=source $$(conda info --base)/etc/profile.d/conda.sh ; conda activate
+CONDA_ACTIVATE=source ${HOME}/miniconda//etc/profile.d/conda.sh ; conda activate
 
 # Cloudformation
 AWS_DEFAULT_PROFILE=myaws
