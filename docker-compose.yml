@@ -49,4 +49,5 @@ volumes:
 
 networks:
   backend:
+    name: global-network
     driver: bridge

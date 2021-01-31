@@ -99,7 +99,7 @@ up: rundb
 	@ docker run -d \
 				-p 8080:8080 \
 				--restart=no \
-				--network django-on-aws_backend \
+				--network global-network \
 				--env DEBUG=True \
 				--env POSTGRES_HOST=postgres \
 				--env POSTGRES_PASSWORD=postgres \
