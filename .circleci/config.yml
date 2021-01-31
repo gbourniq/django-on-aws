@@ -51,59 +51,37 @@ jobs:
           paths:
             - /home/circleci/miniconda/
           key: libs-{{ checksum "poetry.lock" }}
-      # - run:
-      #     name: Run unit-tests
-      #     command: make tests
-      # - run:
-      #     name: Build docker image
-      #     command: make image
-      # - run:
-      #     name: Run containers
-      #     command: make up
-      # - run:
-      #     name: Application healthcheck
-      #     command: make healthcheck
-      # - run:
-      #     name: Remove containers
-      #     command: make down
-      # - run:
-      #     name: Publish to Dockerhub
-      #     command: make publish
+      - run:
+          name: Run unit-tests
+          command: make tests
+      - run:
+          name: Build docker image
+          command: make image
+      - run:
+          name: Run containers
+          command: make up
+      - run:
+          name: Application healthcheck
+          command: make healthcheck
+      - run:
+          name: Remove containers
+          command: make down
+      - run:
+          name: Publish to Dockerhub
+          command: make publish
   cd-pipeline:
     machine:
       image: ubuntu-2004:202010-01
-    environment:
-      AWS_DEPLOYMENT: "false"
     steps:
       - checkout
       - run:
           name: Set Conda path
           command: echo "export PATH=$HOME/miniconda/bin:$PATH" >> $BASH_ENV
+      # Retrieve conda environment
       - restore_cache:
           keys:
             - libs-{{ checksum "poetry.lock" }}
-      - when:
-          condition:
-            equal: [ $AWS_DEPLOYMENT, "false" ]
-          steps:
-            - run: make tests
-      - when:
-          condition:
-            equal: [ $AWS_DEPLOYMENT, "true" ]
-          steps:
-            - run: make cfn-create
-      - when:
-          condition:
-            equal: [ $AWS_DEPLOYMENT, "true" ]
-          steps:
-            - run: make deploy
-      - when:
-          condition:
-            equal: [ $AWS_DEPLOYMENT, "true" ]
-          steps:
-            - run: make load-testing
-      - when:
-          condition:
-            equal: [ $AWS_DEPLOYMENT, "true" ]
-          steps:
-            - run: make cfn-delete
+      - run: make cfn-create
+      - run: make deploy
+      - run: make load-testing
+      - run: make cfn-delete
