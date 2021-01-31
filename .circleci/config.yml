@@ -73,7 +73,9 @@ jobs:
             curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
       - run:
           name: check poetry
-          command: poetry --version
+          command: |
+            export PATH=$HOME/.poetry/env:$PATH
+            poetry --version
       - run: |
           if ! conda info --envs | grep django-on-aws; then
             make env
