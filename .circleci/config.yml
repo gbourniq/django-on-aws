@@ -10,18 +10,23 @@ jobs:
   # Building and testing the project
   # Useful when a PR is open, for example
   build-and-test:
-    docker:
-      - image: circleci/python:3.8.7
+    machine: true
 
     # The steps for our build-and-test
     steps:
       # Get the code
       - checkout
       - run:
+          name: Install packages
+          command: |
+            sudo apt update
+            sudo apt-get install -y jq curl wget
+      - run:
           name: Setup Environment Variables
           command: |
             echo "export PATH=$HOME/miniconda/bin:$PATH" >> $BASH_ENV
             echo ". $HOME/miniconda/etc/profile.d/conda.sh" >> $BASH_ENV
+            echo "export PATH=$HOME/.poetry/env:$PATH" >> $BASH_ENV
       # Download and cache dependencies
       - restore_cache:
           keys:
@@ -63,6 +68,10 @@ jobs:
             else
                 echo "Miniconda is already installed, continuing to build."
             fi
+      - run:
+          name: Install poetry
+          command: |
+            curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
       - run:
           name: Setup environment and run tests
           command: |
