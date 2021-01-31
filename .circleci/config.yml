@@ -25,7 +25,7 @@ jobs:
       # Download and cache dependencies
       - restore_cache:
           keys:
-          - deps-{{ checksum "poetry.lock" }}-1
+          - libs-{{ checksum "poetry.lock" }}-1
 
       # Cache can be tricky at first, but this means
       # Please, restore my cache (what is actually on the cache will be defined later)
@@ -78,12 +78,12 @@ jobs:
       - save_cache:
           paths:
             - /home/circleci/miniconda/
-          key: deps-{{ checksum "poetry.lock" }}-1
+          key: libs-{{ checksum "poetry.lock" }}-1
       # - run:
       #     name: Activate conda environment for downstream steps
       #     command: |
       #       echo "conda activate django-on-aws" >> $BASH_ENV
-      - run: conda activate django-on-aws && conda list
+      - run: conda activate django-on-aws && which conda && conda list
       - run: conda info -a
 
 # version: 2.1
