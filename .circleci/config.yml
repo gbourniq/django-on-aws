@@ -21,7 +21,8 @@ jobs:
           name: Set Conda and Poetry paths
           command: echo "export PATH=$HOME/miniconda/bin:$HOME/.poetry/bin:$PATH" >> $BASH_ENV
       - restore_cache:
-          keys: [libs-{{ checksum "poetry.lock" }}]
+          keys:
+            - libs-{{ checksum "poetry.lock" }}
       - run:
           name: Install Miniconda
           command: |
@@ -45,7 +46,8 @@ jobs:
               echo "conda environment django-on-aws already exists"
             fi
       - save_cache:
-          paths: [/home/circleci/miniconda/]
+          paths:
+            - /home/circleci/miniconda/
           key: libs-{{ checksum "poetry.lock" }}
       # - run:
       #     name: Run unit-tests
