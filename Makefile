@@ -38,6 +38,7 @@ include utils/helpers.mk
 .PHONY: env env-update pre-commit
 env:
 	@ ${INFO} "Creating ${CONDA_ENV_NAME} conda environment and poetry dependencies"
+	@ echo ${PATH}
 	@ conda env create -f environment.yml -n $(CONDA_ENV_NAME)
 	@ (conda activate $(CONDA_ENV_NAME); poetry install)
 	@ ${SUCCESS} "${CONDA_ENV_NAME} conda environment has been created and dependencies installed with Poetry."
