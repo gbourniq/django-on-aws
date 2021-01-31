@@ -70,11 +70,11 @@ jobs:
           name: Install poetry
           command: |
             conda activate base
-            curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
+            pip install poetry
       - run:
           name: check poetry
           command: |
-            source $HOME/.poetry/env
+            conda activate base
             poetry --version
       - run: |
           if ! conda info --envs | grep django-on-aws; then
