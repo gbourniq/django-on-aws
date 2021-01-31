@@ -10,11 +10,11 @@ jobs:
       image: ubuntu-2004:202010-01
     steps:
       - checkout
-      - run:
-          name: Rename project root dir
-          command: |
-            cd $HOME
-            mv project/ django-on-aws/
+      # - run:
+      #     name: Rename project root dir
+      #     command: |
+      #       cd $HOME
+      #       mv project/ django-on-aws/
       - run:
           name: Install packages
           command: |
