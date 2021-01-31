@@ -66,18 +66,19 @@ jobs:
                 echo "Miniconda is already installed, continuing to build."
             fi
       - run:
-          name: Install poetry
-          command: |
-            curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
-      - run:
-          name: check poetry
-          command: poetry --version
-      - run:
           name: Setup environment and run tests
           command: |
             conda update -y conda
             python --version
             conda info -a
+      - run:
+          name: Install poetry
+          command: |
+            source activate base
+            curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
+      - run:
+          name: check poetry
+          command: poetry --version
       - run: |
           if ! conda info --envs | grep django-on-aws; then
             make env
