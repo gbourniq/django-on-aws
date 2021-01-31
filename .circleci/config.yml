@@ -67,7 +67,12 @@ jobs:
             conda update -y conda
             python --version
             conda info -a
-      - run: make env
+      - run: |
+          if conda info --envs | grep django-on-aws; then
+            make env
+          else
+            echo "django-on-aws already exists"
+          fi
       - save_cache:
           paths:
             - /home/circleci/miniconda/envs/django-on-aws
