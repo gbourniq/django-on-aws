@@ -7,12 +7,13 @@ workflows: # https://circleci.com/docs/2.0/configuration-reference/#workflows
 jobs:
   build-and-test:
     machine:
-      image: ubuntu-1604:202010-01
+      image: ubuntu-2004:202010-01
     steps:
       - checkout
       - run:
           name: Install packages
           command: |
+            make --version
             sudo apt update
             sudo apt-get install -y jq curl wget gcc libpq-dev python3-dev
       - run:
