@@ -47,9 +47,6 @@ jobs:
       - run: |
           export PATH="$HOME/miniconda/bin:$PATH"
           conda update -y conda
-          conda create -n myenv python=3.8.7 -c conda-forge
-          source activate myenv
-          python --version
 
           if ! conda info --envs | grep django-on-aws; then
             export PATH="$HOME/miniconda/condabin:$PATH"
