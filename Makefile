@@ -3,7 +3,7 @@
 .ONESHELL:
 
 # Set shell
-SHELL=/bin/bash
+SHELL=/bin/bash -e -o pipefail
 
 ### Environment variables ###
 CONDA_ENV_NAME=django-on-aws
