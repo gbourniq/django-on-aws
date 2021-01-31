@@ -45,9 +45,6 @@ jobs:
           name: Check make
           command: make --help
       - run:
-          name: check poetry
-          command: poetry --version
-      - run:
           name: Check docker
           command: docker --version
       - run:
@@ -72,6 +69,9 @@ jobs:
           name: Install poetry
           command: |
             curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
+      - run:
+          name: check poetry
+          command: poetry --version
       - run:
           name: Setup environment and run tests
           command: |
