@@ -67,20 +67,9 @@ jobs:
                 echo "Miniconda is already installed, continuing to build."
             fi
       - run:
-          name: Setup environment and run tests
-          command: |
-            export PATH="$HOME/miniconda/bin:$PATH"
-            conda update -y conda
-            conda create -n myenv python=$PYTHON_VERSION -c conda-forge
-            conda activate myenv
-            conda activate base
-            which python
-            python --version
-            conda info -a
-      - run:
           name: Install poetry
           command: |
-            source activate base
+            conda activate base
             curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
       - run:
           name: check poetry
