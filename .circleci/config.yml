@@ -1,6 +1,5 @@
 version: 2.1
-
-workflows: # https://circleci.com/docs/2.0/configuration-reference/#workflows 
+workflows:
   main_workflow:
     jobs:
       - build-and-test
@@ -10,184 +9,51 @@ jobs:
       image: ubuntu-2004:202010-01
     steps:
       - checkout
-      # - run:
-      #     name: Rename project root dir
-      #     command: |
-      #       cd $HOME
-      #       mv project/ django-on-aws/
       - run:
-          name: Install packages
-          command: |
-            make --version
-            sudo apt update
-            sudo apt-get install -y jq curl wget gcc libpq-dev python3-dev
+          name: Install Packages
+          command: sudo apt update; sudo apt-get install -y jq curl wget gcc libpq-dev python3-dev
       - run:
-          name: Setup Environment Variables
-          command: |
-            echo "export PATH=$HOME/miniconda/bin:$PATH" >> $BASH_ENV
-            echo "export PATH=$HOME/.poetry/bin:$PATH" >> $BASH_ENV
+          name: Set Conda and Poetry paths
+          command: echo "export PATH=$HOME/miniconda/bin:$HOME/.poetry/bin:$PATH" >> $BASH_ENV
       - restore_cache:
           keys:
           - libs-{{ checksum "poetry.lock" }}-2
-      # Let's install the dependencies
       - run:
-          name: install dependencies
+          name: Install Miniconda
           command: |
             if [ ! -d "$HOME/miniconda" ]; then
-              cd $HOME
-              wget "https://repo.anaconda.com/miniconda/Miniconda3-4.7.10-Linux-x86_64.sh" -O miniconda.sh
+              wget "https://repo.anaconda.com/miniconda/Miniconda3-4.7.10-Linux-x86_64.sh" -O $HOME/miniconda.sh
               printf '%s' "8a324adcc9eaf1c09e22a992bb6234d91a94146840ee6b11c114ecadafc68121  miniconda.sh" | sha256sum -c
-              bash miniconda.sh -b -p $HOME/miniconda
+              bash $HOME/miniconda.sh -b -p $HOME/miniconda
             else
                 echo "Miniconda is already installed, continuing to build."
             fi
       - run:
-          name: Install poetry
+          name: Install Poetry
           command: curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
       - run:
-          name: check poetry
-          command: poetry --version
-      - run: |
-          export PATH="$HOME/miniconda/bin:$PATH"
-          conda update -y conda
-          if ! conda info --envs | grep django-on-aws; then
-            make env
-          else
-            echo "django-on-aws already exists"
-          fi
+          name: Install dependencies
+          command: |
+            conda update -y conda
+            if ! conda info --envs | grep django-on-aws; then
+              make env
+            else
+              echo "conda environment django-on-aws already exists"
+              make env-update
+            fi
       - save_cache:
           paths:
             - /home/circleci/miniconda/
           key: libs-{{ checksum "poetry.lock" }}-2
-      # - run:
-      #     name: Activate conda environment for downstream steps
-      #     command: |
-      #       export PATH="$HOME/miniconda/bin:$PATH"
-      #       conda init bash
-      - run: |
-          export PATH="$HOME/miniconda/bin:$PATH"
-          conda env list
-          source activate django-on-aws
-          conda env list
-          source ${HOME}/miniconda/etc/profile.d/conda.sh
-          export PATH="$HOME/miniconda/bin:$PATH"
-          make tests
+      - run: make tests
       - run: make image
       - run: make up
       - run: make healthcheck
       - run: make down
-
-# version: 2.1
-
-# workflows: # https://circleci.com/docs/2.0/configuration-reference/#workflows 
-#   main_workflow:
-#     jobs:
-#       - build-and-test
-#       - another-job:
-#           requires:
-#             - build-and-test
-
-# jobs:
-#   build-and-test:
-#     machine: true
-#     environment:
-#       PYTHON_VERSION: 3.5.
-#       NUMPY_VERSION: 1.14.2
-#     steps:
-#       # Get the code
-#       - checkout
-#       # Checkcheck
-#       - run: docker --version
-#       - run:
-#           name: Install packages
-#           command: |
-#             sudo apt update
-#             sudo apt-get install -y jq curl wget
-#       - run:
-#           name: Setup Miniconda
-#           command: |
-#             wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
-#             bash miniconda.sh -b -p $HOME/miniconda
-#             source "$HOME/miniconda/etc/profile.d/conda.sh"
-#             hash -r
-#             conda config --set always_yes yes --set changeps1 no
-#             conda update -q conda
-#             conda info -a
-#             export PATH="$HOME/miniconda/bin:$PATH"
-#             conda update -y conda
-#       - run:
-#           name: Setup environment and run tests
-#           command: |
-#             export PATH="$HOME/miniconda/bin:$PATH"
-#             conda update -y conda
-#             conda create -n myenv python=$PYTHON_VERSION -c conda-forge
-#             source activate myenv
-#             conda install -y numpy=$NUMPY_VERSION
-#             python --version
-#             python -c "import numpy; print(numpy.__version__)"
-#       - run:
-#           name: Install poetry
-#           command: |
-#             curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
-#             export PATH="$HOME/.poetry/env:$PATH"
-#       - run:
-#           name: Install Docker Compose
-#           command: |
-#             curl -L https://github.com/docker/compose/releases/download/1.25.3/docker-compose-`uname -s`-`uname -m` > ~/docker-compose
-#             chmod +x ~/docker-compose
-#             sudo mv ~/docker-compose /usr/local/bin/docker-compose
-#       - run:
-#           name: Check docker compose
-#           command: docker-compose --version
-#       - run:
-#           name: Check jq
-#           command: jq --help
-#       # - run:
-#       #     name: Check poetry
-#       #     command: poetry --version
-#       # - run:
-#       #     name: Check conda
-#       #     command: conda info -a
-#   another-job:
-#     machine: true
-#     steps:
-#       # Get the code
-#       - checkout
-#       # Checkcheck
-#       - run:
-#           name: Check docker compose
-#           command: docker-compose --version
-#       - run:
-#           name: Check poetry2
-#           command: |
-#             pip install poetry
-#       - run:
-#           name: Check poetry2
-#           command: |
-#             poetry --version
-#       # # Cache can be tricky at first, but this means
-#       # # Please, restore my cache (what is actually on the cache will be defined later)
-#       # # if the text key `deps-{{ checksum "poetry.lock" }}` changes (and it WILL change everytime poetry.lock is updated since we rely on its checksum)
-#       # # and poetry.lock is updated every time we add a new dependency to our project
-#       # - restore_cache:
-#       #     keys: 
-#       #       - deps-{{ checksum "poetry.lock" }}
-
-#       # # Let's install the dependencies
-#       # - run:
-#       #     name: Install Dependencies
-#       #     command: |
-#       #       poetry install
-
-#       # # Save's the specified path as a cache. This is the path Poetry uses to install the dependencies
-#       # # So if you don't install anything new, this folder won't change and the cache will be effective
-#       # - save_cache:
-#       #     key: deps-{{ checksum "poetry.lock" }}
-#       #     paths: 
-#       #       - /home/circleci/.cache/pypoetry/virtualenvs
-
-#       # - run:
-#       #     name: Run tests
-#       #     # This assumes pytest is installed via the install-package step above
-#       #     command: pytest
-
+      - run: make publish
+      - run: make cfn-package
+      - run: make cfn-validate
+      # - run: make cfn-create
+      # - run: make deploy
+      # - run: make load-testing
+      # - run: make cfn-delete

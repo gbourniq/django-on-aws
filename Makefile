@@ -1,10 +1,14 @@
+# Oneshell means I can run multiple lines in a recipe in the same shell, so I don't have to
+# chain commands together with semicolon
+.ONESHELL:
+
 # Set shell
-SHELL=/bin/bash -e -o pipefail
+SHELL=/bin/bash
 
 ### Environment variables ###
 CONDA_ENV_NAME=django-on-aws
-CONDA_CREATE=source ${HOME}/miniconda/etc/profile.d/conda.sh ; conda env create
-CONDA_ACTIVATE=source ${HOME}/miniconda/etc/profile.d/conda.sh ; conda activate
+CONDA_CREATE=source $$(conda info --base)/etc/profile.d/conda.sh ; conda env create
+CONDA_ACTIVATE=source $$(conda info --base)/etc/profile.d/conda.sh ; conda activate
 
 # Cloudformation
 AWS_DEFAULT_PROFILE=myaws
@@ -52,6 +56,7 @@ env-update:
 	@ ${SUCCESS} "${CONDA_ENV_NAME} conda environment and poetry dependencies have been updated!"
 
 pre-commit:
+	@ $(CONDA_ACTIVATE) $(CONDA_ENV_NAME)
 	@ pre-commit install -t pre-commit -t commit-msg
 	@ ${SUCCESS} "pre-commit set up"
 
@@ -72,12 +77,14 @@ recreatedb: rundb
 	docker exec -it --user=postgres postgres createdb portfoliodb
 
 runserver: rundb
+	@ $(CONDA_ACTIVATE) $(CONDA_ENV_NAME)
 	python app/manage.py collectstatic --no-input -v 0
 	python app/manage.py makemigrations main
 	python app/manage.py migrate --run-syncdb
 	python app/manage.py runserver 0.0.0.0:8080
 
 tests: rundb
+	@ $(CONDA_ACTIVATE) $(CONDA_ENV_NAME)
 	@ ${INFO} "Running Django tests using the postgres container"
 	@ pytest app -x
 	@ docker-compose down || true
@@ -127,6 +134,7 @@ publish:
 .PHONY: cfn-validate cfn-create cfn-update cfn-delete
 
 cfn-package:
+	@ $(CONDA_ACTIVATE) $(CONDA_ENV_NAME)
 	@ ${INFO} "Packaging nested CloudFormation templates into ${CFN_PACKAGED_TEMPLATE_FILE}"
 	@ aws cloudformation package \
 		--template-file ${CFN_PARENT_TEMPLATE_FILE} \
@@ -134,12 +142,14 @@ cfn-package:
 		--s3-bucket ${S3_BUCKET_NAME_CFN_TEMPLATES}
 
 cfn-validate: cfn-package
+	@ $(CONDA_ACTIVATE) $(CONDA_ENV_NAME)
 	@ ${INFO} "Validating CloudFormation template ${CFN_PACKAGED_TEMPLATE_FILE}"
 	@ yamllint -d "{rules: {line-length: {max: 130, level: warning}}}" "${CFN_PACKAGED_TEMPLATE_FILE}"
 	@ cfn-lint "${CFN_PACKAGED_TEMPLATE_FILE}"
 	@ aws cloudformation validate-template --template-body file://"${CFN_PACKAGED_TEMPLATE_FILE}" > /dev/null
 
 cfn-create: cfn-validate
+	@ $(CONDA_ACTIVATE) $(CONDA_ENV_NAME)
 	@ ${INFO} "Creating stack ${STACK_NAME}..."
 	@ aws cloudformation create-stack \
 		--stack-name=${STACK_NAME} \
@@ -164,6 +174,7 @@ cfn-create: cfn-validate
 	@ echo "$$($(call wait_for_stack_creation_status))"
 
 cfn-update: cfn-validate
+	@ $(CONDA_ACTIVATE) $(CONDA_ENV_NAME)
 	@ ${INFO} "Updating stack ${STACK_NAME}..."
 	@ aws cloudformation update-stack \
 		--stack-name=${STACK_NAME} \
@@ -188,6 +199,7 @@ cfn-update: cfn-validate
 	@ echo "$$($(call wait_for_stack_update_status))"
 
 cfn-delete:
+	@ $(CONDA_ACTIVATE) $(CONDA_ENV_NAME)
 	@ ${INFO} "Deleting stack ${STACK_NAME}..."
 	@ aws cloudformation delete-stack --stack-name="${STACK_NAME}"
 	@ echo "$$($(call wait_for_stack_delete_status))"
@@ -199,6 +211,7 @@ cfn-delete:
 deploy: put-image-name-to-ssm deploy-push deploy-create deploy-get-status
 
 put-image-name-to-ssm:
+	@ $(CONDA_ACTIVATE) $(CONDA_ENV_NAME)
 	@ ${INFO} "Starting deployment of docker image ${IMAGE_REPOSITORY}:$(TAG) (DEBUG=${DEBUG})"
 	@ aws ssm put-parameter \
 		--name "/CODEDEPLOY/DOCKER_IMAGE_NAME" \
@@ -212,6 +225,7 @@ put-image-name-to-ssm:
 		--overwrite >/dev/null
 
 deploy-push:
+	@ $(CONDA_ACTIVATE) $(CONDA_ENV_NAME)
 	@ ${INFO} "Push code to S3 and create a CodeDeploy application revision"
 	@ aws deploy push \
 		--application-name "$$($(call get_stack_output, CodeDeployApplicationName))" \
@@ -220,6 +234,7 @@ deploy-push:
 		--ignore-hidden-files
 
 deploy-create:
+	@ $(CONDA_ACTIVATE) $(CONDA_ENV_NAME)
 	@ ${INFO} "Create deployment from the latest CodeDeploy application revision"
 	@ aws deploy create-deployment \
 		--application-name "$$($(call get_stack_output, CodeDeployApplicationName))" \
@@ -229,17 +244,20 @@ deploy-create:
 		--file-exists-behavior OVERWRITE
 
 deploy-get-status:
+	@ $(CONDA_ACTIVATE) $(CONDA_ENV_NAME)
 	@ ${INFO} "Check deployment status..."
 	@ echo "$$($(call wait_for_codedeploy_deployment_status))"
 
 
 # Load Testing
 load-testing:
+	@ $(CONDA_ACTIVATE) $(CONDA_ENV_NAME)
 	@ ${INFO} "Load testing ${WEBSERVER_URL} by spawning ${USERS} users (${SPAWN_RATE}/s) for ${RUN_TIME} minutes."
 	@ locust -f utils/locustfile.py \
 		--host ${WEBSERVER_URL} \
 		--headless --users ${USERS} --spawn-rate ${SPAWN_RATE} --run-time ${RUN_TIME} --only-summary
 
 load-testing-ui:
+	@ $(CONDA_ACTIVATE) $(CONDA_ENV_NAME)
 	@ ${INFO} "Starting load testing UI"
 	@ locust -f utils/locustfile.py --host ${WEBSERVER_URL}
