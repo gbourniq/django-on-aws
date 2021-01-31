@@ -2,12 +2,13 @@ version: 2.1
 workflows:
   main_workflow:
     jobs:
-      - ci-cd-pipeline
-      - damn:
+      - ci-pipeline
+      - cd-pipeline:
+          type: approval
           requires:
-              - ci-cd-pipeline
+              - ci-pipeline
 jobs:
-  ci-cd-pipeline:
+  ci-pipeline:
     machine:
       image: ubuntu-2004:202010-01
     environment:
@@ -49,37 +50,25 @@ jobs:
           paths:
             - /home/circleci/miniconda/
           key: libs-{{ checksum "poetry.lock" }}
-      # - run:
-      #     name: Run unit-tests
-      #     command: make tests
-      # - run:
-      #     name: Build docker image
-      #     command: make image
-      # - run:
-      #     name: Run containers
-      #     command: make up
-      # - run:
-      #     name: Application healthcheck
-      #     command: make healthcheck
-      # - run:
-      #     name: Remove containers
-      #     command: make down
-      # - run:
-      #     name: Publish to Dockerhub
-      #     command: make publish
-      # - run:
-      #     name: Deploy AWS infrastructure
-      #     command: if [[ $AWS_DEPLOYMENT == "true" ]]; then make cfn-create; else exit 0; fi
-      # - run:
-      #     name: Deploy application to AWS
-      #     command: if [[ $AWS_DEPLOYMENT == "true" ]]; then make deploy; else exit 0; fi
-      # - run:
-      #     name: Load test application running on AWS
-      #     command: if [[ $AWS_DEPLOYMENT == "true" ]]; then make load-testing; else exit 0; fi
-      # - run:
-      #     name: Delete AWS infrastructure
-      #     command: if [[ $AWS_DEPLOYMENT == "true" ]]; then make cfn-delete; else exit 0; fi
-  damn:
+      - run:
+          name: Run unit-tests
+          command: make tests
+      - run:
+          name: Build docker image
+          command: make image
+      - run:
+          name: Run containers
+          command: make up
+      - run:
+          name: Application healthcheck
+          command: make healthcheck
+      - run:
+          name: Remove containers
+          command: make down
+      - run:
+          name: Publish to Dockerhub
+          command: make publish
+  cd-pipeline:
     machine:
       image: ubuntu-2004:202010-01
     steps:
@@ -93,3 +82,15 @@ jobs:
       - run:
           name: test
           command: make tests
+      # - run:
+      #     name: Deploy AWS infrastructure
+      #     command: if [[ $AWS_DEPLOYMENT == "true" ]]; then make cfn-create; else exit 0; fi
+      # - run:
+      #     name: Deploy application to AWS
+      #     command: if [[ $AWS_DEPLOYMENT == "true" ]]; then make deploy; else exit 0; fi
+      # - run:
+      #     name: Load test application running on AWS
+      #     command: if [[ $AWS_DEPLOYMENT == "true" ]]; then make load-testing; else exit 0; fi
+      # - run:
+      #     name: Delete AWS infrastructure
+      #     command: if [[ $AWS_DEPLOYMENT == "true" ]]; then make cfn-delete; else exit 0; fi
