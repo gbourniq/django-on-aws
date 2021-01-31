@@ -21,6 +21,7 @@ jobs:
           name: Setup Environment Variables
           command: |
             echo "export PATH=$HOME/miniconda/bin:$PATH" >> $BASH_ENV
+            echo ". $HOME/miniconda/etc/profile.d/conda.sh" >> $BASH_ENV
       # Download and cache dependencies
       - restore_cache:
           keys:
