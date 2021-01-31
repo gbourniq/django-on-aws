@@ -3,13 +3,13 @@ workflows:
   main_workflow:
     jobs:
       - ci-pipeline:
+      - cd-pipeline:
+          requires:
+              - ci-pipeline
           filters:
             branches:
               only:
                 - main
-      - cd-pipeline:
-          requires:
-              - ci-pipeline
 jobs:
   ci-pipeline:
     machine:
