@@ -39,18 +39,13 @@ jobs:
           name: Install poetry
           command: |
             curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
-            source $HOME/.poetry/env
       - run:
           name: check poetry
           command: |
             poetry --version
       - run: |
-          export PATH="$HOME/miniconda/bin:$PATH"
           conda update -y conda
-
           if ! conda info --envs | grep django-on-aws; then
-            source "$HOME/miniconda/etc/profile.d/conda.sh"
-            export PATH="$HOME/miniconda/condabin:$PATH"
             make env
           else
             echo "django-on-aws already exists"
