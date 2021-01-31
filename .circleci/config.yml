@@ -63,6 +63,8 @@ jobs:
           conda env list
           source activate django-on-aws
           conda env list
+          source ${HOME}/miniconda/etc/profile.d/conda.sh
+          export PATH="$HOME/miniconda/bin:$PATH"
           make tests
       - run: make image
       - run: make up
