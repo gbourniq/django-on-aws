@@ -27,7 +27,6 @@ jobs:
           command: |
             echo "export PATH=$HOME/miniconda/bin:$PATH" >> $BASH_ENV
             echo "export PATH=$HOME/miniconda/envs/django-on-aws/bin/:$PATH" >> $BASH_ENV
-            echo ". $HOME/miniconda/etc/profile.d/conda.sh" >> $BASH_ENV
             echo "export PATH=$HOME/.poetry/env:$PATH" >> $BASH_ENV
       # Download and cache dependencies
       - restore_cache:
@@ -76,7 +75,6 @@ jobs:
       - run:
           name: check poetry
           command: |
-
             poetry --version
       - run: |
           if ! conda info --envs | grep django-on-aws; then
