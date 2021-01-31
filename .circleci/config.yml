@@ -8,13 +8,6 @@ jobs:
   build-and-test:
     machine:
       image: ubuntu-2004:202010-01
-    environment:
-      POETRY_PATH: "$HOME/.poetry/env"
-      POETRY: "$HOME/.poetry/bin/poetry"
-      MINICONDA: "$HOME/miniconda"
-      MINICONDA_PATH: "$MINICONDA/bin"
-      CONDA: "$MINICONDA_PATH/conda"
-      CONDARC: "$MINICONDA/condarc.none"
     steps:
       - checkout
       - run:
@@ -22,12 +15,11 @@ jobs:
           command: |
             sudo apt update
             sudo apt-get install -y jq curl wget
-      # - run:
-      #     name: Setup Environment Variables
-      #     command: |
-      #       echo "export PATH=$HOME/miniconda/bin:$PATH" >> $BASH_ENV
-      #       echo "export PATH=$HOME/miniconda/envs/django-on-aws/bin/:$PATH" >> $BASH_ENV
-      #       echo "export PATH=$HOME/.poetry/env:$PATH" >> $BASH_ENV
+      - run:
+          name: Setup Environment Variables
+          command: |
+            echo "export PATH=$HOME/miniconda/bin:$PATH" >> $BASH_ENV
+            echo "export PATH=$HOME/.poetry/bin:$PATH" >> $BASH_ENV
       - restore_cache:
           keys:
           - libs-{{ checksum "poetry.lock" }}-2
@@ -41,9 +33,9 @@ jobs:
                 bash miniconda.sh -b -p $HOME/miniconda
                 source "$HOME/miniconda/etc/profile.d/conda.sh"
                 hash -r
-                $CONDA config --set always_yes yes --set changeps1 no
-                $CONDA update -q conda
-                $CONDA info -a
+                conda config --set always_yes yes --set changeps1 no
+                conda update -q conda
+                conda info -a
             else
                 echo "Miniconda is already installed, continuing to build."
             fi
@@ -55,7 +47,7 @@ jobs:
       - run:
           name: check poetry
           command: |
-            $POETRY --version
+            poetry --version
       - run: |
           source "$HOME/miniconda/etc/profile.d/conda.sh"
           export PATH=$HOME/miniconda/bin:$PATH
