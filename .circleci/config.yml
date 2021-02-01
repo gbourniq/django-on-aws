@@ -1,19 +1,23 @@
 version: 2.1
 workflows:
-  ci_cd_workflow:
+  ci_pipeline_only:
     jobs:
-      - ci-pipeline:
+      - ci-pipeline
+  scheduled_ci_cd_pipeline:
+    triggers:
+      - schedule:
+          # Runs every Sunday at 8PM
+          cron: "0 20 * * 0"
           filters:
             branches:
               only:
                 - main
+    jobs:
+      - ci-pipeline
       - cd-pipeline:
           requires:
               - ci-pipeline
-          filters:
-            branches:
-              only:
-                - main
+
 jobs:
   ci-pipeline:
     machine:
