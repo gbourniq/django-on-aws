@@ -36,18 +36,6 @@ jobs:
       - run:
           name: Install Miniconda
           command: |
-            make --version
-            sudo apt update
-            sudo apt-get install -y jq curl wget gcc libpq-dev python3-dev
-      - run:
-          name: Set Conda and Poetry paths
-          command: echo "export PATH=$HOME/miniconda/bin:$HOME/.poetry/bin:$PATH" >> $BASH_ENV
-      - restore_cache:
-          keys:
-            - libs-{{ checksum "poetry.lock" }}
-      - run:
-          name: Install Miniconda
-          command: |
             if [ ! -d "$HOME/miniconda" ]; then
               wget "https://repo.anaconda.com/miniconda/Miniconda3-4.7.10-Linux-x86_64.sh" -O $HOME/miniconda.sh
               printf '%s' "8a324adcc9eaf1c09e22a992bb6234d91a94146840ee6b11c114ecadafc68121  miniconda.sh" | sha256sum -c

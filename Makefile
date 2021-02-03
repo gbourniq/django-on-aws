@@ -11,7 +11,9 @@ CONDA_CREATE=source $$(conda info --base)/etc/profile.d/conda.sh ; conda env cre
 CONDA_ACTIVATE=source $$(conda info --base)/etc/profile.d/conda.sh ; conda activate
 
 # Cloudformation
-ENVIRONMENT=dev
+# Note The ENVIRONMENT variable (dev/prod) is used as the subdomain name, eg. prod.mydomain.com
+# If set to prod, then an RDS database snapshot will be created on stack deletion 
+ENVIRONMENT=prod
 STACK_NAME=$(ENVIRONMENT)
 S3_BUCKET_NAME_CFN_TEMPLATES=gbournique-sam-artifacts
 CFN_PARENT_TEMPLATE_FILE="deployment/aws/cloudformation/parent-stack.yaml"
@@ -64,11 +66,8 @@ pre-commit:
 .PHONY: rundb stopdb recreatedb runserver tests open-cov-report
 
 rundb:
-	@ echo "Starting postgres container"
+	@ echo "Starting postgres and redis containers"
 	@ docker-compose up -d || true
-
-stopdb:
-	@ docker-compose down || true
 
 recreatedb: rundb
 	@ ${INFO} "Wiping portfoliodb table"
@@ -84,7 +83,7 @@ runserver: rundb
 
 tests: rundb
 	@ $(CONDA_ACTIVATE) $(CONDA_ENV_NAME)
-	@ ${INFO} "Running Django tests using the postgres container"
+	@ ${INFO} "Running Django tests using the postgres and redis containers"
 	@ pytest app -x
 	@ docker-compose down || true
 	@ ${INFO} "Run 'make open-cov-report' to view coverage details"

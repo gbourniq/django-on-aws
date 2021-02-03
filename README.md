@@ -20,215 +20,173 @@ Other improvements compared to the previous version:
 
 Screenshots of the frontend can be found [here](https://github.com/gbourniq/portfolio/blob/master/README.md#portfolio-app-overview).
 
-## Application architecture
-
-The diagram below represents the general application infrastructure, as defined in the CloudFormation template `deployment/cfn-template-app.yaml`.
-
-![Architecture Diagram](docs/app-architecture.png)
-
-To deploy all resources as a CloudFormation Stack:
-
-1. Complete the following prerequisites:
-- Create Route 53 Hosted Zone
-- Create a [free SSL certificate](https://itnext.io/using-letsencrypt-ssl-certificates-in-aws-certificate-manager-c2bc3c6ae10) and load it to ACM in the us-east-1 region 
-- Add variables to the SSM Parameter store: CW Agent config file (.json), RDS password (SecureString), Slack incoming webhook URL (String)
-
-2. Review stack parameters in `deployment/cfn-template-parameters.json`
-
-3. Run `make cfn-create`.
-
 ## Contents
-- [Prerequisites](#prerequisites)
-- [Virtual environment and git-hooks setup](#virtual-environment-and-git-hooks-setup)
-- [Local development and testing](#local-development-and-testing)
-- [Build and push docker image](#build-and-push-docker-image)
-- [Configure RDS Postgres as a database backend](#configure-rds-postgres-as-a-database-backend)
-- [Deployment to AWS](#deployment-to-aws)
+- [Application development](#local-development)
+- [AWS Deployment](#aws-deployment)
 - [CI/CD](#cicd)
-- [RESTful APIs](#restful-apis-wip)
 
-## Prerequisites
+## Application development
+
+### Prerequisites
 - Install [Docker](https://hub.docker.com/search/?type=edition&offering=community)
 - Install [Miniconda](https://docs.conda.io/en/latest/miniconda.html) 
 - Install [Poetry](https://github.com/sdispater/poetry)
 - Install [Make](https://www.gnu.org/software/make/)
 
-## Virtual environment and git-hooks setup
+### Virtual environment and git-hooks setup
 
-To make things easy, you can create the conda environment and install the dependencies by running:
+The following make commands are available:
 ```bash
-make env
-conda activate django-on-aws
+make env						  <-- Create conda environment and install dependencies with poetry
+make env-update                   <-- Update dependencies
+make pre-commit					  <-- Install git-hooks hooks (setup once)
 ```
-> The environment can later be updated with `make env-udpate`, when poetry packages are modified.
 
-A [pre-commit](https://pypi.org/project/pre-commit/) package is used to manage git-hooks. The hooks are defined in `.pre-commit-config.yaml`, and will automatically format the code with `autoflake`, `isort` and `black`, and run code analysis and testing with `pylint` and `pytest`, on each commit. To set them up, run:
+>> The git-hooks are managed by the [pre-commit](https://pypi.org/project/pre-commit/) package and defined in `.pre-commit-config.yaml`. They will automatically format the code with `autoflake`, `isort` and `black`, and run code analysis and testing with `pylint` and `pytest`, on each commit.
+
+### Run django webserver locally and unit-tests
+
+The following make commands are available:
 ```bash
-make pre-commit
+make runserver					  <-- Start django webserver (+ spin up postgres and redis containers)
+make recreatedb                   <-- Wipe database content
+make tests						  <-- Run tests with pytest-django
+make open-cov-report			  <-- Open unit-tests coverage html report
 ```
 
-Make sure to run `source .env` to avoid import errors
+### Build, test, and publish docker image
 
-
-## Local development and testing
-
-When running the webserver for the first time, please follow these steps:
-
-1. Run a postgres docker container with `make rundb`. This will automatically create a table as defined in `deployment/postgres/docker-entrypoint-initdb.d/run_db_setup.sh`.
-> The table can be easily wiped and re-created later on with the `make recreatedb` command.
-
-2. Create the django superuser to access the `/admin` page:
-```bash
-python manage.py createsuperuser
+The following make commands are available:
+```
+make image                        <-- Package django application as a docker image
+make up                           <-- Start django webserver (docker run), postgres/redis (docker-compose) as containers
+make healthcheck                  <-- Ensure django webserver container is up and running
+make down                         <-- Stop and remove all containers
+make publish                      <-- Push django app docker image to Dockerhub
 ```
 
-3. Apply Django model migrations:
-```bash
-python manage.py makemigrations main
-python manage.py migrate
+## AWS Deployment
+
+### Create AWS infrastructure from CloudFormation templates
+
+![Application Architecture](.github/app-architecture.png)
+
+The repository contains nested cloudformation templates so that the application infrastructure shown above can be automatically created from code, using the `awscli`.
+
+>> Note that all AWS resources defined in this architecture *should* be covered by the [AWS Free Tier](https://aws.amazon.com/free/).
+
+Resources are grouped into separate nested (child) cloudformation templates as illustrated below:
+
+```
+cloudformation
+├── parent-stack.yaml
+├── compute
+│   └── template.yaml
+├── dashboard
+│   └── template.yaml
+├── database
+│   └── template.yaml
+├── network
+│   └── template.yaml
+├── serverless
+│   ├── src
+│   │   ├── codedeploy_lambda_handler.py
+│   │   ├── sns_lambda_handler.py
+│   │   └── sqs_lambda_handler.py
+│   └── template.yaml
+└── storage
+    └── template.yaml
 ```
 
-Once the above is set up, the local Django server can be quickly run with:
-```bash
-make runserver
+Prerequisites (manual steps)
+- Create Route 53 Hosted Zone ($0.50/month)
+- Create a domain in Route53, eg. mydomain.com (~$15/year)
+- Create a [free SSL certificate](https://itnext.io/using-letsencrypt-ssl-certificates-in-aws-certificate-manager-c2bc3c6ae10) and load it to the AWS Certificate Manager service in the us-east-1 region 
+
+To deploy all resources as a CloudFormation stack:
+
+1. Review stack parameters in `Makefile` under the `cfn-create` target
+
+2. Run `make cfn-create`
+
+>> Note it can take up to 30mn for all resources to be created. The stack resources can then be updated with `make cfn-create` or deleted with `make cfn-delete`.
+
+### Application deployment to AWS
+
+Deploying the application to a fleet a running EC2 instances is straightforward using the AWS CodeDeploy service.
+
+Application deployment scripts can be found under the `deployment/codedeploy-app/` directory.
+
 ```
-> Note the above command will automatically start a postgres container if it's not already up
-
-Tests can be run with the following make command
-```bash
-make tests
-```
-> The above command runs unit tests and integration tests with `pytest-django` to cover the following:
-> * Simulate requests and insert test data from HTTP-level request handling
-> * Form validation and processing
-> * Template rendering
-
-> To view the unit-tests coverage report, run `make open-cov-report`
-
-## Build and push docker image
-
-Build the image with
-```bash
-make image
-```
-
-Start a container from the image along with a Postgres container
-```bash
-make up
-```
-
-Check app container health to ensure deployment configurations are correct
-```bash
-make healthcheck
+codedeploy-app
+├── appspec.yml					 <-- Used by CodeDeploy to manage deployments
+├── scripts
+│   ├── 1_stop_server.sh		 <-- Gracefully stop the currently running application
+│   ├── 2_before_install.sh		 <-- Preinstall tasks
+│   ├── 3_after_install.sh		 <-- Configuration tasks after the new files are copied to the host
+│   ├── 4_start_server.sh		 <-- Docker pull the new image and run it
+│   └── 5_validate_service.sh	 <-- Ensure new deployment is successful
+└── startup_server.sh			 <-- Startup script copied to the host, & mounted to the container
 ```
 
-Remove application and postgres container
-```
-make down
-```
+Run the `make deploy` command to deploy or update a new version of the application that was pushed as a docker image to Dockerhub. 
 
-Push the docker image to dockerhub (the `DOCKER_PASSWORD` environment variable must be set)
-```bash
-make publish
-```
+>> Note that CodeDeploy is currently set up to update one instance at a time, while keeping a minimum of 50% healthy hosts. Deployment configurations can be found in `deployment/cloudformation/compute/template.yaml` under `# CodeDeploy`.
 
-## Configure RDS Postgres as a database backend
+### CloudWatch Dashboard to monitor application
 
-1. Launch an RDS database from the AWS console, and take a note of the following values:
-```
-POSTGRES_HOST
-POSTGRES_DB
-POSTGRES_PORT
-POSTGRES_PORT
-POSTGRES_PASSWORD
-```
+The `cloudformation/dashboard/template.yaml` template defines the following custom AWS CloudWatch Dashboard.
 
-2. Create a Table using a Postgres management tools such as `pgadmin` or `SQLElectron`:
-```bash
-CREATE USER portfoliodb PASSWORD 'portfoliodb';
-CREATE DATABASE portfoliodb;
-GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO portfoliodb;
-ALTER ROLE portfoliodb IN DATABASE portfoliodb SET search_path = portfoliodb,public;
-```
+![CW Dashboard](.github/cw-dashboard.png)
 
-3. Ensure the variables in step 1 are defined as environment variables
+The dashboard offers a central location where application deployment and performance issues can be investigated through a number of charts:
+- CloudFront metrics (requests, % error rate)
+- ALB requests and HTTP status codes
+- AutoScaling Group Mix/Max/Desired size
+- Target Group heatlhy hosts
+- Average CPU utilization of running EC2 instances
+- Logs: CloudFormation cfn-init, CodeDeploy agent, Docker container, and Django application logs
+- RDS and ElastiCache metrics
 
-4. Run the application docker container
-* Either locally with:
-```bash
-make run-app
-```
-* Or from any server (eg. EC2 instance):
-```bash
-docker run -d \
-	-p 8080:8080 \
-	--name=myapp \
-	--restart=no \
-	--env POSTGRES_HOST=${POSTGRES_HOST} \
-	--env POSTGRES_PASSWORD=${POSTGRES_PASSWORD} \
-	${IMAGE_REPOSITORY}:$(TAG)
-```
+The conda environment is configured with the `locust` package to run load testing. Run the `make load-testing-ui` command to start the Locust UI and ensure the deployed application can handle "real-world" traffic conditions.
 
-## Deployment to AWS
+![Load Testing](.github/load-testing-ui.png)
 
-Not tested yet, though it should be as simple as running 
-```bash
-docker run -d \
-	-p 8080:8080 \
-	--name=myapp \
-	--restart=always \
-	--env POSTGRES_HOST=<rds-db-hostname> \
-	--env POSTGRES_PASSWORD=<rds-db-password> \
-	gbournique/django-on-aws:1.0.0
-```
+### AutoScaling and cost considerations
+
+The Auto Scaling group as currently defined in the `deployment/cloudformation/compute/template.yaml` template make use of `ScheduledAction` resources to fully scale down the website at night (all EC2 are terminated). 
+
+`ScheduledAction` can achieve significant cost savings by scaling the number of instances appropriately when traffic can be anticipated.
+
+Additionally, a `ScalingPolicy` has been defined to trigger auto scaling events so that the average CPU across all running instances stays around 60% (configurable).
+
+
+### Disaster recovery and failover
+
+Automated disaster recovery is currently not implemented. For costs reason, it would be a m
+* `Recovery Point Objective` is estimated to be around 5mn (RDS automated backup)
+* `Recovery Time Objective` is estimated to be around 30mn (time it takes to re-create the whole infrastructure in another region) + minutes to hours for the database recovery
+
+If the website is unavailable, Route53 will failover traffic to an S3 website-enabled bucket reachable behind CloudFront, as illustrated in the Architecture diagram above. This is a simple html page to inform the user:
+
+![Failover page](.github/s3-website-failover.png)
+
+>> Note the website can be unreachable for two reasons: the AutoScaling Group is fulled scaled down (eg. by ScheduledAction at night), or there is an application failure.
+
 
 ## CI/CD
 
-The `.travis.yml` build configuration file defines the following CI/CD pipeline:
+The `.circleci/config.yml` file configures the following CI/CD pipeline
 
-* Continuous Integration
-```
-make env                          <-- Create conda environment and install dependencies
-conda activate django-on-aws      <-- Activate conda environment
-make tests                        <-- Run unit-tests against the built-in FastAPI Testing server
-make image                        <-- Build django application as a docker image
-make up                           <-- Run a local postgres and app containers from the build image and a
-make healthcheck                  <-- Check app container health
-make down                         <-- Remove postgres and app containers
-make publish                      <-- Push docker image to dockerhub
-```
+![CI/CD Pipeline](.github/ci_cd_pipeline.png)
 
-* Continuous Deployment
-```
-TBD - will involve cloudformation templates
-```
+The CI pipeline only is triggered on every push to the `master` branch, while the full CI-CD pipeline is run on a weekly schedule as configured in the CircleCI file.
 
-Note that the following secret environment variables must be set in the Travis Repository settings
+The following secret environment variables must be set in the CircleCI project settings
 ```bash
-DOCKER_PASSWORD
-POSTGRES_PASSWORD
+DOCKER_PASSWORD			<-- to push the built image to Dockerhub (ci pipeline)
+AWS_ACCESS_KEY_ID		<-- used by the awscli (cd pipeline)
+AWS_DEFAULT_REGION		<-- used by the awscli	(cd pipeline)
+AWS_SECRET_ACCESS_KEY	<-- used by the awscli	(cd pipeline)
+RDS_POSTGRES_PASSWORD	<-- to create the RDS database and setup Django DB backend (cd pipeline)
 ```
-
-## RESTful APIs
-
-Web APIs have been developed using the [Django REST framework](https://www.django-rest-framework.org).
-
-* Browse Category and Item model objects (`ListAPIView`):
-```
-api/v1/categories/
-api/v1/categories/<id>/stats
-api/v1/items/
-```
-
-* Add new Category and Item model objects (`CreateAPIView`) :
-```
-api/v1/categories/new
-api/v1/items/new
-```
-
-* Edit and delete existing Category and Item model objects (`RetrieveUpdateDestroyAPIView`):
-```
-api/v1/categories/<id>/
-api/v1/items/<id>/
-```
-> Note: Adding and editing objects requires to be logged in.

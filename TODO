@@ -1,5 +1,9 @@
 TODOs
-- redefine ci/cd with circleci - implement manual step? https://circleci.com/docs/2.0/sample-config/
-- cannot run cfn cicd for every push to  master.. + Too long with no output (exceeded 10m0s): context deadline exceeded
-- update ci/cd pipeline - use everything from makefile basically
-- Update README (with screenshots of eg, the dashboard), update architecture diagram?
+- structure based from old readme from portfolio repo + current makefile
+- trees for cloudformation and codedeploy?
+- use images
+- review readme keywords
+- have all SSM Parameters being pushed (nothing manual)
+- Overview section
+- Add variables to the SSM Parameter store: CW Agent config file (.json), RDS password (SecureString), Slack incoming webhook URL (String)
+
