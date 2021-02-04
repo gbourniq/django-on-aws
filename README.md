@@ -21,11 +21,33 @@ Other improvements compared to the previous version:
 Screenshots of the frontend can be found [here](https://github.com/gbourniq/portfolio/blob/master/README.md#portfolio-app-overview).
 
 ## Contents
-- [Application development](#local-development)
+- [Application overview](#application-overview)
+- [Local development](#local-development)
 - [AWS Deployment](#aws-deployment)
 - [CI/CD](#cicd)
 
-## Application development
+## Application overview
+
+This Django web application is a simple blog-like website which can be used as a personal portfolio. The website static content, namely items and categories data, are managed through the Django admin panel. The app features a user registration system for anyone willing to receive notifications whenever new content is added.
+
+Some screenshots of the UI:
+
+<p align="center">
+  <img src=".github/app_homepage.png">
+  Homepage
+</p>
+
+* Items view page
+
+![Application Items](.github/app_item_page.png)
+
+* Django admin page and login page (Mobile view)
+
+![Application Homepage](.github/django_admin_and_login_page.png)
+
+
+
+## Local development
 
 ### Prerequisites
 - Install [Docker](https://hub.docker.com/search/?type=edition&offering=community)
