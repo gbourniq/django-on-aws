@@ -1,9 +1,0 @@
-TODOs
-- structure based from old readme from portfolio repo + current makefile
-- trees for cloudformation and codedeploy?
-- use images
-- review readme keywords
-- have all SSM Parameters being pushed (nothing manual)
-- Overview section
-- Add variables to the SSM Parameter store: CW Agent config file (.json), RDS password (SecureString), Slack incoming webhook URL (String)
-

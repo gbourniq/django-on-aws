@@ -156,10 +156,11 @@ cloudformation
     └── template.yaml
 ```
 
-Before creating the cloudformation stack, the following prerequisites must be completed:
+Before creating the cloudformation stack, the following prerequisites must be completed manually in the AWS Console:
 - Create Route 53 Hosted Zone ($0.50/month)
 - Create a domain in Route53, eg. mydomain.com (~$15/year)
-- Create a [free SSL certificate](https://itnext.io/using-letsencrypt-ssl-certificates-in-aws-certificate-manager-c2bc3c6ae10) and load it to the AWS Certificate Manager service in the us-east-1 region 
+- Load an existing [SSL certificate](https://itnext.io/using-letsencrypt-ssl-certificates-in-aws-certificate-manager-c2bc3c6ae10) to the AWS Certificate Manager service in the us-east-1 region
+- Create the following AWS SSM Parameters to store sensitive variables: `/RDS/POSTGRES_PASSWORD/SECURE` (type: SecureString); and `/SLACK/INCOMING_WEBHOOK_URL` (type: String)
 
 The aws resources can then be deployed as a CloudFormation stack by simply running the `make cfn-create` command. Please make sure to review the stack parameters in `Makefile` under the `cfn-create` target beforehand.
 
