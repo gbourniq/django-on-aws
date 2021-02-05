@@ -13,6 +13,7 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views import View, generic
 
+from app.config import AWS_REGION
 from helpers import strings
 from helpers.constants import TemplateNames
 
@@ -212,7 +213,7 @@ class ContactUsFormView(RequireLoginMixin, View):
             messages.warning(request, strings.SNS_TOPIC_NOT_CONFIGURED_USER_FRIENDLY)
             return render(request, self.template_name, {"form": form})
 
-        sns_client = boto3.client("sns")
+        sns_client = boto3.client("sns", region_name=AWS_REGION)
         response = sns_client.publish(
             TargetArn=settings.SNS_TOPIC_ARN,
             Message=json.dumps({"default": form.cleaned_data}),

@@ -213,6 +213,14 @@ Resources:
               - Action: [sqs:SendMessage, sqs:SendMessageBatch]
                 Resource: !Ref SQSQueueArn
                 Effect: Allow
+        # Policy for EC2 to send messages to the SNS Topic
+        - PolicyName: allow-autoscaling
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: [sns:Publish]
+                Resource: !Ref SNSTopicArn
         # Policy for EC2 to send an SSM command
         - PolicyName: !Join ['-', [!Ref AWS::StackName, EC2ToRunSSMCommands]]
           PolicyDocument:
