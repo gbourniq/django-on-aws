@@ -93,13 +93,13 @@ jobs:
       - run:
           name: Create AWS infrastructure
           no_output_timeout: 30m
-          command: make cfn-create
+          command: set -e; ENVIRONMENT=dev make cfn-create
       - run:
           name: Deploy application to AWS
-          command: make deploy
+          command: set -e; ENVIRONMENT=dev make deploy
       - run:
           name: Load Testing application
           command: make load-testing
       - run:
           name: Delete AWS infrastructure
-          command: make cfn-delete
+          command: ENVIRONMENT=dev make cfn-delete

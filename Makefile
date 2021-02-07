@@ -13,7 +13,7 @@ CONDA_ACTIVATE=source $$(conda info --base)/etc/profile.d/conda.sh ; conda activ
 # Cloudformation
 # Note The ENVIRONMENT variable (dev/prod) is used as the subdomain name, eg. prod.mydomain.com
 # If set to prod, then an RDS database snapshot will be created on stack deletion 
-ENVIRONMENT=prod
+ENVIRONMENT?=prod
 STACK_NAME=$(ENVIRONMENT)
 S3_BUCKET_NAME_CFN_TEMPLATES=gbournique-sam-artifacts
 CFN_PARENT_TEMPLATE_FILE="deployment/aws/cloudformation/parent-stack.yaml"
