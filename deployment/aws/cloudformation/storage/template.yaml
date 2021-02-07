@@ -12,6 +12,14 @@ Description: |
   - Bucket Policies and Lambda Role
 
 Parameters:
+  ASGScheduledActionUpTimeHour:
+    Description: Time of the day when AutoScaling group ScheduledActionUp is triggered
+    Type: String
+    Description: Allowed values are [1-24], for eg. '8' will cause the ASG to scale up at 8AM GMT
+  ASGScheduledActionDownTimeHour:
+    Description: Time of the day when AutoScaling group ScheduledActionDown is triggered
+    Type: String
+    Description: Allowed values are [1-24], for eg. '23' will cause the ASG to scale up at 11PM GMT
   R53HostedZoneName:
     Description: The DNS name of an existing Amazon Route 53 hosted zone. For eg, mydomain.com
     AllowedPattern: (?!-)[a-zA-Z0-9-.]{1,63}(?<!-)
@@ -171,7 +179,7 @@ Resources:
               <div class="row">
                 <center>
                   <br><br><br><br><br>
-                  <h5>Oops.. ${R53Subdomain}.${R53HostedZoneName} is currently unavailable. Please try again between 10AM-6PM (GMT).</h5>
+                  <h5>Oops.. ${R53Subdomain}.${R53HostedZoneName} is currently unavailable. Please try again between ${ASGScheduledActionUpTimeHour}.00-${ASGScheduledActionDownTimeHour}.00 (GMT).</h5>
                   <br>
                   <a href="/" id="refresh-button" class="btn-large waves-effect waves-light gray darken-1">Try again</a>
                 </center>

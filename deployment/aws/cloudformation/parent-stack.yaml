@@ -12,6 +12,16 @@ Parameters:
   ASGDesiredCapacity:
     Description: Auto Scaling Group Desired Capacity
     Type: String
+  ASGScheduledActionUpTimeHour:
+    Description: Time of the day when the ASG ScheduledActionUp is triggered
+    Default: '17'
+    Type: String
+    Description: Allowed values are [1-24], for eg. '8' will cause the ASG to scale up at 8AM GMT
+  ASGScheduledActionDownTimeHour:
+    Description: Time of the day when the ASG ScheduledActionDown is triggered
+    Default: '23'
+    Type: String
+    Description: Allowed values are [1-24], for eg. '23' will cause the ASG to scale up at 11PM GMT
   CloudFrontExistingCertArn:
     Description: SSL Cert Arn stored in ACM with the same region CloudFront (us-east-1)
     Type: String
@@ -83,6 +93,8 @@ Resources:
       Parameters:
         ASGCPUTargetValue: !Ref ASGCPUTargetValue
         ASGDesiredCapacity: !Ref ASGDesiredCapacity
+        ASGScheduledActionUpTimeHour: !Ref ASGScheduledActionUpTimeHour
+        ASGScheduledActionDownTimeHour: !Ref ASGScheduledActionDownTimeHour
         ASGSubnetsString: !Ref SubnetListStr
         CodeDeployDeploymentGroupName: !Ref Environment
         EC2SecurityGroupId: !GetAtt NetworkStack.Outputs.EC2SecurityGroupId
@@ -106,6 +118,8 @@ Resources:
     Properties:
       TemplateURL: storage/template.yaml
       Parameters:
+        ASGScheduledActionUpTimeHour: !Ref ASGScheduledActionUpTimeHour
+        ASGScheduledActionDownTimeHour: !Ref ASGScheduledActionDownTimeHour
         R53HostedZoneName: !Ref R53HostedZoneName
         R53Subdomain: !Ref Environment
   ServerlessStack:

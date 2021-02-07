@@ -20,6 +20,14 @@ Parameters:
   ASGSubnetsString:
     Description: List of subnets the auto scaling group of EC2s will be spread across
     Type: String
+  ASGScheduledActionUpTimeHour:
+    Description: Time of the day when the ASG ScheduledActionUp is triggered
+    Type: String
+    Description: Allowed values are [1-24], for eg. '8' will cause the ASG to scale up at 8AM GMT
+  ASGScheduledActionDownTimeHour:
+    Description: Time of the day when the ASG ScheduledActionDown is triggered
+    Type: String
+    Description: Allowed values are [1-24], for eg. '23' will cause the ASG to scale up at 11PM GMT
   CodeDeployDeploymentGroupName:
     Description: Name for the CodeDeploy Deployment Group
     Type: String
@@ -124,7 +132,7 @@ Resources:
       # Minimum of 2 instances because CodeDeploy deployment configuration
       # requires a minimum of 1 healthy instance for rolling updates
       MinSize: 2
-      Recurrence: 0 19 * * *
+      Recurrence: !Join [' ', ['0', !Ref ASGScheduledActionUpTimeHour, '*', '*', '*',]]
   ScheduledActionDown:
     Type: AWS::AutoScaling::ScheduledAction
     Properties:
@@ -132,7 +140,7 @@ Resources:
       DesiredCapacity: 0
       MaxSize: 2
       MinSize: 0
-      Recurrence: 0 23 * * *
+      Recurrence: !Join [' ', ['0', !Ref ASGScheduledActionDownTimeHour, '*', '*', '*',]]
 
   # Scaling Policy
   WebServerCPUTargetTrackingScalingPolicy:
