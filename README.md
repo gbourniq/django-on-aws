@@ -13,7 +13,7 @@ A microservices architecture approach has been implemented, relying heavily on A
 
 Another benefit of cloud services is the ability to leverage the following features:
 - Application `auto-healing`, where unresponsive instances are automatically replaced.
-- Application `auto-scaling`, to allow a dynamic fleet of instances scaling based on demand and/or schedule.
+- Application `auto-scaling`, for a dynamic fleet of instances, scaling based on demand and/or schedule.
 
 ## Content
 
@@ -206,6 +206,8 @@ The dashboard offers a central location where application deployment and perform
 - Average CPU utilization of running EC2 instances
 - Logs: CloudFormation cfn-init, CodeDeploy agent, Docker container, and Django application logs
 - RDS and ElastiCache metrics
+
+> Additionally, the CloudFront service itself provides a number of useful charts, such as Popular Objects requested, Viewers details (device, OS, browser, country), and Cache hit/misses statistics.
 
 ### Webapp Load Testing
 
