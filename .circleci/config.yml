@@ -3,6 +3,9 @@ workflows:
   ci_pipeline_only:
     jobs:
       - ci-pipeline
+      - cd-pipeline:
+          requires:
+              - ci-pipeline
   scheduled_ci_cd_pipeline:
     triggers:
       - schedule:
@@ -38,7 +41,7 @@ jobs:
           command: |
             if [ ! -d "$HOME/miniconda" ]; then
               wget "https://repo.anaconda.com/miniconda/Miniconda3-4.7.10-Linux-x86_64.sh" -O $HOME/miniconda.sh
-              printf '%s' "8a324adcc9eaf1c09e22a992bb6234d91a94146840ee6b11c114ecadafc68121  miniconda.sh" | sha256sum -c
+              printf '%s' "8a324adcc9eaf1c09e22a992bb6234d91a94146840ee6b11c114ecadafc68121  $HOME/miniconda.sh" | sha256sum -c
               bash $HOME/miniconda.sh -b -p $HOME/miniconda
             else
                 echo "Miniconda is already installed, continuing to build."
@@ -59,6 +62,7 @@ jobs:
       - save_cache:
           paths:
             - /home/circleci/miniconda/
+            - /home/circleci/.poetry/
           key: libs-{{ checksum "poetry.lock" }}
       - run:
           name: Run unit-tests
@@ -84,9 +88,9 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Set Conda path
-          command: echo "export PATH=$HOME/miniconda/bin:$PATH" >> $BASH_ENV
-      # Retrieve conda environment
+          name: Set Conda and Poetry paths
+          command: echo "export PATH=$HOME/miniconda/bin:$HOME/.poetry/bin:$PATH" >> $BASH_ENV
+      # Restore conda and poetry environment
       - restore_cache:
           keys:
             - libs-{{ checksum "poetry.lock" }}

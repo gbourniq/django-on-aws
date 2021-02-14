@@ -93,7 +93,7 @@ open-cov-report:
 
 
 ### Docker image ###
-.PHONY: image up-with-local-db up healthcheck down publish put-image-name-to-ssm
+.PHONY: image up-with-local-db up healthcheck down publish
 image:
 	rm -rf dist
 	poetry build
@@ -127,19 +127,6 @@ publish:
 	@ echo "${DOCKER_PASSWORD}" | docker login --username "${DOCKER_USER}" --password-stdin 2>&1
 	@ docker push ${IMAGE_REPOSITORY}:$(TAG)
 
-put-image-name-to-ssm:
-	@ $(CONDA_ACTIVATE) $(CONDA_ENV_NAME)
-	@ ${INFO} "Pushing IMAGE='${IMAGE_REPOSITORY}:$(TAG)' and DEBUG='${DEBUG}'to SSM parameters"
-	@ aws ssm put-parameter \
-		--name "/CODEDEPLOY/DOCKER_IMAGE_NAME" \
-		--type "String" \
-		--value "${IMAGE_REPOSITORY}:$(TAG)" \
-		--overwrite >/dev/null
-	@ aws ssm put-parameter \
-		--name "/CODEDEPLOY/DEBUG" \
-		--type "String" \
-		--value "${DEBUG}" \
-		--overwrite >/dev/null
 
 ### Infrastructure ###
 .PHONY: cfn-validate cfn-create cfn-update cfn-delete
@@ -217,7 +204,21 @@ cfn-delete:
 ### Deployment ###
 .PHONY: deploy deploy-push deploy-create deploy-get-status
 
-deploy: deploy-push deploy-create deploy-get-status
+deploy: put-image-name-to-ssm deploy-push deploy-create deploy-get-status
+
+put-image-name-to-ssm:
+	@ $(CONDA_ACTIVATE) $(CONDA_ENV_NAME)
+	@ ${INFO} "Starting deployment of docker image ${IMAGE_REPOSITORY}:$(TAG) (DEBUG=${DEBUG})"
+	@ aws ssm put-parameter \
+		--name "/CODEDEPLOY/DOCKER_IMAGE_NAME" \
+		--type "String" \
+		--value "${IMAGE_REPOSITORY}:$(TAG)" \
+		--overwrite >/dev/null
+	@ aws ssm put-parameter \
+		--name "/CODEDEPLOY/DEBUG" \
+		--type "String" \
+		--value "${DEBUG}" \
+		--overwrite >/dev/null
 
 deploy-push:
 	@ $(CONDA_ACTIVATE) $(CONDA_ENV_NAME)
