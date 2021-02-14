@@ -3,7 +3,7 @@
 .ONESHELL:
 
 # Set shell
-SHELL=/bin/bash -e
+SHELL=/bin/bash
 
 ### Conda environment
 CONDA_ENV_NAME=django-on-aws
