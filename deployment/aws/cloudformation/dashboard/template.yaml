@@ -27,14 +27,161 @@ Parameters:
     Type: String
   DockerLogGroupName:
     Type: String
+  LogsOnly:
+    Description: Set to false to create all charts with the 50+ metrics ($3 p/m)
+    Type: String
+    AllowedValues: ['true', 'false']
+    Default: 'true'
   TargetGroupFullName:
     Type: String
   WebsiteUrl:
     Type: String
 
 
+Conditions:
+  LogsOnly: !Equals [ !Ref LogsOnly, 'true']
+  AllMetrics: !Equals [ !Ref LogsOnly, 'false']
+
 Resources:
-  CloudWatchDashboard:
+  CloudWatchDashboardLogsOnly:
+    Condition: LogsOnly
+    Type: AWS::CloudWatch::Dashboard
+    Properties:
+      DashboardName: !Join ['-', [!Ref 'AWS::StackName', dashboard]]
+      DashboardBody: !Sub |
+        {
+            "widgets": [
+                {
+                    "type": "log",
+                    "x": 3,
+                    "y": 14,
+                    "width": 12,
+                    "height": 6,
+                    "properties": {
+                        "query": "SOURCE 'cfn-init.log' | fields @timestamp | parse @message \"[*] *\" as level, details | limit 100",
+                        "region": "${AWS::Region}",
+                        "stacked": false,
+                        "title": "CloudFormation cfn-init logs",
+                        "view": "table"
+                    }
+                },
+                {
+                    "type": "log",
+                    "x": 15,
+                    "y": 14,
+                    "width": 9,
+                    "height": 6,
+                    "properties": {
+                        "query": "SOURCE 'codedeploy-agent-deployments.log' | parse @message \"[*] [*]*\" as timestamp, deploymentGroup, details | limit 100",
+                        "region": "${AWS::Region}",
+                        "stacked": false,
+                        "title": "CodeDeploy Deployment logs",
+                        "view": "table"
+                    }
+                },
+                {
+                    "type": "log",
+                    "x": 0,
+                    "y": 20,
+                    "width": 9,
+                    "height": 6,
+                    "properties": {
+                        "query": "SOURCE ${DockerLogGroupName} | fields @timestamp, @message | sort @timestamp desc | limit 25",
+                        "region": "${AWS::Region}",
+                        "stacked": false,
+                        "title": "Docker container logs",
+                        "view": "table"
+                    }
+                },
+                {
+                    "type": "log",
+                    "x": 9,
+                    "y": 20,
+                    "width": 9,
+                    "height": 6,
+                    "properties": {
+                        "query": "SOURCE 'django-application.log' | parse @message \"* * * *\" as date, time, level, message | limit 25",
+                        "region": "${AWS::Region}",
+                        "stacked": false,
+                        "view": "table",
+                        "title": "Django application logs"
+                    }
+                },
+                {
+                    "type": "text",
+                    "x": 0,
+                    "y": 0,
+                    "width": 24,
+                    "height": 2,
+                    "properties": {
+                        "markdown": "\n# **CloudWatch Dashboard for ${WebsiteUrl}**\n\nThis CloudWatch Dashboard monitors performance metrics for the main resources deployed within the `${AWS::StackName}` CloudFormation stack.\n"
+                    }
+                },
+                {
+                    "type": "text",
+                    "x": 0,
+                    "y": 8,
+                    "width": 3,
+                    "height": 6,
+                    "properties": {
+                        "markdown": "\n# Auto Scaling Group\n\n[button:primary:Go To ASG](https://${AWS::Region}.console.aws.amazon.com/ec2autoscaling/home?region=${AWS::Region}#/details)\n\n[button:primary:Go To Target Group](https://${AWS::Region}.console.aws.amazon.com/ec2/v2/home?region=${AWS::Region}#TargetGroups)\n\n[button:primary:Go To EC2](https://${AWS::Region}.console.aws.amazon.com/ec2/v2/home?region=${AWS::Region}#Instances)\n"
+                    }
+                },
+                {
+                    "type": "text",
+                    "x": 0,
+                    "y": 2,
+                    "width": 3,
+                    "height": 3,
+                    "properties": {
+                        "markdown": "\n# CloudFront\n\nMore useful metrics on the CloudFront dashboard.\n\n[button:primary:Go To CF Dashboard](https://console.aws.amazon.com/cloudfront/v2/home#/monitoring/)\n"
+                    }
+                },
+                {
+                    "type": "text",
+                    "x": 0,
+                    "y": 5,
+                    "width": 3,
+                    "height": 3,
+                    "properties": {
+                        "markdown": "\n# Application Load Balancer\n\n[button:primary:Go To ALB](https://${AWS::Region}.console.aws.amazon.com/ec2/v2/home?region=${AWS::Region}#LoadBalancers:sort=loadBalancerName)\n"
+                    }
+                },
+                {
+                    "type": "text",
+                    "x": 0,
+                    "y": 14,
+                    "width": 3,
+                    "height": 6,
+                    "properties": {
+                        "markdown": "\n# All Logs\n\n[button:primary:Go To CloudFormation](https://${AWS::Region}.console.aws.amazon.com/cloudformation/home?region=${AWS::Region})\n\n[button:primary:Go To CodeDeploy](https://${AWS::Region}.console.aws.amazon.com/codesuite/codedeploy/deployments?region=${AWS::Region})\n"
+                    }
+                },
+                {
+                    "type": "text",
+                    "x": 0,
+                    "y": 32,
+                    "width": 3,
+                    "height": 6,
+                    "properties": {
+                        "markdown": "\n# ElastiCache\n\n[button:primary:Go To ElastiCache](https://${AWS::Region}.console.aws.amazon.com/elasticache/home?region=${AWS::Region}#redis:)\n"
+                    }
+                },
+                {
+                    "type": "text",
+                    "x": 0,
+                    "y": 26,
+                    "width": 3,
+                    "height": 6,
+                    "properties": {
+                        "markdown": "\n# RDS\n\n[button:primary:Go To RDS](https://${AWS::Region}.console.aws.amazon.com/rds/home?region=${AWS::Region}#databases:)\n"
+                    }
+                }
+            ]
+        }
+
+  CloudWatchDashboardAllMetrics:
+    Condition: AllMetrics
     Type: AWS::CloudWatch::Dashboard
     Properties:
       DashboardName: !Join ['-', [!Ref 'AWS::StackName', dashboard]]
@@ -443,4 +590,4 @@ Resources:
 
 Outputs:
   DashboardName:
-    Value: !Ref CloudWatchDashboard
+    Value: !If [LogsOnly, !Ref CloudWatchDashboardLogsOnly, !Ref CloudWatchDashboardAllMetrics]

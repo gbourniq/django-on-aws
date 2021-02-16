@@ -152,6 +152,7 @@ Resources:
         CodeDeployDimensionName: !Ref CodeDeployDimensionName
         CodeDeployMetricName: !Ref CodeDeployMetricName
         DockerLogGroupName: !Join ['', ["'", !GetAtt ComputeStack.Outputs.DockerLogGroupName, "'"]]
+        LogsOnly: 'true'
         TargetGroupFullName: !GetAtt NetworkStack.Outputs.TargetGroupFullName
         WebsiteUrl: !Join ['', [https://, !GetAtt NetworkStack.Outputs.Route53RecordSetDomainName]]
 
