@@ -39,6 +39,7 @@ Resources:
     DeletionPolicy: Delete
     UpdateReplacePolicy: Retain
     Properties:
+      BackupRetentionPeriod: 0 # disables automated backups
       DeletionProtection: false
       Engine: postgres
       EngineVersion: '12.4'
@@ -62,6 +63,7 @@ Resources:
     DeletionPolicy: Snapshot
     UpdateReplacePolicy: Retain
     Properties:
+      BackupRetentionPeriod: 1 # The number of days for which automated backups are retained
       DeletionProtection: false
       Engine: postgres
       EngineVersion: '12.4'
