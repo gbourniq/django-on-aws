@@ -103,4 +103,4 @@ jobs:
           command: make load-testing
       - run:
           name: Delete AWS infrastructure
-          command: ENVIRONMENT=dev make cfn-delete
+          command: ENVIRONMENT=dev make cfn-delete-async

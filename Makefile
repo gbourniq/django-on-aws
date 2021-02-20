@@ -198,8 +198,12 @@ cfn-delete:
 	@ $(CONDA_ACTIVATE) $(CONDA_ENV_NAME)
 	@ ${INFO} "Deleting stack ${STACK_NAME}..."
 	@ aws cloudformation delete-stack --stack-name="${STACK_NAME}"
-	# @ echo "$$($(call wait_for_stack_delete_status))"
+	@ echo "$$($(call wait_for_stack_delete_status))"
 
+cfn-delete-async:
+	@ $(CONDA_ACTIVATE) $(CONDA_ENV_NAME)
+	@ ${INFO} "Deleting stack ${STACK_NAME}..."
+	@ aws cloudformation delete-stack --stack-name="${STACK_NAME}"
 
 ### Deployment ###
 .PHONY: deploy deploy-push deploy-create deploy-get-status
