@@ -124,6 +124,8 @@ class MockItem:
     DEFAULT_ID = 1
     DEFAULT_ITEM_NAME = "Item "
     DEFAULT_SUMMARY = "summary for item "
+    DEFAULT_IMG_NAME = "img-url"
+    DEFAULT_IMG_EXT = "png"
     DEFAULT_CONTENT = "content for item "
     DEFAULT_DATE = "2020-05-22 19:49:50+00:00"
     DEFAULT_ITEM_SLUG = "item-slug-"
@@ -153,6 +155,10 @@ class MockItem:
         item_data = {
             "item_name": kwargs.get("item_name", f"{MockItem.DEFAULT_ITEM_NAME}{_id}"),
             "summary": kwargs.get("summary", f"{MockItem.DEFAULT_SUMMARY}{_id}"),
+            "image": kwargs.get(
+                "image",
+                f"{MockCategory.DEFAULT_IMG_NAME}{_id}.{MockCategory.DEFAULT_IMG_EXT}",
+            ),
             "content": kwargs.get("content", f"{MockItem.DEFAULT_CONTENT}{_id}"),
             "date_published": kwargs.get("date_published", f"{MockItem.DEFAULT_DATE}",),
             "item_slug": kwargs.get("item_slug", f"{MockItem.DEFAULT_ITEM_SLUG}{_id}"),
