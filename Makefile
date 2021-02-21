@@ -23,7 +23,7 @@ TAG_MODIFIED_DATE="$$(date +%F_%T)"
 
 # Deployment
 DOCKER_USER=gbournique
-IMAGE_REPOSITORY=${DOCKER_USER}/django-on-aws
+IMAGE_REPOSITORY=${DOCKER_USER}/tarikitchen
 TAG=$(shell poetry version | awk '{print $$NF}')
 DEBUG=False
 CODEDEPLOY_APP_DIR=deployment/aws/codedeploy-app

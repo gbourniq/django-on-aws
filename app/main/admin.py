@@ -19,7 +19,7 @@ class ItemAdmin(admin.ModelAdmin):
         ("Title/date", {"fields": ["item_name", "date_published"]}),
         ("URL", {"fields": ["item_slug"]}),
         ("Parent Element", {"fields": ["category_name"]}),
-        ("Content (Width ~600px)", {"fields": ["summary", "content"]}),
+        ("Content (Width ~600px)", {"fields": ["image", "summary", "content"]}),
     ]
     # Add TinyMCE Widget to textfield property
     formfield_overrides = {
