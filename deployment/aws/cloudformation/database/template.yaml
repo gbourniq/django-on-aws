@@ -18,7 +18,7 @@ Parameters:
   Environment:
     Description: Stage environment name to determine RDS DeletionPolicy
     Type: String
-    AllowedValues: [dev, prod]
+    AllowedValues: [dev, demo]
   RDSSecurityGroupName:
     Description: Security Group Name for RDS to allow incoming request from EC2s
     Type: String
@@ -28,9 +28,9 @@ Parameters:
     Type: String
 
 Conditions:
-  RDSReadReplica: !And [!Equals [ !Ref AddRDSReadReplica, 'true' ], !Equals [ !Ref Environment, prod]]
+  RDSReadReplica: !And [!Equals [ !Ref AddRDSReadReplica, 'true' ], !Not [!Equals [ !Ref Environment, dev]]]
   DevEnvironment: !Equals [ !Ref Environment, dev]
-  ProdEnvironment: !Equals [ !Ref Environment, prod]
+  ProdEnvironment: !Not [!Equals [ !Ref Environment, dev]]
 
 Resources:
   DevRDSPostgresDB:

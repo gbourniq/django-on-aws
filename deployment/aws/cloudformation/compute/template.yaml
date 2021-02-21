@@ -21,17 +21,19 @@ Parameters:
     Description: List of subnets the auto scaling group of EC2s will be spread across
     Type: String
   ASGScheduledActionUpTimeHour:
-    Description: Time of the day when the ASG ScheduledActionUp is triggered
     Type: String
-    Description: Allowed values are [1-24], for eg. '8' will cause the ASG to scale up at 8AM GMT
+    Description: Scale up time, for eg. '8' will cause the ASG to scale up at 8AM GMT.
+    AllowedValues: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12',
+                    '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23', '24']
   ASGScheduledActionDownTimeHour:
-    Description: Time of the day when the ASG ScheduledActionDown is triggered
     Type: String
-    Description: Allowed values are [1-24], for eg. '23' will cause the ASG to scale up at 11PM GMT
+    Description: Scale down time, for eg. '23' will cause the ASG to scale down at 11PM GMT.
+    AllowedValues: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12',
+                    '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23', '24']
   CodeDeployDeploymentGroupName:
     Description: Name for the CodeDeploy Deployment Group
     Type: String
-    AllowedValues: [dev, prod]
+    AllowedValues: [dev, demo]
   EC2SecurityGroupId:
     Type: String 
   EC2InstanceType:

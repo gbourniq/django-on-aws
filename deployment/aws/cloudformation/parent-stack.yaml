@@ -21,7 +21,7 @@ Parameters:
   ASGScheduledActionDownTimeHour:
     Default: '23'
     Type: String
-    Description: Scale down time, for eg. '23' will cause the ASG to scale up at 11PM GMT.
+    Description: Scale down time, for eg. '23' will cause the ASG to scale down at 11PM GMT.
     AllowedValues: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12',
                     '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23', '24']
   CloudFrontExistingCertArn:
@@ -51,7 +51,7 @@ Parameters:
   Environment:
     Description: Stage name which is used as the R53 DNS subdomain, the CodeDeploy deployment group, and to determine RDS DeletePolicy
     Type: String
-    AllowedValues: [dev, prod]
+    AllowedValues: [dev, demo]
   R53HostedZoneName:
     Description: The DNS name of an existing Amazon Route 53 hosted zone. For example, "mydomain.com" 
     AllowedPattern: (?!-)[a-zA-Z0-9-.]{1,63}(?<!-)

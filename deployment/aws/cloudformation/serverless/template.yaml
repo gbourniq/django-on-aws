@@ -18,7 +18,7 @@ Parameters:
   Environment:
     Description: Stage environment name as a suffix to Lambda function names
     Type: String
-    AllowedValues: [dev, prod]
+    AllowedValues: [dev, demo]
   SlackWebhookUrl:
     NoEcho: 'true'
     Description: Slack WebHook Url to forward ASG/CodeDeploy events SNS notifications to Slack
