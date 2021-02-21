@@ -160,7 +160,14 @@ Resources:
 
 Outputs:
   DashboardUrl:
-    Value: !Sub https://${AWS::Region}.console.aws.amazon.com/cloudwatch/home?region=${AWS::Region}#dashboards:name=${DashboardStack.Outputs.DashboardName}
+    Value: !Join ['', [
+      'https://',
+      !Sub '${AWS::Region}',
+      '.console.aws.amazon.com/cloudwatch/home?region=',
+      !Sub '${AWS::Region}',
+      '#dashboards:name=',
+      !GetAtt 'DashboardStack.Outputs.DashboardName'
+    ]]
   CodeDeployApplicationName:
     Value: !GetAtt ComputeStack.Outputs.CodeDeployApplicationName
   CodeDeployDeploymentGroupName:
