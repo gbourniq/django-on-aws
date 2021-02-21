@@ -11,9 +11,7 @@ CONDA_CREATE=source $$(conda info --base)/etc/profile.d/conda.sh ; conda env cre
 CONDA_ACTIVATE=source $$(conda info --base)/etc/profile.d/conda.sh ; conda activate
 
 # Cloudformation
-# Note The ENVIRONMENT environment variable (dev/demo) is used as the subdomain name, eg. demo.mydomain.com
-# If set to demo, then an RDS database snapshot will be created on stack deletion 
-ENVIRONMENT?=demo
+ENVIRONMENT?=tari-kitchen
 STACK_NAME=$(ENVIRONMENT)
 S3_BUCKET_NAME_CFN_TEMPLATES=gbournique-sam-artifacts
 CFN_PARENT_TEMPLATE_FILE="deployment/aws/cloudformation/parent-stack.yaml"
