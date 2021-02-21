@@ -7,13 +7,14 @@
 
 ## Overview
 
-The aim of this repository is to demonstrate how a django web application can be deployed to the AWS Cloud via cloudformation templates (infrastructure as code), and following AWS solutions architecture best practices.
+#### Speeds up development
+This project demonstrates how a sample blog-like django webapp can be deployed to the AWS Cloud. The website static content, ie. items and categories data, is managed through the Django admin panel. The application features a user registration system for users to subscribe to new content notifications.
 
-A microservices architecture approach has been implemented, relying heavily on AWS managed services, for eg. Amazon RDS database and ElastiCache Redis, which reduces the load on the application server, while improving maintainability. More information can be found in the [AWS deployment](#aws-deployment) section.
+#### AWS services architecture
+A microservices architecture approach was implemented using AWS managed services, with the ability to auto-scale a dynamic fleet of EC2 instances based on demand and schedule. Network and compute performance metrics can be monitored via a custom AWS CloudWatch Dashboard.
 
-Another benefit of cloud services is the ability to leverage the following features:
-- Application `auto-healing`, where unresponsive instances are automatically replaced.
-- Application `auto-scaling`, for a dynamic fleet of instances, scaling based on demand and/or schedule.
+#### Infrastructure as code
+Use of nested AWS CloudFormation templates to easily create, update and delete the entire application [AWS infrastructure]("https://github.com/gbourniq/django-on-aws/blob/main/.github/app-architecture.png"). Application deployment to a running fleet of EC2 instances via the AWS CodeDeploy service. Automated weekly CI/CD pipeline to test the application code, infrastructure code, and deployment scripts.
 
 ## Content
 
