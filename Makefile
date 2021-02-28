@@ -214,12 +214,12 @@ put-image-name-to-ssm:
 	@ $(CONDA_ACTIVATE) $(CONDA_ENV_NAME)
 	@ ${INFO} "Starting deployment of docker image ${IMAGE_REPOSITORY}:$(TAG) (DEBUG=${DEBUG})"
 	@ aws ssm put-parameter \
-		--name "/CODEDEPLOY/DOCKER_IMAGE_NAME" \
+		--name "/CODEDEPLOY/DOCKER_IMAGE_NAME_DEMO" \
 		--type "String" \
 		--value "${IMAGE_REPOSITORY}:$(TAG)" \
 		--overwrite >/dev/null
 	@ aws ssm put-parameter \
-		--name "/CODEDEPLOY/DEBUG" \
+		--name "/CODEDEPLOY/DEBUG_DEMO" \
 		--type "String" \
 		--value "${DEBUG}" \
 		--overwrite >/dev/null

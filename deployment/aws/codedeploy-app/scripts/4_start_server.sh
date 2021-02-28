@@ -13,12 +13,12 @@ systemctl stop httpd.service || true
 
 echo "Get the image name and debug bool from the SSM Parameter service"
 IMAGE_NAME=$(aws ssm get-parameter \
-                --name "/CODEDEPLOY/DOCKER_IMAGE_NAME" \
+                --name "/CODEDEPLOY/DOCKER_IMAGE_NAME_DEMO" \
                 --query "Parameter.Value" \
                 --output text \
                 --region "${AWS_REGION}")
 DEBUG=$(aws ssm get-parameter \
-                --name "/CODEDEPLOY/DEBUG" \
+                --name "/CODEDEPLOY/DEBUG_DEMO" \
                 --query "Parameter.Value" \
                 --output text \
                 --region "${AWS_REGION}")          

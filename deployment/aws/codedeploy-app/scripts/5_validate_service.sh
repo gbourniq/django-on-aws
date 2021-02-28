@@ -31,7 +31,7 @@ source /root/.bashrc
 
 echo "Get the image name from the SSM Parameter service"
 IMAGE_NAME=$(aws ssm get-parameter \
-                --name "/CODEDEPLOY/DOCKER_IMAGE_NAME" \
+                --name "/CODEDEPLOY/DOCKER_IMAGE_NAME_DEMO" \
                 --query "Parameter.Value" \
                 --output text \
                 --region "${AWS_REGION}")
