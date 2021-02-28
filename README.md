@@ -16,6 +16,11 @@ A microservices architecture approach was implemented using AWS managed services
 #### Infrastructure as code
 Use of nested AWS CloudFormation templates to easily create, update and delete the entire application [AWS infrastructure]("https://github.com/gbourniq/django-on-aws/blob/main/.github/app-architecture.png"). Application deployment to a running fleet of EC2 instances via the AWS CodeDeploy service. Automated weekly CI/CD pipeline to test the application code, infrastructure code, and deployment scripts.
 
+<p align="center">
+  <img src=".github/app-architecture.png">
+  <i>AWS services architecture</i>
+</p>
+
 ## Content
 
 The README covers the following topics:
