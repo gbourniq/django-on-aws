@@ -1,4 +1,4 @@
-# Terraform+Ansible
+# Terraform+Ansible Documentation
 
 This README contains instructions on how to set up terraform and ansible to automatically create and configure ec2 instances.
 

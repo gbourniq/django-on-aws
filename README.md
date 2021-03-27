@@ -14,7 +14,8 @@ This project demonstrates how a sample blog-like django webapp can be deployed t
 A microservices architecture approach was implemented using AWS managed services, with the ability to auto-scale a dynamic fleet of EC2 instances based on demand and schedule. Network and compute performance metrics can be monitored via a custom AWS CloudWatch Dashboard.
 
 #### Infrastructure as code
-Use of nested AWS CloudFormation templates to easily create, update and delete the entire application [AWS infrastructure]("https://github.com/gbourniq/django-on-aws/blob/main/.github/app-architecture.png"). Application deployment to a running fleet of EC2 instances via the AWS CodeDeploy service. Automated weekly CI/CD pipeline to test the application code, infrastructure code, and deployment scripts.
+Dev deployment: Use of Terraform and Ansible playbooks for ad-hoc deployments of the dockerised application with local databases.
+Prod deployment: Use of nested AWS CloudFormation templates to create a prodution grade infrastructure [AWS infrastructure]("https://github.com/gbourniq/django-on-aws/blob/main/.github/app-architecture.png"), including AWS managed databases. Application deployment to a running fleet of EC2 instances via the AWS CodeDeploy service. Automated weekly CI/CD pipeline to test the application code, infrastructure code, and deployment scripts.
 
 <p align="center">
   <img src=".github/app-architecture.png">
@@ -37,7 +38,7 @@ Details can be found in these individual sections.
 	- [Virtual environment and git-hooks setup](#Virtual-environment-and-git-hooks-setup)
 	- [Run django webserver locally and unit-tests](#Run-django-webserver-locally-and-unit-tests)
 	- [Build, test, and publish docker image](#build-test–and-publish-docker-image)
-	- [Run the application container on a remote server with a Terraform and Ansible deployment](#run-the-application-container-on-a-remote-server-with-a-terraform-and-ansible-deployment)
+	- [Run the application container on a remote server with Terraform and Ansible](#run-the-application-container-on-a-remote-server-with-terraform-and-ansible)
 - [AWS deployment](#aws-deployment)
 	- [Create AWS infrastructure from CloudFormation templates](#Create-AWS-infrastructure-from-CloudFormation-templates)
 	- [Webapp deployment with AWS CodeDeploy](#Webapp-deployment-with-AWS-CodeDeploy)
@@ -127,9 +128,9 @@ make down                        <-- Stop and remove all containers
 make publish                     <-- Push django app docker image to Dockerhub
 ```
 
-### Run the application container on a remote server with a Terraform and Ansible deployment
+### Run the application container on a remote server with Terraform and Ansible
 
-Terraform and ansible files located in `./deployment/dev/` can be used to quickly create an ec2 instance (or multiple) using Terraform code, and deploy the docker image to the server via Ansible playbooks.
+Terraform and ansible files located in `./deployment/dev/` can be used to quickly create an ec2 instance (or multiple) using Terraform code, and deploy the docker image to the server via Ansible playbooks. Note these commands are not covered by the CI/CD pipeline and are mainly intended for a quick ad-hoc deployment testing.
 
 Terraform steps:
 - Create EC2 instance(s)
