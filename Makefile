@@ -11,10 +11,10 @@ CONDA_CREATE=source $$(conda info --base)/etc/profile.d/conda.sh ; conda env cre
 CONDA_ACTIVATE=source $$(conda info --base)/etc/profile.d/conda.sh ; conda activate
 
 # Terraform
-TF_DIR=./deployment/terraform+ansible/terraform
+TF_DIR=./deployment/dev/terraform
 TF_LOG_PATH=./terraform-crash.log
 TF_LOG=TRACE
-ANSIBLE_DIR=./deployment/terraform+ansible/ansible
+ANSIBLE_DIR=./deployment/dev/ansible
 # Ansible variables to configure the remote instances
 export ANSIBLE_HOST_KEY_CHECKING=False
 export ANSIBLE_VAULT_PASSWORD_FILE=~/.ansible_vault_pass

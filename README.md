@@ -129,7 +129,7 @@ make publish                     <-- Push django app docker image to Dockerhub
 
 ### Run the application container on a remote server with a Terraform and Ansible deployment
 
-Terraform and ansible files located in `./deployment/terraform+ansible/` can be used to quickly create an ec2 instance (or multiple) using Terraform code, and deploy the docker image to the server via Ansible playbooks.
+Terraform and ansible files located in `./deployment/dev/` can be used to quickly create an ec2 instance (or multiple) using Terraform code, and deploy the docker image to the server via Ansible playbooks.
 
 Terraform steps:
 - Create EC2 instance(s)
@@ -151,7 +151,7 @@ make show-urls
 make destroy-instances
 ```
 
->> To configure terraform and ansible, please review the `deployment/terraform+ansible/README.md` file.
+>> To configure terraform and ansible, please review the `deployment/dev/README.md` file.
 
 ## AWS Deployment
 
