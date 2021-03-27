@@ -44,7 +44,7 @@ dist/
 ### Terraform + Ansible
 
 # Ansible staging inventory which is automatically create/destroyed by Terraform
-*ansible/inventories/staging/hosts
+*hosts
 
 # Local .terraform directories
 **/.terraform/*
