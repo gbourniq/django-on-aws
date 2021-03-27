@@ -37,6 +37,7 @@ Details can be found in these individual sections.
 	- [Virtual environment and git-hooks setup](#Virtual-environment-and-git-hooks-setup)
 	- [Run django webserver locally and unit-tests](#Run-django-webserver-locally-and-unit-tests)
 	- [Build, test, and publish docker image](#build-test–and-publish-docker-image)
+	- [Run the application container on a remote server with a Terraform and Ansible deployment](#run-the-application-container-on-a-remote-server-with-a-terraform-and-ansible-deployment)
 - [AWS deployment](#aws-deployment)
 	- [Create AWS infrastructure from CloudFormation templates](#Create-AWS-infrastructure-from-CloudFormation-templates)
 	- [Webapp deployment with AWS CodeDeploy](#Webapp-deployment-with-AWS-CodeDeploy)
@@ -125,6 +126,32 @@ make healthcheck                 <-- Ensure django webserver container is up and
 make down                        <-- Stop and remove all containers
 make publish                     <-- Push django app docker image to Dockerhub
 ```
+
+### Run the application container on a remote server with a Terraform and Ansible deployment
+
+Terraform and ansible files located in `./deployment/terraform+ansible/` can be used to quickly create an ec2 instance (or multiple) using Terraform code, and deploy the docker image to the server via Ansible playbooks.
+
+Terraform steps:
+- Create EC2 instance(s)
+- Create and attach security groups for accessing the application and SSH
+- Create an Ansible inventory file containing the instance(s) IP(s) to ssh into
+
+Ansible, for each instance:
+- Install the required software and packages, such as docker, poetry, conda...
+- Copy the git ssh key
+- Login to dockerhub, so that the already built docker image can be pulled
+- Git clone this repository and checkout the relevant branch
+- Start the databases and django containers
+
+The above steps are automated with the following make commands:
+```bash
+make create-instances
+make deploy-to-instances
+make show-urls
+make destroy-instances
+```
+
+>> To configure terraform and ansible, please review the `deployment/terraform+ansible/README.md` file.
 
 ## AWS Deployment
 

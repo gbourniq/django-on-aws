@@ -155,7 +155,7 @@ deploy-to-instances:
 		"${ANSIBLE_DIR}/staging.yaml" \
 		-v --timeout 60
 
-show-public-ips:
+show-urls:
 	cd "${TF_DIR}"; terraform output public_ips
 
 destroy-instances:
