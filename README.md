@@ -132,27 +132,14 @@ make publish                     <-- Push django app docker image to Dockerhub
 
 Terraform and ansible files located in `./deployment/dev/` can be used to quickly create an ec2 instance (or multiple) using Terraform code, and deploy the docker image to the server via Ansible playbooks. Note these commands are not covered by the CI/CD pipeline and are mainly intended for a quick ad-hoc deployment testing.
 
-Terraform steps:
-- Create EC2 instance(s)
-- Create and attach security groups for accessing the application and SSH
-- Create an Ansible inventory file containing the instance(s) IP(s) to ssh into
-
-Ansible, for each instance:
-- Install the required software and packages, such as docker, poetry, conda...
-- Copy the git ssh key
-- Login to dockerhub, so that the already built docker image can be pulled
-- Git clone this repository and checkout the relevant branch
-- Start the databases and django containers
-
-The above steps are automated with the following make commands:
 ```bash
-make create-instances
-make deploy-to-instances
-make show-urls
-make destroy-instances
+make create-instances            <-- TF creates EC2s + inbound ports & generates Ansible inventory file 
+make deploy-to-instances         <-- Ansible installs packages, git clone repo, docker pull images and runs the app
+make show-urls                   <-- command to display the URL(s) of the deployed app instances
+make destroy-instances           <-- TF destroys all created infrastructure
 ```
 
->> To configure terraform and ansible, please review the `deployment/dev/README.md` file.
+> To configure terraform and ansible, please review the `deployment/dev/README.md` file.
 
 ## AWS Deployment
 
