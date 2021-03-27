@@ -28,9 +28,10 @@ export ANSIBLE_PYTHON_VERSION=$(shell python -V | awk '{print $$NF}')
 ENVIRONMENT?=demo
 STACK_NAME=$(ENVIRONMENT)
 S3_BUCKET_NAME_CFN_TEMPLATES=gbournique-sam-artifacts
-CFN_PARENT_TEMPLATE_FILE="deployment/aws/cloudformation/parent-stack.yaml"
-CFN_PACKAGED_TEMPLATE_FILE="deployment/aws/cloudformation/nested-stacks.yaml"
-CFN_PARAMETERS_FILE="deployment/aws/cloudformation/cfn-parameters.json"
+PROD_DEPLOYMENT_DIR=deployment/prod
+CFN_PARENT_TEMPLATE_FILE="${PROD_DEPLOYMENT_DIR}/cloudformation/parent-stack.yaml"
+CFN_PACKAGED_TEMPLATE_FILE="${PROD_DEPLOYMENT_DIR}/cloudformation/nested-stacks.yaml"
+CFN_PARAMETERS_FILE="${PROD_DEPLOYMENT_DIR}/cloudformation/cfn-parameters.json"
 TAG_NAME="Guillaume Bournique"
 TAG_EMAIL="gbournique.dev1@gmail.com"
 TAG_MODIFIED_DATE="$$(date +%F_%T)"
@@ -40,7 +41,7 @@ DOCKER_USER=gbournique
 IMAGE_REPOSITORY=${DOCKER_USER}/django-on-aws
 TAG=$(shell poetry version | awk '{print $$NF}')
 DEBUG=False
-CODEDEPLOY_APP_DIR=deployment/aws/codedeploy-app
+CODEDEPLOY_APP_DIR=${PROD_DEPLOYMENT_DIR}/codedeploy-app
 
 # Database
 RDS_POSTGRES_HOST=$$(echo "$$($(call get_stack_output, PostgresRdsEndpoint))")
