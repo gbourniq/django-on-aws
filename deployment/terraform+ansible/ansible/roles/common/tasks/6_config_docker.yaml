@@ -1,0 +1,27 @@
+---
+
+# This step stops docker deployed application if it is running.
+# If there is no Docker service installed, or there are no containers running,
+# it will raise an error which will be ignored.
+- name: Stop and remove working containers
+  shell: docker stop $(docker ps -aq) && docker rm $(docker ps -aq)
+  ignore_errors: yes
+
+# If there is no Docker service installed, it will raise an error which will be ignored.
+- name: Prune Docker containers
+  docker_prune:
+    containers: yes
+    images: yes
+    images_filters:
+      dangling: true
+  ignore_errors: yes
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+
+- name: Log into Dockerhub
+  docker_login:
+    username: "{{ dockerhub_user }}"
+    password: "{{ dockerhub_password }}"
+    reauthorize: yes
+  vars:
+    ansible_python_interpreter: /usr/bin/python3

@@ -1,0 +1,28 @@
+---
+
+- name: Check if previous installation exists
+  stat:
+    path: "{{ user_path }}/miniconda3/"
+  register: prev_inst_dir
+
+- name: Fetch miniconda installer
+  become_user: ec2-user
+  get_url:
+    url: https://repo.anaconda.com/miniconda/Miniconda2-latest-Linux-x86_64.sh
+    dest: /tmp/miniconda.sh
+  when: prev_inst_dir.stat.isdir is not defined
+
+- name: Install conda
+  become_user: ec2-user
+  command: bash /tmp/miniconda.sh -b -u -p {{ user_path }}/miniconda3/
+  when: prev_inst_dir.stat.isdir is not defined
+
+- name: Add miniconda binaries directory to your PATH in {{ linux_shell_profile_name }} for {{ ansible_distribution }} distribution
+  become_user: ec2-user
+  shell: echo '. ~/miniconda3/etc/profile.d/conda.sh' | cat >> {{ linux_shell_profile_name }}
+  when: prev_inst_dir.stat.isdir is not defined
+
+- name: Install python v{{ python_version }} to conda base environment
+  become_user: ec2-user
+  command: conda install -c miniconda python={{ python_version }} -y
+  when: prev_inst_dir.stat.isdir is not defined

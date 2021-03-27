@@ -1,0 +1,6 @@
+aws_pem_key_name  = ""
+environment       = "dev"
+instance_count    = 2
+provisioning_logs = "~/path/to/tf_provisioning.log"
+tag_name          = ""
+vpn_ip            = ""

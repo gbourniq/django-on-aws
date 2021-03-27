@@ -10,6 +10,18 @@ CONDA_ENV_NAME=django-on-aws
 CONDA_CREATE=source $$(conda info --base)/etc/profile.d/conda.sh ; conda env create
 CONDA_ACTIVATE=source $$(conda info --base)/etc/profile.d/conda.sh ; conda activate
 
+# Terraform
+TF_DIR=./deployment/terraform+ansible/terraform
+TF_LOG_PATH=./terraform-crash.log
+TF_LOG=TRACE
+ANSIBLE_DIR=./deployment/terraform+ansible/ansible
+# Ansible variables to configure the remote instances
+export ANSIBLE_HOST_KEY_CHECKING=False
+export ANSIBLE_VAULT_PASSWORD_FILE=~/.ansible_vault_pass
+export ANSIBLE_GIT_REPO_NAME=django-on-aws
+export ANSIBLE_GIT_BRANCH_NAME=main
+export ANSIBLE_PYTHON_VERSION=$(shell python -V | awk '{print $$NF}')
+
 # Cloudformation
 # Note The ENVIRONMENT environment variable (dev/demo) is used as the subdomain name, eg. demo.mydomain.com
 # If set to demo, then an RDS database snapshot will be created on stack deletion 
@@ -91,7 +103,6 @@ tests: rundb
 open-cov-report:
 	@ open htmlcov/index.html
 
-
 ### Docker image ###
 .PHONY: image up-with-local-db up healthcheck down publish
 image:
@@ -126,6 +137,29 @@ publish:
 	@ [[ ! -z "${DOCKER_USER}" ]] || ${WARNING} "DOCKER_USER not set"
 	@ echo "${DOCKER_PASSWORD}" | docker login --username "${DOCKER_USER}" --password-stdin 2>&1
 	@ docker push ${IMAGE_REPOSITORY}:$(TAG)
+
+### Development and Testing on Remote EC2 with Terraform+Ansible ###
+.PHONY: create-and-deploy-to-ec2 destroy-ec2
+
+create-instances:
+	cd "${TF_DIR}"; terraform init
+	cd "${TF_DIR}"; terraform fmt -recursive
+	cd "${TF_DIR}"; terraform validate
+	cd "${TF_DIR}"; terraform plan -out=./.terraform/terraform_plan
+	cd "${TF_DIR}"; terraform apply ./.terraform/terraform_plan
+
+deploy-to-instances:
+	echo "Running ansible playbook only against already created instances"
+	ansible-playbook \
+		-i "${ANSIBLE_DIR}/inventories" \
+		"${ANSIBLE_DIR}/staging.yaml" \
+		-v --timeout 60
+
+show-public-ips:
+	cd "${TF_DIR}"; terraform output public_ips
+
+destroy-instances:
+	cd "${TF_DIR}"; terraform destroy --auto-approve
 
 
 ### Infrastructure ###

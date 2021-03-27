@@ -1,0 +1,13 @@
+---
+docker_version: "18.06.1"
+docker_compose_version: "1.24.1"
+dockerhub_user: "{{ lookup('env','DOCKER_USER') }}"
+full_path_repositories_dir: "{{ user_path }}/repos"
+full_path_django_repo_dir: "{{ full_path_repositories_dir }}/{{ lookup('env','ANSIBLE_GIT_REPO_NAME') }}"
+git_repository: "git@github.com:gbourniq/{{ lookup('env','ANSIBLE_GIT_REPO_NAME') }}.git"
+git_branch_name: "{{ lookup('env','ANSIBLE_GIT_BRANCH_NAME') }}"
+linux_shell_profile_name: "{{ user_path }}/.bashrc"
+poetry_version: "1.1.5"
+python_version: "{{ lookup('env','ANSIBLE_PYTHON_VERSION') or '3.8' }}"
+user: "{{ lookup('env','DEPLOYMENT_USER') or 'ec2-user' }}"
+user_path: "/home/{{ user }}"

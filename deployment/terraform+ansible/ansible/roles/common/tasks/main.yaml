@@ -1,0 +1,9 @@
+---
+
+- import_tasks: 1_install_packages.yaml
+- import_tasks: 2_install_conda.yaml
+- import_tasks: 3_install_poetry.yaml
+- import_tasks: 4_install_docker.yaml
+- import_tasks: 5_install_docker_compose.yaml
+- import_tasks: 6_config_docker.yaml
+- import_tasks: 7_deploy.yaml

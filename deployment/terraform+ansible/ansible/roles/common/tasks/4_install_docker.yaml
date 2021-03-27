@@ -1,0 +1,16 @@
+---
+
+- name: Install Docker-CE via amazon-linux-extras packages
+  shell: "amazon-linux-extras install docker={{ docker_version }} -y"
+
+- name: Enable Docker CE service at startup
+  service:
+    name: docker
+    state: started
+    enabled: yes
+
+- name: Add the user to the docker group
+  user:
+    name: "{{ user }}"
+    groups: docker
+    append: yes

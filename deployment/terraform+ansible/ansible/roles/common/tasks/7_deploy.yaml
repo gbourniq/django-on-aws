@@ -1,0 +1,72 @@
+---
+
+- name: Check if previous installation exists
+  stat:
+    path: "{{ full_path_repositories_dir }}"
+  register: prev_inst_dir
+
+- name: Delete a previous installation directory
+  file:
+    path: "{{ full_path_repositories_dir }}"
+    state: absent
+  when: prev_inst_dir.stat.isdir is defined and prev_inst_dir.stat.isdir
+
+- name: Create install directories (if they do not exist) and change ownership
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+    owner: "{{ user }}"
+    group: "{{ user }}"
+  loop:
+    - "{{ full_path_repositories_dir }}"
+
+- name: Copy github ssh keys from local host to remote (~/.ssh/id_rsa)
+  copy: 
+    src: /Users/guillaume.bournique/.ssh/{{ item }}
+    dest: "{{ user_path }}/.ssh/{{ item }}" 
+    mode: 0400
+  loop:
+    - "id_rsa.pub"
+    - "id_rsa"
+
+- name: Clone the code django repository
+  git:
+    repo: "{{ git_repository }}"
+    dest: "{{ full_path_django_repo_dir }}"
+    accept_hostkey: yes
+    key_file: "{{ user_path }}/.ssh/id_rsa"
+    update: no
+
+- name: Checkout to branch {{ git_branch_name }}
+  command: git checkout {{ git_branch_name }}
+  ignore_errors: yes
+  args:
+    chdir: "{{ full_path_django_repo_dir }}"
+
+- name: Remove github ssh keys from remote host
+  file:
+    path: "{{ user_path }}/.ssh/{{ item }}" 
+    state: absent
+  loop:
+    - "id_rsa.pub"
+    - "id_rsa"
+
+- name: Check packages are installed
+  become_user: ec2-user
+  shell: |
+    poetry --version
+    docker --version
+    docker-compose --version
+
+- name: Start postgres and redis databases
+  become_user: ec2-user
+  command: make rundb
+  args:
+    chdir: "{{ full_path_django_repo_dir }}"
+
+- name: Start django application
+  become_user: ec2-user
+  command: make up
+  args:
+    chdir: "{{ full_path_django_repo_dir }}"

@@ -1,0 +1,28 @@
+---
+
+- name: Check if previous installation exists
+  stat:
+    path: "{{ user_path }}/.poetry/"
+  register: prev_inst_dir
+
+- name: Fetch poetry installer
+  become_user: ec2-user
+  get_url:
+    url: https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py
+    dest: "{{ user_path }}"
+  when: prev_inst_dir.stat.isdir is not defined
+
+- name: Install Poetry v{{ poetry_version }}
+  become_user: ec2-user
+  command: python {{ user_path }}/get-poetry.py --version {{ poetry_version }} -y
+  when: prev_inst_dir.stat.isdir is not defined
+
+- name: Add Poetry binaries directory to your PATH in {{ linux_shell_profile_name }} for {{ ansible_distribution }} distribution
+  become_user: ec2-user
+  shell: echo 'export PATH="$HOME/.poetry/bin:$PATH"' | cat >> {{ linux_shell_profile_name }}
+  when: prev_inst_dir.stat.isdir is not defined
+
+- name: Set Poetry config virtualenvs to False
+  become_user: ec2-user
+  command: "{{ user_path }}/.poetry/bin/poetry config virtualenvs.create false"
+  when: prev_inst_dir.stat.isdir is not defined

@@ -1,0 +1,9 @@
+galaxy_info:
+  author: Guillaume Bournique
+  description: Roles for provisioning EC2 instances with git repositories and required software and packages
+
+  min_ansible_version: 2.0
+
+  galaxy_tags: docker, terraform, aws
+
+  dependencies: []

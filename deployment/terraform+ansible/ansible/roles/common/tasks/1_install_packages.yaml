@@ -1,0 +1,52 @@
+---
+
+- name: Upgrade all packages
+  become_user: root
+  yum:
+    name: '*'
+    state: latest
+    lock_timeout: 180
+
+- name: Install a list of packages with a list variable
+  yum:
+    name: "{{ packages }}"
+    update_cache: true
+    state: present
+  vars:
+    packages:
+    - git
+    - python3
+    - python3-pip
+    - amazon-linux-extras
+
+- name: Add extras repository
+  shell: yum-config-manager --enable extras
+
+- name: Add python alias
+  lineinfile:
+    dest="{{ user_path }}/.bashrc"
+    line="alias python='python3'"
+    state=present
+    insertafter=EOF
+    create=True
+
+- name: Add pip alias
+  lineinfile:
+    dest="{{ user_path }}/.bashrc"
+    line="alias pip='pip3'"
+    state=present
+    insertafter=EOF
+    create=True
+
+- name: Install pip packages
+  pip:
+    name: "{{ packages }}"
+    executable: pip3
+    extra_args: --user
+  vars:
+    packages:
+    - docker
+    - docker-compose
+    - boto
+    - boto3
+    - docker-compose

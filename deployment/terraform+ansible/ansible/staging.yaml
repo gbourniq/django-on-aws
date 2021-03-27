@@ -1,0 +1,7 @@
+- hosts: staging
+  remote_user: ec2-user
+  become: yes
+  roles:
+    - common
+  vars_files:
+    - secrets.yaml
