@@ -3,7 +3,7 @@
 # This step stops docker deployed application if it is running.
 # If there is no Docker service installed, or there are no containers running,
 # it will raise an error which will be ignored.
-- name: Stop and remove working containers
+- name: Stop and remove running containers
   shell: docker stop $(docker ps -aq) && docker rm $(docker ps -aq)
   ignore_errors: yes
 

@@ -49,4 +49,3 @@
     - docker-compose
     - boto
     - boto3
-    - docker-compose

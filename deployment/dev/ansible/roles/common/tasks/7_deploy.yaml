@@ -52,21 +52,35 @@
     - "id_rsa.pub"
     - "id_rsa"
 
-- name: Check packages are installed
-  become_user: ec2-user
-  shell: |
-    poetry --version
-    docker --version
-    docker-compose --version
+- name: Compose up postgres and redis databases
+  docker_compose:
+    project_src: "{{ full_path_django_repo_dir }}"
+    pull: yes
+    state: present
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
 
-- name: Start postgres and redis databases
-  become_user: ec2-user
-  command: make rundb
+- name: Get docker image tag from poetry project version
+  become_user: "{{ user }}"
+  command: poetry version -s
   args:
     chdir: "{{ full_path_django_repo_dir }}"
+  register: image_tag
 
-- name: Start django application
-  become_user: ec2-user
-  command: make up
-  args:
-    chdir: "{{ full_path_django_repo_dir }}"
+- name: Run dockerised django application
+  community.docker.docker_container:
+    name: portfolioapp
+    state: started
+    detach: yes
+    ports: ["8080:8080"]
+    restart: no
+    networks: [name: global-network]
+    env:
+      DEBUG: "True"
+      POSTGRES_HOST: "postgres"
+      POSTGRES_PASSWORD: "postgres"
+      REDIS_ENDPOINT: "redis:6379"
+      SNS_TOPIC_ARN: ""
+    image: "{{ docker_image_name }}:{{ image_tag.stdout }}"
+  vars:
+    ansible_python_interpreter: /usr/bin/python3

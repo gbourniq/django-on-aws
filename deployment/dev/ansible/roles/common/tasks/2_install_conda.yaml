@@ -1,6 +1,6 @@
 ---
 
-- name: Check if previous installation exists
+- name: Check if previous conda installation exists
   stat:
     path: "{{ user_path }}/miniconda3/"
   register: prev_inst_dir

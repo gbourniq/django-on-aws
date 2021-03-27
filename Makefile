@@ -21,6 +21,7 @@ export ANSIBLE_VAULT_PASSWORD_FILE=~/.ansible_vault_pass
 export ANSIBLE_GIT_REPO_NAME=django-on-aws
 export ANSIBLE_GIT_BRANCH_NAME=main
 export ANSIBLE_PYTHON_VERSION=$(shell python -V | awk '{print $$NF}')
+export DOCKER_USER=gbournique
 
 # Cloudformation
 # Note The ENVIRONMENT environment variable (dev/demo) is used as the subdomain name, eg. demo.mydomain.com
@@ -143,24 +144,25 @@ publish:
 .PHONY: create-and-deploy-to-ec2 destroy-ec2
 
 create-instances:
-	cd "${TF_DIR}"; terraform init
-	cd "${TF_DIR}"; terraform fmt -recursive
-	cd "${TF_DIR}"; terraform validate
-	cd "${TF_DIR}"; terraform plan -out=./.terraform/terraform_plan
-	cd "${TF_DIR}"; terraform apply ./.terraform/terraform_plan
+	@ ${INFO} "Creating ec2 instance(s) with inbound rules for the application and ssh"
+	@ cd "${TF_DIR}"; terraform init
+	@ cd "${TF_DIR}"; terraform fmt -recursive
+	@ cd "${TF_DIR}"; terraform validate
+	@ cd "${TF_DIR}"; terraform plan -out=./.terraform/terraform_plan
+	@ cd "${TF_DIR}"; terraform apply ./.terraform/terraform_plan
 
 deploy-to-instances:
-	echo "Running ansible playbook only against already created instances"
-	ansible-playbook \
-		-i "${ANSIBLE_DIR}/inventories" \
-		"${ANSIBLE_DIR}/staging.yaml" \
-		-v --timeout 60
+	@ ${INFO} "Deploying dockerised application to ec2 instance(s) created by Terraform"
+	@ echo "Running ansible playbook only against already created instances"
+	@ ansible-playbook -i "${ANSIBLE_DIR}/inventories" "${ANSIBLE_DIR}/staging.yaml" -vv --timeout 60
 
 show-urls:
-	cd "${TF_DIR}"; terraform output public_ips
+	@ ${INFO} "Public URL(s) where the app have been deployed"
+	@ cd "${TF_DIR}"; terraform output public_ips
 
 destroy-instances:
-	cd "${TF_DIR}"; terraform destroy --auto-approve
+	@ ${INFO} "Destroying all infrastructure created by Terraform"
+	@ cd "${TF_DIR}"; terraform destroy --auto-approve
 
 
 ### Infrastructure ###

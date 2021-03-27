@@ -2,6 +2,7 @@
 docker_version: "18.06.1"
 docker_compose_version: "1.24.1"
 dockerhub_user: "{{ lookup('env','DOCKER_USER') }}"
+docker_image_name: "{{ dockerhub_user }}/django-on-aws"
 full_path_repositories_dir: "{{ user_path }}/repos"
 full_path_django_repo_dir: "{{ full_path_repositories_dir }}/{{ lookup('env','ANSIBLE_GIT_REPO_NAME') }}"
 git_repository: "git@github.com:gbourniq/{{ lookup('env','ANSIBLE_GIT_REPO_NAME') }}.git"
