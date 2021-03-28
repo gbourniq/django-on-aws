@@ -180,12 +180,33 @@ cloudformation
 Before creating the cloudformation stack, the following prerequisites must be completed manually in the AWS Console:
 - Create Route 53 Hosted Zone ($0.50/month)
 - Create a domain in Route53, eg. mydomain.com (~$15/year)
-- Load an existing [SSL certificate](https://itnext.io/using-letsencrypt-ssl-certificates-in-aws-certificate-manager-c2bc3c6ae10) to the AWS Certificate Manager service in the us-east-1 region
+- Load an existing [free SSL certificate](https://itnext.io/using-letsencrypt-ssl-certificates-in-aws-certificate-manager-c2bc3c6ae10) to the AWS Certificate Manager service in the main region and us-east-1 region for CF.
 - Create the following AWS SSM Parameters to store sensitive variables: `/RDS/POSTGRES_PASSWORD/SECURE` (type: SecureString); and `/SLACK/INCOMING_WEBHOOK_URL` (type: String)
 
 The aws resources can then be deployed as a CloudFormation stack by simply running the `make cfn-create` command. Please make sure to review the stack parameters in `Makefile` under the `cfn-create` target beforehand.
 
 > Note it can take up to 30mn for all resources to be created. The stack resources can then be updated with `make cfn-create` or deleted with `make cfn-delete`.
+
+> To renew the certificate:
+```
+rm -rf ~/letsencrypt
+mkdir ~/letsencrypt
+cd ~/letsencrypt
+certbot certonly \
+  --manual \
+  --preferred-challenges=dns \
+  --email gbournique@gmail.com \
+  --agree-tos \
+  --config-dir ./config \
+  --logs-dir ./logs \
+  --work-dir ./workdir \
+  -d '*.bournique.fr'
+# DNS validation with a Route53 DNS TXT record
+# In ACM, copy keys content (x2:  Main region + N. Virginia for CF!): 
+#   privkey.pem -> certificate private key
+#   cert.pem -> certificate body
+#   fullchain.pem -> certificate chain
+```
 
 ### Webapp deployment with AWS CodeDeploy
 
