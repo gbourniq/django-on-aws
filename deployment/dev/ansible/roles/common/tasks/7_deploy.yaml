@@ -69,7 +69,7 @@
 
 - name: Run dockerised django application
   community.docker.docker_container:
-    name: portfolioapp
+    name: webapp
     state: started
     detach: yes
     ports: ["8080:8080"]

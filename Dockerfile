@@ -6,12 +6,15 @@ SHELL ["/bin/bash", "-e", "-o", "pipefail", "-c"]
 ARG APP_WHEEL=dist/*.whl
 ARG APP_DIR=app
 ARG MOUNT_DIR=mounts
-ARG STARTUP_SCRIPT=deployment/local/app/startup_server.sh
+ARG STARTUP_SCRIPT=deployment/config/app/startup_server.sh
 ARG USERNAME="portfoliouser"
 
 ENV PATH="/opt/venv/bin:${PATH}" \
     PYTHONPATH="/home/${USERNAME}/${APP_DIR}/" \
-    DJANGO_SETTINGS_MODULE="portfolio.settings"
+    DJANGO_SETTINGS_MODULE="portfolio.settings" \
+    # prevents python creating .pyc files
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
     
 # Copy application code, startup script, and dependencies
 COPY ${APP_DIR}/ /home/${USERNAME}/${APP_DIR}
@@ -41,6 +44,7 @@ RUN python -m venv /opt/venv && \
 
 USER ${USERNAME}
 
+# Webserver will be running on this port
 EXPOSE 8080
 
 HEALTHCHECK --interval=30s --timeout=30s --retries=3 CMD curl --fail http://localhost:8080 || exit 1

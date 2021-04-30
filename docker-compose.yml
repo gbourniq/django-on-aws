@@ -12,8 +12,8 @@ services:
       POSTGRES_DB: portfoliodb
       POSTGRES_INITDB_ARGS: "--encoding='UTF-8'"
     volumes:
-      - ./deployment/local/postgres/config/postgres.conf:/etc/postgres/postgres.conf:ro
-      - ./deployment/local/postgres/docker-entrypoint-initdb.d/:/docker-entrypoint-initdb.d/
+      - ./deployment/config/postgres/config/postgres.conf:/etc/postgres/postgres.conf:ro
+      - ./deployment/config/postgres/docker-entrypoint-initdb.d/:/docker-entrypoint-initdb.d/
       - pgdata:/var/lib/postgresql/data/ 
       - pglogs:/var/lib/postgresql/pglogs/
     healthcheck:

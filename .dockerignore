@@ -1,0 +1,33 @@
+# Artifacts to exclude when sending build context to the docker daemon
+
+# Dotfiles, cache, build artifacts, test, etc.
+.coverage
+.coveragerc
+.dockerignore
+.circleci
+.github
+.gitignore
+.pre-commit-config.yaml
+.pylintrc
+app.egg-info
+app/tests/
+bin/
+build/
+docker-compose.yml
+Dockerfile
+environment.yml
+htmlcov
+Makefile
+pyproject.toml
+
+# Cache 
+.pytest_cache/
+__pycache__/
+
+# Everything under deployent other than script files and python files
+deployment/**/*
+!deployment/config/*
+
+# IDE stuff
+.idea/
+.vscode/

@@ -115,6 +115,7 @@ image:
 up: rundb
 	@ ${INFO} "Running app container, with local Postgres as a DB backend and Redis for Cache"
 	@ docker run -d \
+				--name webapp \
 				-p 8080:8080 \
 				--restart=no \
 				--network global-network \
