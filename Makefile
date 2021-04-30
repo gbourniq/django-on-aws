@@ -144,7 +144,7 @@ publish:
 .PHONY: create-and-deploy-to-ec2 destroy-ec2
 
 create-instances:
-	@ ${INFO} "Creating ec2 instance(s) with inbound rules for the application and ssh"
+	@ ${INFO} "Creating ec2 instance(s) with Terraform"
 	@ cd "${TF_DIR}"; terraform init
 	@ cd "${TF_DIR}"; terraform fmt -recursive
 	@ cd "${TF_DIR}"; terraform validate
@@ -152,12 +152,12 @@ create-instances:
 	@ cd "${TF_DIR}"; terraform apply ./.terraform/terraform_plan
 
 deploy-to-instances:
-	@ ${INFO} "Deploying dockerised application to ec2 instance(s) created by Terraform"
+	@ ${INFO} "Git clone repository and start dockerised application to created instances with Ansible"
 	@ echo "Running ansible playbook only against already created instances"
 	@ ansible-playbook -i "${ANSIBLE_DIR}/inventories" "${ANSIBLE_DIR}/staging.yaml" -vv --timeout 60
 
 show-urls:
-	@ ${INFO} "Public URL(s) where the app have been deployed"
+	@ ${INFO} "Public URL(s) where the app is running"
 	@ cd "${TF_DIR}"; terraform output public_ips
 
 destroy-instances:
