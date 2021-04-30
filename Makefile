@@ -40,7 +40,10 @@ TAG_MODIFIED_DATE="$$(date +%F_%T)"
 # Deployment
 DOCKER_USER=gbournique
 IMAGE_REPOSITORY=${DOCKER_USER}/django-on-aws
-TAG=$(shell poetry version | awk '{print $$NF}')
+# Checksum of the application and dependencies files
+# to check if identical docker image already exists in docker repository
+CKSUM=$$(cat Dockerfile environment.yml poetry.lock $$(find ./app/ -type f) | cksum | cut -c -8)
+TAG=$(shell poetry version | awk '{print $$NF}')-$(CKSUM)
 DEBUG=False
 CODEDEPLOY_APP_DIR=${PROD_DEPLOYMENT_DIR}/codedeploy-app
 
@@ -142,6 +145,22 @@ publish:
 	@ docker push ${IMAGE_REPOSITORY}:$(TAG)
 	@ docker tag ${IMAGE_REPOSITORY}:$(TAG) ${IMAGE_REPOSITORY}:latest
 	@ docker push ${IMAGE_REPOSITORY}:latest
+
+### CI Pipeline
+
+run-ci-pipeline:
+	@ if docker manifest inspect ${IMAGE_REPOSITORY}:$(TAG) > /dev/null 2>&1; then \
+		${INFO} "Docker image ${IMAGE_REPOSITORY}:$(TAG) already exists on Dockerhub! Skipping CI pipeline."; \
+	  else \
+	  	${INFO} "Running CI pipeline to build, test, and push docker image"; \
+	    $(MAKE) tests; \
+	  	$(MAKE) image; \
+		$(MAKE) up; \
+		$(MAKE) healthcheck; \
+		$(MAKE) down; \
+		$(MAKE) publish; \
+	  fi
+
 
 ### Development and Testing on Remote EC2 with Terraform+Ansible ###
 .PHONY: create-and-deploy-to-ec2 destroy-ec2

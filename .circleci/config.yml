@@ -62,23 +62,8 @@ jobs:
             - /home/circleci/.poetry/
           key: libs-{{ checksum "poetry.lock" }}
       - run:
-          name: Run unit-tests
-          command: set -e; make tests
-      - run:
-          name: Build docker image
-          command: set -e; make image
-      - run:
-          name: Run containers
-          command: set -e; make up
-      - run:
-          name: Application healthcheck
-          command: set -e; make healthcheck
-      - run:
-          name: Remove containers
-          command: set -e; make down
-      - run:
-          name: Publish to Dockerhub
-          command: set -e; make publish
+          name: "Run ci pipeline: unit-tests, lint, docker build, test, and push"
+          command: set -e; run-ci-pipeline
   cd-pipeline:
     machine:
       image: ubuntu-2004:202010-01
