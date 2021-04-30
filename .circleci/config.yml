@@ -63,7 +63,7 @@ jobs:
           key: libs-{{ checksum "poetry.lock" }}
       - run:
           name: "Run ci pipeline: unit-tests, lint, docker build, test, and push"
-          command: set -e; run-ci-pipeline
+          command: set -e; make run-ci-pipeline
   cd-pipeline:
     machine:
       image: ubuntu-2004:202010-01
