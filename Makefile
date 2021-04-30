@@ -147,27 +147,25 @@ publish:
 .PHONY: create-and-deploy-to-ec2 destroy-ec2
 
 create-instances:
-	@ ${INFO} "Creating ec2 instance(s) with Terraform"
-	@ cd "${TF_DIR}" \
-		TF_LOG_PATH=$(TF_LOG_PATH) \
-		TF_LOG=$(TF_LOG) \
-		terraform init \
-		terraform fmt -recursive \
-		terraform validate \
-		terraform plan -out=./.terraform/terraform_plan \
-		terraform apply ./.terraform/terraform_plan
+	cd "${TF_DIR}"
+	TF_LOG_PATH=$(TF_LOG_PATH)
+	TF_LOG=$(TF_LOG)
+	terraform init
+	terraform fmt -recursive
+	terraform validate
+	terraform plan -out=./.terraform/terraform_plan
+	terraform apply ./.terraform/terraform_plan
 
 provision-instances:
 	@ ${INFO} "Git clone repository and start dockerised application to created instances with Ansible"
-	@ echo "Running ansible playbook only against already created instances"
-	@ ANSIBLE_HOST_KEY_CHECKING=$(ANSIBLE_HOST_KEY_CHECKING) \
-		ANSIBLE_HOST_KEY_CHECKING=$(ANSIBLE_HOST_KEY_CHECKING) \
-		ANSIBLE_VAULT_PASSWORD_FILE=$(ANSIBLE_VAULT_PASSWORD_FILE) \
-		ANSIBLE_GIT_REPO_NAME=$(ANSIBLE_GIT_REPO_NAME) \
-		ANSIBLE_GIT_BRANCH_NAME=$(ANSIBLE_GIT_BRANCH_NAME) \
-		ANSIBLE_PYTHON_VERSION=$(ANSIBLE_PYTHON_VERSION) \
-		DOCKER_USER=$(DOCKER_USER)
-		ansible-playbook -i "${ANSIBLE_DIR}/inventories" "${ANSIBLE_DIR}/staging.yaml" -vv --timeout 60
+	export ANSIBLE_HOST_KEY_CHECKING=$(ANSIBLE_HOST_KEY_CHECKING)
+	export ANSIBLE_HOST_KEY_CHECKING=$(ANSIBLE_HOST_KEY_CHECKING)
+	export ANSIBLE_VAULT_PASSWORD_FILE=$(ANSIBLE_VAULT_PASSWORD_FILE)
+	export ANSIBLE_GIT_REPO_NAME=$(ANSIBLE_GIT_REPO_NAME)
+	export ANSIBLE_GIT_BRANCH_NAME=$(ANSIBLE_GIT_BRANCH_NAME)
+	export ANSIBLE_PYTHON_VERSION=$(ANSIBLE_PYTHON_VERSION)
+	export DOCKER_USER=$(DOCKER_USER)
+	ansible-playbook -i "${ANSIBLE_DIR}/inventories" "${ANSIBLE_DIR}/staging.yaml" -vv --timeout 60
 
 show-urls:
 	@ ${INFO} "Public URL(s) where the app is running"
