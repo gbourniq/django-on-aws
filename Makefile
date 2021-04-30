@@ -5,27 +5,27 @@
 # Set shell
 SHELL=/bin/bash
 
-### Conda environment
+# Conda environment
 CONDA_ENV_NAME=django-on-aws
 CONDA_CREATE=source $$(conda info --base)/etc/profile.d/conda.sh ; conda env create
 CONDA_ACTIVATE=source $$(conda info --base)/etc/profile.d/conda.sh ; conda activate
 
-# Terraform
+# Terraform to create ec2 instances
 TF_DIR=./deployment/dev/terraform
 TF_LOG_PATH=./terraform-crash.log
 TF_LOG=TRACE
 ANSIBLE_DIR=./deployment/dev/ansible
-# Ansible variables to configure the remote instances
-export ANSIBLE_HOST_KEY_CHECKING=False
-export ANSIBLE_VAULT_PASSWORD_FILE=~/.ansible_vault_pass
-export ANSIBLE_GIT_REPO_NAME=django-on-aws
-export ANSIBLE_GIT_BRANCH_NAME=main
-export ANSIBLE_PYTHON_VERSION=$(shell python -V | awk '{print $$NF}')
-export DOCKER_USER=gbournique
+
+# Ansible variables to provision ec2 instances with git repository
+ANSIBLE_HOST_KEY_CHECKING=False
+ANSIBLE_VAULT_PASSWORD_FILE=~/.ansible_vault_pass
+ANSIBLE_GIT_REPO_NAME=django-on-aws
+ANSIBLE_GIT_BRANCH_NAME=main
+ANSIBLE_PYTHON_VERSION=$(shell python -V | awk '{print $$NF}')
 
 # Cloudformation
 # Note The ENVIRONMENT environment variable (dev/demo) is used as the subdomain name, eg. demo.mydomain.com
-# If set to demo, then an RDS database snapshot will be created on stack deletion 
+# If set to 'demo', then an RDS database snapshot will be created on stack deletion 
 ENVIRONMENT?=demo
 STACK_NAME=$(ENVIRONMENT)
 S3_BUCKET_NAME_CFN_TEMPLATES=gbournique-sam-artifacts
@@ -99,7 +99,7 @@ tests: rundb
 	@ $(CONDA_ACTIVATE) $(CONDA_ENV_NAME)
 	@ ${INFO} "Running Django tests using the postgres and redis containers"
 	@ pytest app -x
-	@ docker-compose down || true
+	@ docker-compose down --remove-orphans || true
 	@ ${INFO} "Run 'make open-cov-report' to view coverage details"
 
 open-cov-report:
@@ -133,33 +133,51 @@ healthcheck:
 down:
 	@ ${INFO} "Removing Django app container"
 	@ docker rm --force $$(docker ps --filter "ancestor=${IMAGE_REPOSITORY}:$(TAG)" -qa) || true
-	@ docker-compose down || true
+	@ docker-compose down --remove-orphans || true
 
 publish:
 	@ [[ ! -z "${DOCKER_PASSWORD}" ]] || ${WARNING} "DOCKER_PASSWORD not set"
 	@ [[ ! -z "${DOCKER_USER}" ]] || ${WARNING} "DOCKER_USER not set"
 	@ echo "${DOCKER_PASSWORD}" | docker login --username "${DOCKER_USER}" --password-stdin 2>&1
 	@ docker push ${IMAGE_REPOSITORY}:$(TAG)
+	@ docker tag ${IMAGE_REPOSITORY}:$(TAG) ${IMAGE_REPOSITORY}:latest
+	@ docker push ${IMAGE_REPOSITORY}:latest
 
 ### Development and Testing on Remote EC2 with Terraform+Ansible ###
 .PHONY: create-and-deploy-to-ec2 destroy-ec2
 
 create-instances:
 	@ ${INFO} "Creating ec2 instance(s) with Terraform"
-	@ cd "${TF_DIR}"; terraform init
-	@ cd "${TF_DIR}"; terraform fmt -recursive
-	@ cd "${TF_DIR}"; terraform validate
-	@ cd "${TF_DIR}"; terraform plan -out=./.terraform/terraform_plan
-	@ cd "${TF_DIR}"; terraform apply ./.terraform/terraform_plan
+	@ cd "${TF_DIR}" \
+		TF_LOG_PATH=$(TF_LOG_PATH) \
+		TF_LOG=$(TF_LOG) \
+		terraform init \
+		terraform fmt -recursive \
+		terraform validate \
+		terraform plan -out=./.terraform/terraform_plan \
+		terraform apply ./.terraform/terraform_plan
 
-deploy-to-instances:
+provision-instances:
 	@ ${INFO} "Git clone repository and start dockerised application to created instances with Ansible"
 	@ echo "Running ansible playbook only against already created instances"
-	@ ansible-playbook -i "${ANSIBLE_DIR}/inventories" "${ANSIBLE_DIR}/staging.yaml" -vv --timeout 60
+	@ ANSIBLE_HOST_KEY_CHECKING=$(ANSIBLE_HOST_KEY_CHECKING) \
+		ANSIBLE_HOST_KEY_CHECKING=$(ANSIBLE_HOST_KEY_CHECKING) \
+		ANSIBLE_VAULT_PASSWORD_FILE=$(ANSIBLE_VAULT_PASSWORD_FILE) \
+		ANSIBLE_GIT_REPO_NAME=$(ANSIBLE_GIT_REPO_NAME) \
+		ANSIBLE_GIT_BRANCH_NAME=$(ANSIBLE_GIT_BRANCH_NAME) \
+		ANSIBLE_PYTHON_VERSION=$(ANSIBLE_PYTHON_VERSION) \
+		DOCKER_USER=$(DOCKER_USER)
+		ansible-playbook -i "${ANSIBLE_DIR}/inventories" "${ANSIBLE_DIR}/staging.yaml" -vv --timeout 60
 
 show-urls:
 	@ ${INFO} "Public URL(s) where the app is running"
 	@ cd "${TF_DIR}"; terraform output public_ips
+
+deploy-to-dev-instances:
+	@ $(MAKE) create-instances
+	@ $(MAKE) provision-instances
+	@ $(MAKE) show-urls
+	@ ${INFO} "Run make destroy-instances to clean up"
 
 destroy-instances:
 	@ ${INFO} "Destroying all infrastructure created by Terraform"
