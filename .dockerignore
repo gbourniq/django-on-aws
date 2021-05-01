@@ -15,10 +15,8 @@ bin/
 build/
 docker-compose.yml
 Dockerfile
-environment.yml
 htmlcov
 Makefile
-pyproject.toml
 
 # Cache 
 .pytest_cache/
