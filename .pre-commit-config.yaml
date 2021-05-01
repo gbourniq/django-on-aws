@@ -41,18 +41,11 @@ repos:
         entry: python utils/generate_pylint_badge.py
         types: [python]
 
-      - id: coverage-badge
-        name: coverage-badge
-        stages: [commit]
-        language: system
-        entry: bash utils/generate_coverage_badge.sh
-        types: [python]
-
   - repo: git://github.com/antonbabenko/pre-commit-terraform
     rev: v1.46.0
     hooks:
       - id: terraform_fmt
-      - id: terraform_validate
+      # - id: terraform_validate
       - id: terraform_docs
       - id: terraform_tflint
         args:
