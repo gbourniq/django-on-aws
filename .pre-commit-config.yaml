@@ -49,6 +49,13 @@ repos:
         entry: bash -c "yamllint . -d relaxed --no-warnings"
         types: [yaml]
 
+      - id: cfnlint
+        name: cfnlint
+        stages: [commit]
+        language: system
+        entry: bash -c "cfn-lint deployment/prod/cloudformation/**/*.yaml --ignore-checks W3002"
+        types: [yaml]
+
   - repo: git://github.com/antonbabenko/pre-commit-terraform
     rev: v1.46.0
     hooks:
