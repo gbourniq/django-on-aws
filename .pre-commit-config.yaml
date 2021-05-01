@@ -34,14 +34,13 @@ repos:
         entry: black
         types: [python]
 
-  - repo: https://github.com/pycqa/pylint
-    rev: pylint-2.6.0
-    hooks:
       - id: pylint
         name: pylint
         stages: [commit]
+        language: system
         entry: pylint
-        args: ["app", "--fail-under", "9.5"]
+        args: ["app", "--fail-under", "9.5", "--load-plugins", "pylint_django"]
+        types: [python]
 
   - repo: git://github.com/antonbabenko/pre-commit-terraform
     rev: v1.46.0
@@ -64,6 +63,7 @@ repos:
           - '--args=--only=terraform_required_providers'
           - '--args=--only=terraform_standard_module_structure'
           - '--args=--only=terraform_workspace_remote'
+
   - repo: git://github.com/pre-commit/pre-commit-hooks
     rev: v3.4.0
     hooks:
