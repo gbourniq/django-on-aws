@@ -3,28 +3,25 @@ version: "3.5"
 services:
 
   postgres:
-    image: postgres:12-alpine
+    image: bitnami/postgresql:11.8.0-debian-10-r19
     container_name: postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: portfoliodb
-      POSTGRES_INITDB_ARGS: "--encoding='UTF-8'"
+      POSTGRESQL_DATABASE: portfoliodb
+      POSTGRESQL_USERNAME: postgres
+      POSTGRESQL_PASSWORD: postgres
+      POSTGRESQL_POSTGRES_PASSWORD: postgres
     volumes:
-      - ./deployment/config/postgres/config/postgres.conf:/etc/postgres/postgres.conf:ro
-      - ./deployment/config/postgres/docker-entrypoint-initdb.d/:/docker-entrypoint-initdb.d/
-      - pgdata:/var/lib/postgresql/data/ 
-      - pglogs:/var/lib/postgresql/pglogs/
+      - pgdata:/bitnami/postgresql
+    ports:
+      - 5434:5434
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
+      interval: 30s
       timeout: 5s
-      retries: 10
-    ports:
-      - "5432:5432"
+      retries: 5
     networks:
-      - backend
+        - backend
 
   redis:
     image: redis:alpine
