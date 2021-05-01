@@ -6,7 +6,7 @@ SHELL ["/bin/bash", "-e", "-o", "pipefail", "-c"]
 ARG APP_WHEEL=dist/*.whl
 ARG APP_DIR=app
 ARG MOUNT_DIR=mounts
-ARG STARTUP_SCRIPT=deployment/config/app/startup_server.sh
+ARG STARTUP_SCRIPT=deployment/config/startup_server.sh
 ARG USERNAME="portfoliouser"
 
 ENV PATH="/opt/venv/bin:${PATH}" \
