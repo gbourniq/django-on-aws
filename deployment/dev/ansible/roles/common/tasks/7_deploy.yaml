@@ -22,9 +22,9 @@
     - "{{ full_path_repositories_dir }}"
 
 - name: Copy github ssh keys from local host to remote (~/.ssh/id_rsa)
-  copy: 
+  copy:
     src: /Users/guillaume.bournique/.ssh/{{ item }}
-    dest: "{{ user_path }}/.ssh/{{ item }}" 
+    dest: "{{ user_path }}/.ssh/{{ item }}"
     mode: 0400
   loop:
     - "id_rsa.pub"
@@ -46,7 +46,7 @@
 
 - name: Remove github ssh keys from remote host
   file:
-    path: "{{ user_path }}/.ssh/{{ item }}" 
+    path: "{{ user_path }}/.ssh/{{ item }}"
     state: absent
   loop:
     - "id_rsa.pub"

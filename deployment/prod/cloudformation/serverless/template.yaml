@@ -27,17 +27,17 @@ Parameters:
 Resources:
 
   # CloudWatch Event Rules
-  EventRule: 
+  EventRule:
     Type: AWS::Events::Rule
-    Properties: 
+    Properties:
       Description: EventRule triggered by CodeDeploy deployment state changes
-      EventPattern: 
+      EventPattern:
         source: [aws.codedeploy]
         detail-type: ["CodeDeploy Deployment State-change Notification"]
-        detail: 
+        detail:
           state: [FAILURE, SUCCESS]
       State: "ENABLED"
-      Targets: 
+      Targets:
         - Arn: !GetAtt LambdaPushMetricCodeDeployDeploymentState.Arn
           Id: "TargetFunctionV1"
 
@@ -58,9 +58,9 @@ Resources:
         Variables:
           CODEDEPLOY_METRIC_NAME: !Ref CodeDeployMetricName
           CODEDEPLOY_DIMENSION_NAME: !Ref CodeDeployDimensionName
-  PermissionForEventsToInvokeLambda: 
+  PermissionForEventsToInvokeLambda:
     Type: AWS::Lambda::Permission
-    Properties: 
+    Properties:
       FunctionName: !Ref LambdaPushMetricCodeDeployDeploymentState
       Action: "lambda:InvokeFunction"
       Principal: "events.amazonaws.com"
@@ -132,7 +132,7 @@ Resources:
             Condition:
               ArnLike:
                 AWS:SourceArn: !Sub 'arn:aws:*:*:${AWS::AccountId}:*'
-      
+
   # SQS
   SQSQueue:
     Type: AWS::SQS::Queue

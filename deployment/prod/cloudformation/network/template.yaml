@@ -7,7 +7,7 @@ Description: |
   - CloudFront Distribution to make the application globally accessible via Amazon's Content Delivery Network
   - CloudFront Origin Access Identity to make private content from S3 accessible through CloudFront
   - Application Load Balancer and Target Group to be associated with compute targets such as EC2 / ASG.
-  - All Security Groups within the application stack, to allow traffic between our resources 
+  - All Security Groups within the application stack, to allow traffic between our resources
 
 Parameters:
   ALBSubnetsString:

@@ -53,7 +53,7 @@ Parameters:
     Type: String
     AllowedValues: [dev, demo]
   R53HostedZoneName:
-    Description: The DNS name of an existing Amazon Route 53 hosted zone. For example, "mydomain.com" 
+    Description: The DNS name of an existing Amazon Route 53 hosted zone. For example, "mydomain.com"
     AllowedPattern: (?!-)[a-zA-Z0-9-.]{1,63}(?<!-)
     Type: String
     ConstraintDescription: Must be an existing DNS zone name.

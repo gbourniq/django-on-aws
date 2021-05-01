@@ -35,7 +35,7 @@ Parameters:
     Type: String
     AllowedValues: [dev, demo]
   EC2SecurityGroupId:
-    Type: String 
+    Type: String
   EC2InstanceType:
     Type: String
     AllowedValues: [t1.micro, t2.nano, t2.micro, t2.small]
@@ -98,12 +98,12 @@ Resources:
       HealthCheckType: ELB
       HealthCheckGracePeriod: 300
       TargetGroupARNs: [!Ref TargetGroupArn]
-      MetricsCollection: 
+      MetricsCollection:
         - Granularity: 1Minute
           Metrics: [GroupMinSize, GroupMaxSize, GroupDesiredCapacity]
       NotificationConfigurations:
         - TopicARN: !Ref SNSTopicArn
-          NotificationTypes: 
+          NotificationTypes:
             - autoscaling:EC2_INSTANCE_LAUNCH
             - autoscaling:EC2_INSTANCE_LAUNCH_ERROR
             - autoscaling:EC2_INSTANCE_TERMINATE
@@ -123,7 +123,7 @@ Resources:
       AutoScalingScheduledAction:
         # Prevent Scheduled Actions from modifying min/max/desired for CloudFormation
         IgnoreUnmodifiedGroupSizeProperties: true
-  
+
   # Scheduled Actions
   ScheduledActionUp:
     Type: AWS::AutoScaling::ScheduledAction
@@ -321,7 +321,7 @@ Resources:
 
           # Send used-defined message to Slack via the SQS queue and Lambda
           aws sqs send-message --queue-url ${SQSQueueUrl} --message-body "Cfn init successful🙌" --region ${AWS::Region}
-          
+
           # Send signal back to CloudFormation
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackId} --resource AutoScalingGroup --region ${AWS::Region}
     Metadata:
@@ -561,7 +561,7 @@ Resources:
         Type: FLEET_PERCENT
         Value: 50
 
-  DockerLogGroup: 
+  DockerLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Join ['-', [!Ref AWS::StackName, DockerLogs]]
