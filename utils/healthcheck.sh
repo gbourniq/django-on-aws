@@ -12,7 +12,7 @@ function get_service_health() {
 }
 
 function check_service_health() {
-  container_id=$(docker ps --filter "ancestor=$1:$2" -qa)
+  container_id=$(docker ps --filter "name=$1" -qa)
 
   # Check if container exists
   if [[ -z "${container_id}" ]]; then
@@ -31,10 +31,10 @@ function check_service_health() {
     exit 1
   fi;
 
-  echo "Container running from $1:$2 is healthy 🍀"
+  echo "Container $1 running is healthy 🍀"
 }
 
 # Start script
-echo "Checking health for container running from $1:$2"
-check_service_health "$1" "$2"
+echo "Checking health for $1 container"
+check_service_health "$1"
 echo "✅  All services are up and healthy!"
