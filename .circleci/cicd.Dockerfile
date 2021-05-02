@@ -2,6 +2,7 @@ ARG CONDA_VERSION=4.9.2
 FROM continuumio/miniconda3:${CONDA_VERSION}
 
 ARG POETRY_HOME="/opt/poetry"
+ARG WORKDIR=/root/cicd
 ENV PYTHONUNBUFFERED=1 \
     # prevents python creating .pyc files
     PYTHONDONTWRITEBYTECODE=1 \
@@ -10,7 +11,10 @@ ENV PYTHONUNBUFFERED=1 \
     # prevent poetry from creating a virtual environment in the project's root
     POETRY_VIRTUALENVS_IN_PROJECT=false \
     # prepend poetry and venv to path
-    PATH="${POETRY_HOME}/bin:$PATH"
+    PATH="${POETRY_HOME}/bin:$PATH" \
+    # for docker inspect manifest
+    DOCKER_CLI_EXPERIMENTAL=enabled \
+    PYTHONPATH=${WORKDIR}
 
 RUN apt-get update \
     && apt-get install --no-install-recommends -yq \
@@ -53,7 +57,7 @@ RUN curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poet
     # Upgrade pip
     && pip install --upgrade pip
 
-WORKDIR /root/cicd
+WORKDIR ${WORKDIR}
 
 COPY environment.yml poetry.lock pyproject.toml ./
 
@@ -64,7 +68,5 @@ RUN poetry install
 
 # Activate conda environment for any runtime commands
 ENTRYPOINT ["conda", "run", "--no-capture-output", "-n", "django-on-aws"]
-
-ENV PYTHONPATH=/root/cicd
 
 CMD ["tail", "-f", "/dev/null"]

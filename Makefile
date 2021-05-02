@@ -10,6 +10,11 @@ CONDA_ENV_NAME=django-on-aws
 CONDA_CREATE=source $$(conda info --base)/etc/profile.d/conda.sh ; conda env create
 CONDA_ACTIVATE=source $$(conda info --base)/etc/profile.d/conda.sh ; conda activate
 
+# CI/CD docker image
+DOCKER_USER=gbournique
+CICD_IMAGE_REPOSITORY=${DOCKER_USER}/cicd-with-deps
+CICD_IMAGE_TAG=$$(cat environment.yml poetry.lock | cksum | cut -c -8)
+
 # Terraform to create ec2 instances
 TF_DIR=./deployment/dev/terraform
 TF_LOG_PATH=./terraform-crash.log
@@ -38,12 +43,11 @@ TAG_EMAIL="gbournique.dev1@gmail.com"
 TAG_MODIFIED_DATE="$$(date +%F_%T)"
 
 # Deployment
-DOCKER_USER=gbournique
-IMAGE_REPOSITORY=${DOCKER_USER}/django-on-aws
+WEBAPP_IMAGE_REPOSITORY=${DOCKER_USER}/django-on-aws
 # Checksum of the application and dependencies files
 # to check if identical docker image already exists in docker repository
-CKSUM=$$(cat Dockerfile environment.yml poetry.lock $$(find ./app/ -type f) | cksum | cut -c -8)
-TAG=$(shell poetry version | awk '{print $$NF}')-$(CKSUM)
+CKSUM=$$(cat Dockerfile environment.yml poetry.lock $$(find ./app -type f -not -name "*.pyc" -not -name "*.log") | cksum | cut -c -8)
+WEBAPP_IMAGE_TAG=$(shell poetry version | awk '{print $$NF}')-$(CKSUM)
 DEBUG=False
 CODEDEPLOY_APP_DIR=${PROD_DEPLOYMENT_DIR}/codedeploy-app
 
@@ -74,92 +78,136 @@ env-update:
 	@ ${SUCCESS} "${CONDA_ENV_NAME} conda environment and poetry dependencies have been updated!"
 
 pre-commit:
-	@ $(CONDA_ACTIVATE) $(CONDA_ENV_NAME)
 	@ pre-commit install -t pre-commit -t commit-msg
 	@ ${SUCCESS} "pre-commit set up"
 
 
-### Development and Testing ###
-.PHONY: rundb stopdb recreatedb runserver tests open-cov-report
+### Development ###
+.PHONY: runserver tests open-cov-report
 
-rundb:
-	@ echo "Starting postgres and redis containers"
-	@ docker-compose up -d || true
-
-recreatedb: rundb
-	@ ${INFO} "Wiping portfoliodb table"
-	docker exec -it --user=postgres postgres dropdb portfoliodb
-	docker exec -it --user=postgres postgres createdb portfoliodb
-
-runserver: rundb
-	@ $(CONDA_ACTIVATE) $(CONDA_ENV_NAME)
+runserver:
 	python app/manage.py collectstatic --no-input -v 0
 	python app/manage.py makemigrations main
 	python app/manage.py migrate --run-syncdb
 	python app/manage.py runserver 0.0.0.0:8080
 
-tests: rundb
-	@ $(CONDA_ACTIVATE) $(CONDA_ENV_NAME)
-	@ ${INFO} "Running Django tests using the postgres and redis containers"
-	@ pytest app -x
-	@ docker-compose down --remove-orphans || true
-	@ ${INFO} "Run 'make open-cov-report' to view coverage details"
+### Containerised testing ###
+.PHONY: build-image-cicd-if-not-exists build-image-webapp-if-not-exists db-up lint tests healthcheck db-down
 
-open-cov-report:
-	@ open htmlcov/index.html
+# global-network so that db containers and webapp container can communicate
+run_docker_ci = { \
+	docker network create global-network 2>/dev/null || true; \
+	docker run \
+		-it --rm --name "$(1)" \
+		-v /var/run/docker.sock:/var/run/docker.sock \
+		-v $$(pwd):/root/cicd/ \
+		--network global-network \
+		${CICD_IMAGE_REPOSITORY}:${CICD_IMAGE_TAG} bash -c "$(2)"; \
+}
 
-### Docker image ###
-.PHONY: image up-with-local-db up healthcheck down publish
-image:
-	rm -rf dist
-	poetry build
-	docker build -t ${IMAGE_REPOSITORY}:$(TAG) .
-
-up: rundb
-	@ ${INFO} "Running app container, with local Postgres as a DB backend and Redis for Cache"
-	@ docker run -d \
-				--name webapp \
-				-p 8080:8080 \
-				--restart=no \
-				--network global-network \
-				--env DEBUG=True \
-				--env POSTGRES_HOST=postgres \
-				--env POSTGRES_PASSWORD=postgres \
-				--env REDIS_ENDPOINT=redis:6379 \
-				--env SNS_TOPIC_ARN="" \
-				${IMAGE_REPOSITORY}:$(TAG)
-
-healthcheck:
-	@ ${INFO} "Checking Django application container health"
-	@ ./utils/healthcheck.sh ${IMAGE_REPOSITORY} ${TAG}
-
-down:
-	@ ${INFO} "Removing Django app container"
-	@ docker rm --force $$(docker ps --filter "ancestor=${IMAGE_REPOSITORY}:$(TAG)" -qa) || true
-	@ docker-compose down --remove-orphans || true
-
-publish:
-	@ [[ ! -z "${DOCKER_PASSWORD}" ]] || ${WARNING} "DOCKER_PASSWORD not set"
-	@ [[ ! -z "${DOCKER_USER}" ]] || ${WARNING} "DOCKER_USER not set"
-	@ echo "${DOCKER_PASSWORD}" | docker login --username "${DOCKER_USER}" --password-stdin 2>&1
-	@ docker push ${IMAGE_REPOSITORY}:$(TAG)
-	@ docker tag ${IMAGE_REPOSITORY}:$(TAG) ${IMAGE_REPOSITORY}:latest
-	@ docker push ${IMAGE_REPOSITORY}:latest
-
-### CI Pipeline
-
-run-ci-pipeline:
-	@ if docker manifest inspect ${IMAGE_REPOSITORY}:$(TAG) > /dev/null 2>&1; then \
-		${INFO} "Docker image ${IMAGE_REPOSITORY}:$(TAG) already exists on Dockerhub! Skipping CI pipeline."; \
+build-image-cicd-if-not-exists:
+	@ if docker manifest inspect ${CICD_IMAGE_REPOSITORY}:${CICD_IMAGE_TAG} > /dev/null 2>&1; then \
+		${INFO} "Docker image ${CICD_IMAGE_REPOSITORY}:${CICD_IMAGE_TAG} already exists on Dockerhub! Not building deps."; \
+		docker pull ${CICD_IMAGE_REPOSITORY}:${CICD_IMAGE_TAG}; \
 	  else \
-	  	${INFO} "Running CI pipeline to build, test, and push docker image"; \
-	    $(MAKE) tests; \
-	  	$(MAKE) image; \
-		$(MAKE) up; \
-		$(MAKE) healthcheck; \
-		$(MAKE) down; \
-		$(MAKE) publish; \
+	  	${INFO} "Docker image ${CICD_IMAGE_REPOSITORY}:$(CICD_IMAGE_TAG) does not exist on Dockerhub! Building and publishing."; \
+		docker build -t ${CICD_IMAGE_REPOSITORY}:${CICD_IMAGE_TAG} -f .circleci/cicd.Dockerfile . ; \
 	  fi
+
+build-image-webapp-if-not-exists:
+	@ $(call \
+		run_docker_ci,ci-build-image-webapp, \
+		if docker manifest inspect ${WEBAPP_IMAGE_REPOSITORY}:${WEBAPP_IMAGE_TAG} > /dev/null 2>&1; then \
+			docker pull ${WEBAPP_IMAGE_REPOSITORY}:${WEBAPP_IMAGE_TAG}; \
+	  	else \
+			rm -rf dist; \
+			poetry build; \
+			docker build -t ${WEBAPP_IMAGE_REPOSITORY}:$(WEBAPP_IMAGE_TAG) . ; \
+	  	fi \
+	)
+
+db-up:
+	@ $(call \
+		run_docker_ci,ci-rundb, \
+		docker-compose up -d || true \
+	)
+
+lint:
+	@ $(call \
+		run_docker_ci,ci-lint, \
+		pre-commit run --all-files --show-diff-on-failure \
+	)
+
+tests: db-up
+	@ $(call \
+		run_docker_ci,ci-unit-tests, \
+		pytest app -x; coverage-badge -o .github/coverage.svg -f \
+	)
+	@ ${INFO} "Run open htmlcov/index.html to open coverage results"
+
+healthcheck: db-up
+	@ $(call \
+		run_docker_ci,ci-webapp-healthcheck, \
+		docker rm --force $$(docker ps --filter "name=webapp" -qa) 2>/dev/null || true; \
+		docker run \
+			-d --name webapp -p 8080:8080 --restart=no \
+			--network global-network \
+			--env DEBUG=True \
+			--env POSTGRES_HOST=postgres \
+			--env POSTGRES_PASSWORD=postgres \
+			--env REDIS_ENDPOINT=redis:6379 \
+			--env SNS_TOPIC_ARN= \
+			${WEBAPP_IMAGE_REPOSITORY}:${WEBAPP_IMAGE_TAG} || true; \
+		./utils/healthcheck.sh webapp; \
+	)
+
+db-down:
+	@ $(call \
+		run_docker_ci,ci-down, \
+		docker rm --force $$(docker ps --filter "name=webapp" -qa) 2>/dev/null || true; \
+		docker-compose down --remove-orphans 2>/dev/null || true \
+	)
+
+publish-images:
+	@ $(call \
+		run_docker_ci,publish-images, \
+		echo "${DOCKER_PASSWORD}" | docker login --username "${DOCKER_USER}" --password-stdin 2>&1; \
+		echo "${CICD_IMAGE_REPOSITORY}:$(CICD_IMAGE_TAG)"; \
+		docker push ${CICD_IMAGE_REPOSITORY}:$(CICD_IMAGE_TAG); \
+		docker tag ${CICD_IMAGE_REPOSITORY}:$(CICD_IMAGE_TAG) ${CICD_IMAGE_REPOSITORY}:latest; \
+		docker push ${CICD_IMAGE_REPOSITORY}:latest; \
+		docker push ${WEBAPP_IMAGE_REPOSITORY}:$(WEBAPP_IMAGE_TAG); \
+		docker tag ${WEBAPP_IMAGE_REPOSITORY}:$(WEBAPP_IMAGE_TAG) ${WEBAPP_IMAGE_REPOSITORY}:latest; \
+		docker push ${WEBAPP_IMAGE_REPOSITORY}:latest; \
+	)
+
+### CI/CD Pipeline
+
+
+put-image-name-to-ssm:
+	@ ${INFO} "Update docker image name in aws ssm parameter store: ${WEBAPP_IMAGE_REPOSITORY}:$(WEBAPP_IMAGE_TAG) (DEBUG=${DEBUG})"
+	@ aws ssm put-parameter \
+		--name "/CODEDEPLOY/DOCKER_IMAGE_NAME_DEMO" \
+		--type "String" \
+		--value "${WEBAPP_IMAGE_REPOSITORY}:latest" \
+		--overwrite >/dev/null
+	@ aws ssm put-parameter \
+		--name "/CODEDEPLOY/DEBUG_DEMO" \
+		--type "String" \
+		--value "${DEBUG}" \
+		--overwrite >/dev/null
+
+docker-ci:
+	@ $(MAKE) build-image-cicd-if-not-exists
+	@ $(MAKE) build-image-webapp-if-not-exists
+	@ $(MAKE) db-up
+	@ $(MAKE) tests
+	@ $(MAKE) lint
+	@ $(MAKE) healthcheck
+	@ $(MAKE) db-down
+	@ $(MAKE) publish-images
+	@ $(MAKE) put-image-name-to-ssm
+
 
 
 ### Development and Testing on Remote EC2 with Terraform+Ansible ###
@@ -215,8 +263,6 @@ cfn-package:
 cfn-validate: cfn-package
 	@ $(CONDA_ACTIVATE) $(CONDA_ENV_NAME)
 	@ ${INFO} "Validating CloudFormation template ${CFN_PACKAGED_TEMPLATE_FILE}"
-	@ yamllint -d "{rules: {line-length: {max: 130, level: warning}}}" "${CFN_PACKAGED_TEMPLATE_FILE}"
-	@ cfn-lint "${CFN_PACKAGED_TEMPLATE_FILE}"
 	@ aws cloudformation validate-template --template-body file://"${CFN_PACKAGED_TEMPLATE_FILE}" > /dev/null
 
 cfn-create: cfn-validate
@@ -282,20 +328,6 @@ cfn-delete-async:
 .PHONY: deploy deploy-push deploy-create deploy-get-status
 
 deploy: put-image-name-to-ssm deploy-push deploy-create deploy-get-status
-
-put-image-name-to-ssm:
-	@ $(CONDA_ACTIVATE) $(CONDA_ENV_NAME)
-	@ ${INFO} "Starting deployment of docker image ${IMAGE_REPOSITORY}:$(TAG) (DEBUG=${DEBUG})"
-	@ aws ssm put-parameter \
-		--name "/CODEDEPLOY/DOCKER_IMAGE_NAME_DEMO" \
-		--type "String" \
-		--value "${IMAGE_REPOSITORY}:$(TAG)" \
-		--overwrite >/dev/null
-	@ aws ssm put-parameter \
-		--name "/CODEDEPLOY/DEBUG_DEMO" \
-		--type "String" \
-		--value "${DEBUG}" \
-		--overwrite >/dev/null
 
 deploy-push:
 	@ $(CONDA_ACTIVATE) $(CONDA_ENV_NAME)
