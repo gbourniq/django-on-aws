@@ -115,6 +115,9 @@ build-image-cicd-if-not-exists:
 	  else \
 	  	${INFO} "Docker image ${CICD_IMAGE_REPOSITORY}:$(CICD_IMAGE_TAG) does not exist on Dockerhub! Building and publishing."; \
 		docker build -t ${CICD_IMAGE_REPOSITORY}:${CICD_IMAGE_TAG} -f .circleci/cicd.Dockerfile . ; \
+		docker push ${CICD_IMAGE_REPOSITORY}:$(CICD_IMAGE_TAG); \
+		docker tag ${CICD_IMAGE_REPOSITORY}:${CICD_IMAGE_TAG} ${CICD_IMAGE_REPOSITORY}:latest; \
+		docker push ${CICD_IMAGE_REPOSITORY}:latest; \
 	  fi
 
 build-image-webapp-if-not-exists:
@@ -175,10 +178,6 @@ publish-images:
 	@ $(call \
 		run_docker_ci,publish-images, \
 		echo "${DOCKER_PASSWORD}" | docker login --username "${DOCKER_USER}" --password-stdin 2>&1; \
-		echo "${CICD_IMAGE_REPOSITORY}:$(CICD_IMAGE_TAG)"; \
-		docker push ${CICD_IMAGE_REPOSITORY}:$(CICD_IMAGE_TAG); \
-		docker tag ${CICD_IMAGE_REPOSITORY}:$(CICD_IMAGE_TAG) ${CICD_IMAGE_REPOSITORY}:latest; \
-		docker push ${CICD_IMAGE_REPOSITORY}:latest; \
 		docker push ${WEBAPP_IMAGE_REPOSITORY}:$(WEBAPP_IMAGE_TAG); \
 		docker tag ${WEBAPP_IMAGE_REPOSITORY}:$(WEBAPP_IMAGE_TAG) ${WEBAPP_IMAGE_REPOSITORY}:latest; \
 		docker push ${WEBAPP_IMAGE_REPOSITORY}:latest; \
