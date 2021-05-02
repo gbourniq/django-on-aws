@@ -47,7 +47,7 @@ WEBAPP_IMAGE_REPOSITORY=${DOCKER_USER}/django-on-aws
 # Checksum of the application and dependencies files
 # to check if identical docker image already exists in docker repository
 CKSUM=$$(cat Dockerfile environment.yml poetry.lock $$(find ./app -type f -not -name "*.pyc" -not -name "*.log") | cksum | cut -c -8)
-WEBAPP_IMAGE_TAG=$$(shell poetry version | awk '{print $$NF}')-$(CKSUM)
+WEBAPP_IMAGE_TAG=$$(awk '/^version/' pyproject.toml | sed 's/[^0-9\.]//g')-$(CKSUM)
 DEBUG=False
 CODEDEPLOY_APP_DIR=${PROD_DEPLOYMENT_DIR}/codedeploy-app
 
