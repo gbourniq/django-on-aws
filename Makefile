@@ -122,7 +122,7 @@ build-image-cicd-if-not-exists:
 	  fi
 
 build-image-webapp-if-not-exists:
-	@ $(call \
+	$(call \
 		run_docker_ci,ci-build-image-webapp, \
 		if docker manifest inspect ${WEBAPP_IMAGE_REPOSITORY}:${WEBAPP_IMAGE_TAG} > /dev/null 2>&1; then \
 			docker pull ${WEBAPP_IMAGE_REPOSITORY}:${WEBAPP_IMAGE_TAG}; \
