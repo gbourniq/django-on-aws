@@ -115,6 +115,7 @@ build-image-cicd-if-not-exists:
 	  else \
 	  	${INFO} "Docker image ${CICD_IMAGE_REPOSITORY}:$(CICD_IMAGE_TAG) does not exist on Dockerhub! Building and publishing."; \
 		docker build -t ${CICD_IMAGE_REPOSITORY}:${CICD_IMAGE_TAG} -f .circleci/cicd.Dockerfile . ; \
+		echo "${DOCKER_PASSWORD}" | docker login --username "${DOCKER_USER}" --password-stdin 2>&1; \
 		docker push ${CICD_IMAGE_REPOSITORY}:$(CICD_IMAGE_TAG); \
 		docker tag ${CICD_IMAGE_REPOSITORY}:${CICD_IMAGE_TAG} ${CICD_IMAGE_REPOSITORY}:latest; \
 		docker push ${CICD_IMAGE_REPOSITORY}:latest; \
