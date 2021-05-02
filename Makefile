@@ -125,7 +125,7 @@ build-image-webapp-if-not-exists:
 	  	else \
 			rm -rf dist; \
 			poetry build; \
-			docker build -t ${WEBAPP_IMAGE_REPOSITORY}:$(WEBAPP_IMAGE_TAG) . ; \
+			docker build -t ${WEBAPP_IMAGE_REPOSITORY}:${WEBAPP_IMAGE_TAG} . ; \
 	  	fi \
 	)
 
