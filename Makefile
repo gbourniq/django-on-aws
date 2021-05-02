@@ -109,7 +109,8 @@ run_docker_ci = { \
 }
 
 build-image-cicd-if-not-exists:
-	@ if docker manifest inspect ${CICD_IMAGE_REPOSITORY}:${CICD_IMAGE_TAG} > /dev/null 2>&1; then \
+	@ export DOCKER_CLI_EXPERIMENTAL=enabled
+	@ if docker manifest inspect ${CICD_IMAGE_REPOSITORY}:${CICD_IMAGE_TAG}; then \
 		${INFO} "Docker image ${CICD_IMAGE_REPOSITORY}:${CICD_IMAGE_TAG} already exists on Dockerhub! Not building deps."; \
 		docker pull ${CICD_IMAGE_REPOSITORY}:${CICD_IMAGE_TAG}; \
 	  else \
