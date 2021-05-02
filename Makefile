@@ -91,7 +91,7 @@ runserver:
 	python app/manage.py migrate --run-syncdb
 	python app/manage.py runserver 0.0.0.0:8080
 
-### Containerised testing ###
+### Containerised testing and CI/CD ###
 .PHONY: build-image-cicd-if-not-exists build-image-webapp-if-not-exists db-up lint tests healthcheck db-down
 
 # global-network so that db containers and webapp container can communicate
@@ -102,6 +102,9 @@ run_docker_ci = { \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v $$(pwd):/root/cicd/ \
 		--network global-network \
+		-e AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION} \
+		-e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} \
+		-e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} \
 		${CICD_IMAGE_REPOSITORY}:${CICD_IMAGE_TAG} bash -c "$(2)"; \
 }
 
@@ -181,34 +184,21 @@ publish-images:
 		docker push ${WEBAPP_IMAGE_REPOSITORY}:latest; \
 	)
 
-### CI/CD Pipeline
-
-
 put-image-name-to-ssm:
-	@ ${INFO} "Update docker image name in aws ssm parameter store: ${WEBAPP_IMAGE_REPOSITORY}:$(WEBAPP_IMAGE_TAG) (DEBUG=${DEBUG})"
-	@ aws ssm put-parameter \
-		--name "/CODEDEPLOY/DOCKER_IMAGE_NAME_DEMO" \
-		--type "String" \
-		--value "${WEBAPP_IMAGE_REPOSITORY}:latest" \
-		--overwrite >/dev/null
-	@ aws ssm put-parameter \
-		--name "/CODEDEPLOY/DEBUG_DEMO" \
-		--type "String" \
-		--value "${DEBUG}" \
-		--overwrite >/dev/null
-
-docker-ci:
-	@ $(MAKE) build-image-cicd-if-not-exists
-	@ $(MAKE) build-image-webapp-if-not-exists
-	@ $(MAKE) db-up
-	@ $(MAKE) tests
-	@ $(MAKE) lint
-	@ $(MAKE) healthcheck
-	@ $(MAKE) db-down
-	@ $(MAKE) publish-images
-	@ $(MAKE) put-image-name-to-ssm
-
-
+	@ ${INFO} "Update docker image name in aws ssm parameter store: (IMAGE=${WEBAPP_IMAGE_REPOSITORY}:latest; DEBUG=${DEBUG})"
+	@ $(call \
+		run_docker_ci,put-image-name-to-ssm, \
+		aws ssm put-parameter \
+			--name "/CODEDEPLOY/DOCKER_IMAGE_NAME_DEMO" \
+			--type "String" \
+			--value "${WEBAPP_IMAGE_REPOSITORY}:latest" \
+			--overwrite >/dev/null; \
+		aws ssm put-parameter \
+			--name "/CODEDEPLOY/DEBUG_DEMO" \
+			--type "String" \
+			--value "${DEBUG}" \
+			--overwrite >/dev/null \
+	)
 
 ### Development and Testing on Remote EC2 with Terraform+Ansible ###
 .PHONY: create-and-deploy-to-ec2 destroy-ec2
