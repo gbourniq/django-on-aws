@@ -25,57 +25,37 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Install Packages
-          command: sudo apt update; sudo apt-get install -y jq curl wget gcc libpq-dev python3-dev
+          name: "Build CI/CD docker image"
+          command: set -e; make build-image-cicd-if-not-exists
       - run:
-          name: Set Conda and Poetry paths
-          command: echo "export PATH=$HOME/miniconda/bin:$HOME/.poetry/bin:$PATH" >> $BASH_ENV
-      - restore_cache:
-          keys:
-            - libs-{{ checksum "poetry.lock" }}
+          name: "Build webapp docker image"
+          command: set -e; make build-image-webapp-if-not-exists
       - run:
-          name: Install Miniconda
-          command: |
-            if [ ! -d "$HOME/miniconda" ]; then
-              wget "https://repo.anaconda.com/miniconda/Miniconda3-4.7.10-Linux-x86_64.sh" -O $HOME/miniconda.sh
-              printf '%s' "8a324adcc9eaf1c09e22a992bb6234d91a94146840ee6b11c114ecadafc68121  $HOME/miniconda.sh" | sha256sum -c
-              bash $HOME/miniconda.sh -b -p $HOME/miniconda
-            else
-                echo "Miniconda is already installed, continuing to build."
-            fi
+          name: "Run postgres and redis databases"
+          command: set -e; make db-up
       - run:
-          name: Install Poetry
-          command: curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
+          name: "Run unit tests"
+          command: set -e; make tests
       - run:
-          name: Install dependencies
-          command: |
-            set -e
-            conda update -y conda
-            if ! conda info --envs | grep django-on-aws; then
-              make env
-            else
-              echo "conda environment django-on-aws already exists"
-            fi
-      - save_cache:
-          paths:
-            - /home/circleci/miniconda/
-            - /home/circleci/.poetry/
-          key: libs-{{ checksum "poetry.lock" }}
+          name: "Run pre commit hooks (linting)"
+          command: set -e; make lint
       - run:
-          name: "Run ci pipeline: unit-tests, lint, docker build, test, and push"
-          command: set -e; make run-ci-pipeline
+          name: "Run webapp container and check health"
+          command: set -e; make healthcheck
+      - run:
+          name: "Stop and remove database containers"
+          command: set -e; make db-down
+      - run:
+          name: "Publish images to Dockerhub"
+          command: set -e; make publish-images
+      - run:
+          name: "Push variables to ssm paramter store for CD pipeline"
+          command: set -e; make put-image-name-to-ssm
   cd-pipeline:
     machine:
       image: ubuntu-2004:202010-01
     steps:
       - checkout
-      - run:
-          name: Set Conda and Poetry paths
-          command: echo "export PATH=$HOME/miniconda/bin:$HOME/.poetry/bin:$PATH" >> $BASH_ENV
-      # Restore conda and poetry environment
-      - restore_cache:
-          keys:
-            - libs-{{ checksum "poetry.lock" }}
       - run:
           name: Create AWS infrastructure
           no_output_timeout: 30m
