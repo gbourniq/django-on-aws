@@ -51,6 +51,10 @@ jobs:
       - run:
           name: "Push variables to ssm paramter store for CD pipeline"
           command: set -e; make put-image-name-to-ssm
+      - run:
+          name: Validate AWS infrastructure
+          no_output_timeout: 30m
+          command: set -e; ENVIRONMENT=dev make cfn-validate
   cd-pipeline:
     machine:
       image: ubuntu-2004:202010-01

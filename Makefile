@@ -202,59 +202,65 @@ put-image-name-to-ssm:
 	)
 
 ### Development and Testing on Remote EC2 with Terraform+Ansible ###
+### View ./deployment/dev/README.md for setup instructions 
 .PHONY: create-and-deploy-to-ec2 destroy-ec2
 
 create-instances:
-	cd "${TF_DIR}"
-	TF_LOG_PATH=$(TF_LOG_PATH)
-	TF_LOG=$(TF_LOG)
-	terraform init
-	terraform fmt -recursive
-	terraform validate
-	terraform plan -out=./.terraform/terraform_plan
-	terraform apply ./.terraform/terraform_plan
+	@ $(call \
+		run_docker_ci,create-instances, \
+		cd "${TF_DIR}"; \
+		TF_LOG_PATH=$(TF_LOG_PATH); \
+		TF_LOG=$(TF_LOG); \
+		terraform init; \
+		terraform fmt -recursive; \
+		terraform validate; \
+		terraform plan -out=./.terraform/terraform_plan; \
+		terraform apply ./.terraform/terraform_plan; \
+	)
 
 provision-instances:
 	@ ${INFO} "Git clone repository and start dockerised application to created instances with Ansible"
-	export ANSIBLE_HOST_KEY_CHECKING=$(ANSIBLE_HOST_KEY_CHECKING)
-	export ANSIBLE_HOST_KEY_CHECKING=$(ANSIBLE_HOST_KEY_CHECKING)
-	export ANSIBLE_VAULT_PASSWORD_FILE=$(ANSIBLE_VAULT_PASSWORD_FILE)
-	export ANSIBLE_GIT_REPO_NAME=$(ANSIBLE_GIT_REPO_NAME)
-	export ANSIBLE_GIT_BRANCH_NAME=$(ANSIBLE_GIT_BRANCH_NAME)
-	export ANSIBLE_PYTHON_VERSION=$(ANSIBLE_PYTHON_VERSION)
-	export DOCKER_USER=$(DOCKER_USER)
-	ansible-playbook -i "${ANSIBLE_DIR}/inventories" "${ANSIBLE_DIR}/staging.yaml" -vv --timeout 60
-
-show-urls:
-	@ ${INFO} "Public URL(s) where the app is running"
-	@ cd "${TF_DIR}"; terraform output public_ips
-
-deploy-to-dev-instances:
-	@ $(MAKE) create-instances
-	@ $(MAKE) provision-instances
-	@ $(MAKE) show-urls
-	@ ${INFO} "Run make destroy-instances to clean up"
+	@ $(call \
+		run_docker_ci,provision-instances, \
+		export ANSIBLE_HOST_KEY_CHECKING=$(ANSIBLE_HOST_KEY_CHECKING); \
+		export ANSIBLE_HOST_KEY_CHECKING=$(ANSIBLE_HOST_KEY_CHECKING); \
+		export ANSIBLE_VAULT_PASSWORD_FILE=$(ANSIBLE_VAULT_PASSWORD_FILE); \
+		export ANSIBLE_GIT_REPO_NAME=$(ANSIBLE_GIT_REPO_NAME); \
+		export ANSIBLE_GIT_BRANCH_NAME=$(ANSIBLE_GIT_BRANCH_NAME); \
+		export ANSIBLE_PYTHON_VERSION=$(ANSIBLE_PYTHON_VERSION); \
+		export DOCKER_USER=$(DOCKER_USER); \
+		ansible-playbook -i "${ANSIBLE_DIR}/inventories" "${ANSIBLE_DIR}/staging.yaml" -vv --timeout 60; \
+		cd "${TF_DIR}"; terraform output public_ips; \
+	)	
 
 destroy-instances:
 	@ ${INFO} "Destroying all infrastructure created by Terraform"
-	@ cd "${TF_DIR}"; terraform destroy --auto-approve
+	@ $(call \
+		run_docker_ci,destroy-instances, \
+		cd "${TF_DIR}"; terraform destroy --auto-approve; \
+	)
 
 
 ### Infrastructure ###
 .PHONY: cfn-validate cfn-create cfn-update cfn-delete
 
 cfn-package:
-	@ $(CONDA_ACTIVATE) $(CONDA_ENV_NAME)
 	@ ${INFO} "Packaging nested CloudFormation templates into ${CFN_PACKAGED_TEMPLATE_FILE}"
-	@ aws cloudformation package \
-		--template-file ${CFN_PARENT_TEMPLATE_FILE} \
-		--output-template ${CFN_PACKAGED_TEMPLATE_FILE} \
-		--s3-bucket ${S3_BUCKET_NAME_CFN_TEMPLATES}
+	@ $(call \
+		run_docker_ci,cfn-package, \
+		aws cloudformation package \
+			--template-file ${CFN_PARENT_TEMPLATE_FILE} \
+			--output-template ${CFN_PACKAGED_TEMPLATE_FILE} \
+			--s3-bucket ${S3_BUCKET_NAME_CFN_TEMPLATES}; \
+	)
 
 cfn-validate: cfn-package
-	@ $(CONDA_ACTIVATE) $(CONDA_ENV_NAME)
 	@ ${INFO} "Validating CloudFormation template ${CFN_PACKAGED_TEMPLATE_FILE}"
-	@ aws cloudformation validate-template --template-body file://"${CFN_PACKAGED_TEMPLATE_FILE}" > /dev/null
+	@ $(call \
+		run_docker_ci,cfn-package, \
+		aws cloudformation validate-template \
+			--template-body file://"${CFN_PACKAGED_TEMPLATE_FILE}" > /dev/null; \
+	)
 
 cfn-create: cfn-validate
 	@ $(CONDA_ACTIVATE) $(CONDA_ENV_NAME)
