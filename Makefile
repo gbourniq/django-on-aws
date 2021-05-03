@@ -10,11 +10,6 @@ CONDA_ENV_NAME=django-on-aws
 CONDA_CREATE=source $$(conda info --base)/etc/profile.d/conda.sh ; conda env create
 CONDA_ACTIVATE=source $$(conda info --base)/etc/profile.d/conda.sh ; conda activate
 
-# CI/CD docker image
-DOCKER_USER=gbournique
-CICD_IMAGE_REPOSITORY=${DOCKER_USER}/cicd-with-deps
-CICD_IMAGE_TAG=$$(cat environment.yml poetry.lock | cksum | cut -c -8)
-
 # Terraform to create ec2 instances
 TF_DIR=./deployment/dev/terraform
 TF_LOG_PATH=./terraform-crash.log
@@ -43,12 +38,6 @@ TAG_EMAIL="gbournique.dev1@gmail.com"
 TAG_MODIFIED_DATE="$$(date +%F_%T)"
 
 # Deployment
-WEBAPP_IMAGE_REPOSITORY=${DOCKER_USER}/django-on-aws
-# Checksum of the application and dependencies files
-# to check if identical docker image already exists in docker repository
-CKSUM=$$(cat Dockerfile environment.yml poetry.lock $$(find ./app -type f -not -name "*.pyc" -not -name "*.log") | cksum | cut -c -8)
-WEBAPP_IMAGE_TAG=$$(awk '/^version/' pyproject.toml | sed 's/[^0-9\.]//g')-$(CKSUM)
-DEBUG=False
 CODEDEPLOY_APP_DIR=${PROD_DEPLOYMENT_DIR}/codedeploy-app
 
 # Database
@@ -93,113 +82,8 @@ runserver:
 
 ### Containerised testing and CI/CD ###
 .PHONY: build-image-cicd-if-not-exists build-image-webapp-if-not-exists db-up lint tests healthcheck db-down
+#####
 
-# global-network so that db containers and webapp container can communicate
-run_docker_ci = { \
-	docker network create global-network 2>/dev/null || true; \
-	docker run \
-		-it --rm --name "$(1)" \
-		-v /var/run/docker.sock:/var/run/docker.sock \
-		-v $$(pwd):/root/cicd/ \
-		--network global-network \
-		-e AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION} \
-		-e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} \
-		-e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} \
-		${CICD_IMAGE_REPOSITORY}:${CICD_IMAGE_TAG} bash -c "$(2)"; \
-}
-
-build-image-cicd-if-not-exists:
-	@ export DOCKER_CLI_EXPERIMENTAL=enabled
-	@ if docker manifest inspect ${CICD_IMAGE_REPOSITORY}:${CICD_IMAGE_TAG}; then \
-		${INFO} "Docker image ${CICD_IMAGE_REPOSITORY}:${CICD_IMAGE_TAG} already exists on Dockerhub! Not building deps."; \
-		docker pull ${CICD_IMAGE_REPOSITORY}:${CICD_IMAGE_TAG}; \
-	  else \
-	  	${INFO} "Docker image ${CICD_IMAGE_REPOSITORY}:$(CICD_IMAGE_TAG) does not exist on Dockerhub! Building and publishing."; \
-		docker build -t ${CICD_IMAGE_REPOSITORY}:${CICD_IMAGE_TAG} -f .circleci/cicd.Dockerfile . ; \
-		echo "${DOCKER_PASSWORD}" | docker login --username "${DOCKER_USER}" --password-stdin 2>&1; \
-		docker push ${CICD_IMAGE_REPOSITORY}:$(CICD_IMAGE_TAG); \
-		docker tag ${CICD_IMAGE_REPOSITORY}:${CICD_IMAGE_TAG} ${CICD_IMAGE_REPOSITORY}:latest; \
-		docker push ${CICD_IMAGE_REPOSITORY}:latest; \
-	  fi
-
-build-image-webapp-if-not-exists:
-	$(call \
-		run_docker_ci,ci-build-image-webapp, \
-		if docker manifest inspect ${WEBAPP_IMAGE_REPOSITORY}:${WEBAPP_IMAGE_TAG} > /dev/null 2>&1; then \
-			docker pull ${WEBAPP_IMAGE_REPOSITORY}:${WEBAPP_IMAGE_TAG}; \
-	  	else \
-			rm -rf dist; \
-			poetry build; \
-			docker build -t ${WEBAPP_IMAGE_REPOSITORY}:${WEBAPP_IMAGE_TAG} . ; \
-	  	fi \
-	)
-
-db-up:
-	@ $(call \
-		run_docker_ci,ci-rundb, \
-		docker-compose up -d || true \
-	)
-
-lint:
-	@ $(call \
-		run_docker_ci,ci-lint, \
-		pre-commit run --all-files --show-diff-on-failure \
-	)
-
-tests: db-up
-	@ $(call \
-		run_docker_ci,ci-unit-tests, \
-		pytest app -x; coverage-badge -o .github/coverage.svg -f \
-	)
-	@ ${INFO} "Run open htmlcov/index.html to open coverage results"
-
-healthcheck: db-up
-	@ $(call \
-		run_docker_ci,ci-webapp-healthcheck, \
-		docker rm --force $$(docker ps --filter "name=webapp" -qa) 2>/dev/null || true; \
-		docker run \
-			-d --name webapp -p 8080:8080 --restart=no \
-			--network global-network \
-			--env DEBUG=True \
-			--env POSTGRES_HOST=postgres \
-			--env POSTGRES_PASSWORD=postgres \
-			--env REDIS_ENDPOINT=redis:6379 \
-			--env SNS_TOPIC_ARN= \
-			${WEBAPP_IMAGE_REPOSITORY}:${WEBAPP_IMAGE_TAG} || true; \
-		./utils/healthcheck.sh webapp; \
-	)
-
-db-down:
-	@ $(call \
-		run_docker_ci,ci-down, \
-		docker rm --force $$(docker ps --filter "name=webapp" -qa) 2>/dev/null || true; \
-		docker-compose down --remove-orphans 2>/dev/null || true \
-	)
-
-publish-images:
-	@ $(call \
-		run_docker_ci,publish-images, \
-		echo "${DOCKER_PASSWORD}" | docker login --username "${DOCKER_USER}" --password-stdin 2>&1; \
-		docker push ${WEBAPP_IMAGE_REPOSITORY}:$(WEBAPP_IMAGE_TAG); \
-		docker tag ${WEBAPP_IMAGE_REPOSITORY}:$(WEBAPP_IMAGE_TAG) ${WEBAPP_IMAGE_REPOSITORY}:latest; \
-		docker push ${WEBAPP_IMAGE_REPOSITORY}:latest; \
-	)
-
-put-image-name-to-ssm:
-	@ ${INFO} "Update docker image name in aws ssm parameter store: (IMAGE=${WEBAPP_IMAGE_REPOSITORY}:latest; DEBUG=${DEBUG})"
-	@ $(call \
-		run_docker_ci,put-image-name-to-ssm, \
-		aws ssm put-parameter \
-			--name "/CODEDEPLOY/DOCKER_IMAGE_NAME_DEMO" \
-			--type "String" \
-			--value "${WEBAPP_IMAGE_REPOSITORY}:latest" \
-			--overwrite >/dev/null; \
-		aws ssm put-parameter \
-			--name "/CODEDEPLOY/DEBUG_DEMO" \
-			--type "String" \
-			--value "${DEBUG}" \
-			--overwrite >/dev/null \
-	)
 
 ### Development and Testing on Remote EC2 with Terraform+Ansible ###
 ### View ./deployment/dev/README.md for setup instructions 

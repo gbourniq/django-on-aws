@@ -25,36 +25,29 @@ jobs:
     steps:
       - checkout
       - run:
-          name: "Build CI/CD docker image"
-          command: set -e; make build-image-cicd-if-not-exists
-      - run:
-          name: "Build webapp docker image"
-          command: set -e; make build-image-webapp-if-not-exists
+          name: "Build CI/CD and webapp docker image"
+          command: ./cicd.sh build_docker_images
       - run:
           name: "Run postgres and redis databases"
-          command: set -e; make db-up
+          command: ./cicd.sh start_db
       - run:
           name: "Run unit tests"
-          command: set -e; make tests
+          command: ./cicd.sh unit_tests
       - run:
           name: "Run pre commit hooks (linting)"
-          command: set -e; make lint
+          command: ./cicd.sh lint
       - run:
           name: "Run webapp container and check health"
-          command: set -e; make healthcheck
+          command: ./cicd.sh healthcheck
       - run:
           name: "Stop and remove database containers"
-          command: set -e; make db-down
+          command: ./cicd.sh down
       - run:
           name: "Publish images to Dockerhub"
-          command: set -e; make publish-images
+          command: ./cicd.sh publish_images
       - run:
           name: "Push variables to ssm paramter store for CD pipeline"
-          command: set -e; make put-image-name-to-ssm
-      - run:
-          name: Validate AWS infrastructure
-          no_output_timeout: 30m
-          command: set -e; ENVIRONMENT=dev make cfn-validate
+          command: ./cicd.sh put_ssm_parameters
   cd-pipeline:
     machine:
       image: ubuntu-2004:202010-01
