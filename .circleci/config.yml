@@ -40,8 +40,8 @@ jobs:
           name: "Run webapp container and check health"
           command: ./cicd.sh healthcheck
       - run:
-          name: "Stop and remove database containers"
-          command: ./cicd.sh down
+          name: "Stop and remove all containers"
+          command: ./cicd.sh clean
       - run:
           name: "Publish images to Dockerhub"
           command: ./cicd.sh publish_images

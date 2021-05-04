@@ -136,7 +136,7 @@ up()
 
 down()
 {
-	docker-ci docker rm --force $(docker ps --filter name=${WEBAPP_CONTAINER_NAME} -qa) >/dev/null 2>&1
+	docker-ci docker rm --force $(docker ps --filter name=${WEBAPP_CONTAINER_NAME} -qa) >/dev/null 2>&1 || true
 }
 
 
@@ -240,7 +240,7 @@ if [[ -n $1 ]]; then
 			stop_db
 			exit 0
 			;;
-		down)
+		clean)
 			printf "🧹  Stopping and removing all containers...\n"
 			set_common_env_variables
 			stop_db
