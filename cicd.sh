@@ -44,7 +44,9 @@ check_required_env_variables()
 }
 set_common_env_variables()
 {
+	# Docker (experimental cli to use docker manifest)
 	export DOCKER_USER=gbournique
+    export DOCKER_CLI_EXPERIMENTAL=enabled
 
 	# CI/CD docker image
 	export CICD_IMAGE_TAG=$(cat environment.yml poetry.lock | cksum | cut -c -8)
