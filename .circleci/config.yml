@@ -26,7 +26,7 @@ jobs:
       - checkout
       - run:
           name: "Build CI/CD and webapp docker image"
-          command: ./cicd.sh build_docker_images
+          command: ./cicd.sh build
       - run:
           name: "Run postgres and redis databases"
           command: ./cicd.sh start_db
@@ -44,10 +44,10 @@ jobs:
           command: ./cicd.sh clean
       - run:
           name: "Publish images to Dockerhub"
-          command: ./cicd.sh publish_images
+          command: ./cicd.sh push_images
       - run:
           name: "Push variables to ssm paramter store for CD pipeline"
-          command: ./cicd.sh put_ssm_parameters
+          command: ./cicd.sh put_ssm_vars
   cd-pipeline:
     machine:
       image: ubuntu-2004:202010-01

@@ -11,7 +11,7 @@ script_name="$(basename -- "$0")"
 trap err_exit ERR
 
 err_exit () {
-	echo "echo ⚠️  Something went wrong! Tidying up..."
+	echo "echo ⚠️ Something went wrong! Tidying up..."
 	stop_db
 	down
 	exit 1
@@ -22,20 +22,20 @@ help_text()
     echo ""
     echo "Usage:        ./$script_name COMMAND"
     echo ""
-    echo "Helper script to run and manage the ancillary services that Eigen relies on."
-    echo "Docker and Docker-compose are used to supply these services and run them as containers."
+    echo "Helper script to run and manage the scripts invoked by the CI/CD pipeline."
     echo ""
     echo "Available Commands:"
-    echo "  build       Build the services"
-    echo "  start       Start the services"
-    echo "  stop        Stop the services"
-    echo "  restart     Restart the services"
-    echo "  status      Display the status of the running services for this project"
-    echo "  clean       Stop and remove any containers related to this project which may have turned into zombies"
-    echo "  nuke        Remove any docker volumes related to this project"
-    echo "  teamcity    Print the 'setParameter' strings that TeamCity uses to set parameters in a build config"
+    echo "  build         🔨 Build cicd and webapp docker images"
+    echo "  start_db      🟢  Start redis and postgres containers"
+    echo "  stop_db       🔴 Stop redis and postgres containers"
+    echo "  up            🆙 Start webapp container"
+    echo "  unit_tests    🕵  Run unit tests"
+    echo "  lint          ✨ Run pre-commit hooks (linting)"
+    echo "  healthcheck   🚑 Check webapp container health"
+    echo "  push_images   🐳 Publish images to Dockerhub"
+    echo "  put_ssm_vars  ☁️  Update AWS ssm parameters"
+    echo "  run_ci        🚀 Run CI pipeline steps (for local troubleshooting)"
 }
-
 
 check_required_env_variables()
 {
@@ -50,6 +50,7 @@ check_required_env_variables()
         var_not_set "DOCKER_PASSWORD"
     fi
 }
+
 set_common_env_variables()
 {
 	# Docker (experimental cli to use docker manifest)
@@ -147,7 +148,6 @@ down()
 	docker-ci docker rm --force $(docker ps --filter name=${WEBAPP_CONTAINER_NAME} -qa) >/dev/null 2>&1 || true
 }
 
-
 healthcheck()
 {
 	get_service_health() {
@@ -195,31 +195,37 @@ put_ssm_parameter_str()
 				  --overwrite >/dev/null; \
 }
 
-
+# Script starting point
 if [[ -n $1 ]]; then
 	case "$1" in
-		build_docker_images)
-			printf "🔨  Building cicd and webapp docker images...\n"
+		build)
+			printf "🔨 Building cicd and webapp docker images...\n"
 			set_common_env_variables
 			build_cicd_image
 			build_webapp_image
 			exit 0
 			;;
 		start_db)
-			printf "🐳  Starting redis and postgres containers...\n"
+			printf "🐳 Starting redis and postgres containers...\n"
 			set_common_env_variables
 			start_db
 			exit 0
 			;;
+		stop_db)
+			printf "🔥🚒 Stopping redis and postgres containers...\n"
+			set_common_env_variables
+			stop_db
+			exit 0
+			;;
 		up)
-			printf "🐳  Starting webapp container...\n"
+			printf "🐳 Starting webapp container...\n"
 			set_common_env_variables
 			start_db
 			up
 			exit 0
 			;;
 		unit_tests)
-			printf "🔎🕵  Running unit tests...\n"
+			printf "🔎🕵 Running unit tests...\n"
 			set_common_env_variables
 			start_db
 			unit_tests
@@ -227,13 +233,13 @@ if [[ -n $1 ]]; then
 			exit 0
 			;;
 		lint)
-			printf "🚨✨  Running pre-commit hooks (linting)...\n"
+			printf "🚨✨ Running pre-commit hooks (linting)...\n"
 			set_common_env_variables
 			lint
 			exit 0
 			;;
 		healthcheck)
-			printf "👨‍⚕🚑  Checking webapp container health...\n"
+			printf "👨‍⚕🚑 Checking webapp container health...\n"
 			set_common_env_variables
 			start_db
 			up
@@ -242,35 +248,29 @@ if [[ -n $1 ]]; then
 			stop_db
 			exit 0
 			;;
-		stop_db)
-			printf "🔥🚒  Stopping redis and postgres containers...\n"
-			set_common_env_variables
-			stop_db
-			exit 0
-			;;
 		clean)
-			printf "🧹  Stopping and removing all containers...\n"
+			printf "🧹 Stopping and removing all containers...\n"
 			set_common_env_variables
 			stop_db
 			down
 			exit 0
 			;;
-		publish_images)
+		push_images)
 			printf "🐳 Publishing images to Dockerhub...\n"
 			set_common_env_variables
 			publish_image ${WEBAPP_IMAGE_REPOSITORY} ${WEBAPP_IMAGE_TAG}
 			publish_image ${CICD_IMAGE_REPOSITORY} ${CICD_IMAGE_TAG}
 			exit 0
 			;;
-		put_ssm_parameters)
-			printf "☁️  Updating AWS ssm parameters...\n"
+		put_ssm_vars)
+			printf "☁️ Updating AWS ssm parameters...\n"
 			set_common_env_variables
 			put_ssm_parameter_str "/CODEDEPLOY/DOCKER_IMAGE_NAME_DEMO" "${WEBAPP_IMAGE_REPOSITORY}:latest"
 			put_ssm_parameter_str "/CODEDEPLOY/DEBUG_DEMO" "${DEBUG}"
 			exit 0
 			;;
 		run_ci)
-			printf "🚀  Running CI pipeline steps (for local troubleshooting)...\n"
+			printf "🚀 Running CI pipeline steps (for local troubleshooting)...\n"
 			set_common_env_variables
 			build_cicd_image
 			build_webapp_image
