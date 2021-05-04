@@ -26,28 +26,28 @@ jobs:
       - checkout
       - run:
           name: "Build CI/CD and webapp docker image"
-          command: ./cicd.sh build
+          command: ./ci.sh build
       - run:
           name: "Run postgres and redis databases"
-          command: ./cicd.sh start_db
+          command: ./ci.sh start_db
       - run:
           name: "Run unit tests"
-          command: ./cicd.sh unit_tests
+          command: ./ci.sh unit_tests
       - run:
           name: "Run pre commit hooks (linting)"
-          command: ./cicd.sh lint
+          command: ./ci.sh lint
       - run:
           name: "Run webapp container and check health"
-          command: ./cicd.sh healthcheck
+          command: ./ci.sh healthcheck
       - run:
           name: "Stop and remove all containers"
-          command: ./cicd.sh clean
+          command: ./ci.sh clean
       - run:
           name: "Publish images to Dockerhub"
-          command: ./cicd.sh push_images
+          command: ./ci.sh push_images
       - run:
           name: "Push variables to ssm paramter store for CD pipeline"
-          command: ./cicd.sh put_ssm_vars
+          command: ./ci.sh put_ssm_vars
   cd-pipeline:
     machine:
       image: ubuntu-2004:202010-01

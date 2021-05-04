@@ -22,10 +22,10 @@ help_text()
     echo ""
     echo "Usage:        ./$script_name COMMAND"
     echo ""
-    echo "Helper script to run and manage the scripts invoked by the CI/CD pipeline."
+    echo "Helper script to run and manage the scripts invoked by the CI pipeline."
     echo ""
     echo "Available Commands:"
-    echo "  build         🔨 Build cicd and webapp docker images"
+    echo "  build         🔨 Build ci and webapp docker images"
     echo "  start_db      🟢  Start redis and postgres containers"
     echo "  stop_db       🔴 Stop redis and postgres containers"
     echo "  up            🆙 Start webapp container"
@@ -34,7 +34,7 @@ help_text()
     echo "  healthcheck   🚑 Check webapp container health"
     echo "  push_images   🐳 Publish images to Dockerhub"
     echo "  put_ssm_vars  ☁️  Update AWS ssm parameters"
-    echo "  run_ci        🚀 Run CI pipeline steps (for local troubleshooting)"
+    echo "  run           🚀 Run all CI steps (for local troubleshooting)"
 }
 
 check_required_env_variables()
@@ -58,8 +58,8 @@ set_common_env_variables()
     export DOCKER_CLI_EXPERIMENTAL=enabled
 
 	# CI/CD docker image
-	export CICD_IMAGE_TAG=$(cat environment.yml poetry.lock | cksum | cut -c -8)
-	export CICD_IMAGE_REPOSITORY=${DOCKER_USER}/cicd-with-deps
+	export CI_IMAGE_TAG=$(cat environment.yml poetry.lock | cksum | cut -c -8)
+	export CI_IMAGE_REPOSITORY=${DOCKER_USER}/cicd-with-deps
 
 	# Webapp docker image
 	WEBAPP_DEPENDENCIES_FILES=(\
@@ -86,16 +86,16 @@ docker-ci() {
 		-e AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION} \
 		-e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} \
 		-e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} \
-		${CICD_IMAGE_REPOSITORY}:${CICD_IMAGE_TAG} bash -c "$*"
+		${CI_IMAGE_REPOSITORY}:${CI_IMAGE_TAG} bash -c "$*"
 }
 
-build_cicd_image() {
-	printf "Building cicd docker image ${CICD_IMAGE_REPOSITORY}:${CICD_IMAGE_TAG}...\n"
-	if docker manifest inspect ${CICD_IMAGE_REPOSITORY}:${CICD_IMAGE_TAG} >/dev/null 2>&1; then
-		echo Docker image ${CICD_IMAGE_REPOSITORY}:${CICD_IMAGE_TAG} already exists on Dockerhub! Not building.
-		docker pull ${CICD_IMAGE_REPOSITORY}:${CICD_IMAGE_TAG}
+build_ci_image() {
+	printf "Building ci docker image ${CI_IMAGE_REPOSITORY}:${CI_IMAGE_TAG}...\n"
+	if docker manifest inspect ${CI_IMAGE_REPOSITORY}:${CI_IMAGE_TAG} >/dev/null 2>&1; then
+		echo Docker image ${CI_IMAGE_REPOSITORY}:${CI_IMAGE_TAG} already exists on Dockerhub! Not building.
+		docker pull ${CI_IMAGE_REPOSITORY}:${CI_IMAGE_TAG}
 	else \
-		docker build -t ${CICD_IMAGE_REPOSITORY}:${CICD_IMAGE_TAG} -f .circleci/cicd.Dockerfile .
+		docker build -t ${CI_IMAGE_REPOSITORY}:${CI_IMAGE_TAG} -f .circleci/cicd.Dockerfile .
 	fi
 }
 
@@ -199,9 +199,9 @@ put_ssm_parameter_str()
 if [[ -n $1 ]]; then
 	case "$1" in
 		build)
-			printf "🔨 Building cicd and webapp docker images...\n"
+			printf "🔨 Building ci and webapp docker images...\n"
 			set_common_env_variables
-			build_cicd_image
+			build_ci_image
 			build_webapp_image
 			exit 0
 			;;
@@ -259,7 +259,7 @@ if [[ -n $1 ]]; then
 			printf "🐳 Publishing images to Dockerhub...\n"
 			set_common_env_variables
 			publish_image ${WEBAPP_IMAGE_REPOSITORY} ${WEBAPP_IMAGE_TAG}
-			publish_image ${CICD_IMAGE_REPOSITORY} ${CICD_IMAGE_TAG}
+			publish_image ${CI_IMAGE_REPOSITORY} ${CI_IMAGE_TAG}
 			exit 0
 			;;
 		put_ssm_vars)
@@ -269,10 +269,10 @@ if [[ -n $1 ]]; then
 			put_ssm_parameter_str "/CODEDEPLOY/DEBUG_DEMO" "${DEBUG}"
 			exit 0
 			;;
-		run_ci)
+		run)
 			printf "🚀 Running CI pipeline steps (for local troubleshooting)...\n"
 			set_common_env_variables
-			build_cicd_image
+			build_ci_image
 			build_webapp_image
 			start_db
 			unit_tests
@@ -282,7 +282,7 @@ if [[ -n $1 ]]; then
 			down
 			stop_db
 			publish_image ${WEBAPP_IMAGE_REPOSITORY} ${WEBAPP_IMAGE_TAG}
-			publish_image ${CICD_IMAGE_REPOSITORY} ${CICD_IMAGE_TAG}
+			publish_image ${CI_IMAGE_REPOSITORY} ${CI_IMAGE_TAG}
 			put_ssm_parameters
 			clean
 			exit 0
