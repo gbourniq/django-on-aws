@@ -146,7 +146,7 @@ healthcheck()
 		echo "$1" | xargs -I ID docker inspect -f '{{if .State.Running}}{{ .State.Health.Status }}{{end}}' ID
 	}
 
-	container_id=$(docker ps --filter name=${WEBAPP_CONTAINER_NAME} -qa)
+	container_id=$(docker ps --filter name=$1 -qa)
 
 	# Check if container exists
 	if [[ -z "${container_id}" ]]; then
@@ -165,7 +165,7 @@ healthcheck()
 		exit 1
 	fi;
 
-	echo "🍀 Container $1 running is healthy"
+	echo "🍀 Container $1 is healthy"
 }
 
 publish_image()
