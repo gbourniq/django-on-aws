@@ -80,21 +80,23 @@ docker-ci() {
 
 build_cicd_image() {
 	printf "Building cicd docker image ${CICD_IMAGE_REPOSITORY}:${CICD_IMAGE_TAG}...\n"
-	if docker manifest inspect ${CICD_IMAGE_REPOSITORY}:${CICD_IMAGE_TAG} >/dev/null 2>&1; then \
-		echo Docker image ${CICD_IMAGE_REPOSITORY}:${CICD_IMAGE_TAG} already exists on Dockerhub! Not building.; \
-		docker pull ${CICD_IMAGE_REPOSITORY}:${CICD_IMAGE_TAG}; \
+	if docker manifest inspect ${CICD_IMAGE_REPOSITORY}:${CICD_IMAGE_TAG} >/dev/null 2>&1; then
+		echo Docker image ${CICD_IMAGE_REPOSITORY}:${CICD_IMAGE_TAG} already exists on Dockerhub! Not building.
+		docker pull ${CICD_IMAGE_REPOSITORY}:${CICD_IMAGE_TAG}
 	else \
-		docker build -t ${CICD_IMAGE_REPOSITORY}:${CICD_IMAGE_TAG} -f .circleci/cicd.Dockerfile . ; \
+		docker build -t ${CICD_IMAGE_REPOSITORY}:${CICD_IMAGE_TAG} -f .circleci/cicd.Dockerfile .
 	fi
 }
 
 build_webapp_image() {
 	printf "Building webapp docker image ${WEBAPP_IMAGE_REPOSITORY}:${WEBAPP_IMAGE_TAG}...\n"
-	if docker manifest inspect ${WEBAPP_IMAGE_REPOSITORY}:${WEBAPP_IMAGE_TAG} >/dev/null 2>&1; then \
-		echo Docker image ${WEBAPP_IMAGE_REPOSITORY}:${WEBAPP_IMAGE_TAG} already exists on Dockerhub! Not building.; \
-		docker pull ${WEBAPP_IMAGE_REPOSITORY}:${WEBAPP_IMAGE_TAG}; \
+	if docker manifest inspect ${WEBAPP_IMAGE_REPOSITORY}:${WEBAPP_IMAGE_TAG} >/dev/null 2>&1; then
+		echo Docker image ${WEBAPP_IMAGE_REPOSITORY}:${WEBAPP_IMAGE_TAG} already exists on Dockerhub! Not building.
+		docker pull ${WEBAPP_IMAGE_REPOSITORY}:${WEBAPP_IMAGE_TAG}
 	else \
-		docker build -t ${WEBAPP_IMAGE_REPOSITORY}:${WEBAPP_IMAGE_TAG} . ; \
+		rm -rf dist
+		poetry build
+		docker build -t ${WEBAPP_IMAGE_REPOSITORY}:${WEBAPP_IMAGE_TAG} .
 	fi
 }
 
