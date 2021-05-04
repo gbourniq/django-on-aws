@@ -3,7 +3,7 @@ version: "3.5"
 services:
 
   postgres:
-    image: bitnami/postgresql:11.8.0-debian-10-r19
+    image: bitnami/postgresql:11.11.0
     container_name: postgres
     restart: unless-stopped
     environment:

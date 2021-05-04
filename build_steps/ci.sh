@@ -7,6 +7,7 @@
 set -Eeuo pipefail
 
 script_name="$(basename -- "$0")"
+script_dir="$(basename $PWD)"
 
 trap err_exit ERR
 
@@ -20,9 +21,11 @@ err_exit () {
 help_text()
 {
     echo ""
-    echo "Usage:        ./$script_name COMMAND"
-    echo ""
     echo "Helper script to run and manage the scripts invoked by the CI pipeline."
+    echo ""
+    echo "⚠️  This must be run from the root of the repository."
+    echo ""
+    echo "Usage:        ./$script_dir/$script_name COMMAND"
     echo ""
     echo "Available Commands:"
     echo "  build         🔨 Build ci and webapp docker images"
@@ -91,7 +94,7 @@ docker-ci() {
 
 build_ci_image() {
 	printf "Building ci docker image ${CI_IMAGE_REPOSITORY}:${CI_IMAGE_TAG}...\n"
-	if docker manifest inspect ${CI_IMAGE_REPOSITORY}:${CI_IMAGE_TAG} >/dev/null 2>&1; then
+	if ! docker manifest inspect ${CI_IMAGE_REPOSITORY}:${CI_IMAGE_TAG} >/dev/null 2>&1; then
 		echo Docker image ${CI_IMAGE_REPOSITORY}:${CI_IMAGE_TAG} already exists on Dockerhub! Not building.
 		docker pull ${CI_IMAGE_REPOSITORY}:${CI_IMAGE_TAG}
 	else \
@@ -101,7 +104,7 @@ build_ci_image() {
 
 build_webapp_image() {
 	printf "Building webapp docker image ${WEBAPP_IMAGE_REPOSITORY}:${WEBAPP_IMAGE_TAG}...\n"
-	if docker manifest inspect ${WEBAPP_IMAGE_REPOSITORY}:${WEBAPP_IMAGE_TAG} >/dev/null 2>&1; then
+	if ! docker manifest inspect ${WEBAPP_IMAGE_REPOSITORY}:${WEBAPP_IMAGE_TAG} >/dev/null 2>&1; then
 		echo Docker image ${WEBAPP_IMAGE_REPOSITORY}:${WEBAPP_IMAGE_TAG} already exists on Dockerhub! Not building.
 		docker pull ${WEBAPP_IMAGE_REPOSITORY}:${WEBAPP_IMAGE_TAG}
 	else \
@@ -113,6 +116,7 @@ build_webapp_image() {
 
 start_db()
 {
+	echo "um $(pwd)"
 	docker-ci docker-compose up -d || true
 }
 
