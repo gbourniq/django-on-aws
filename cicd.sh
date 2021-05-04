@@ -1,11 +1,21 @@
 #!/usr/bin/env bash
 
-# exit with error status on first failure
-set -e
+# -e: Exit on first failure
+# -E (-o errtrace): Ensures that ERR traps get inherited by functions and subshells.
+# -u (-o nounset): Treats unset variables as errors.
+# -o pipefail: This option will propagate intermediate errors when using pipes.
+set -Eeuo pipefail
 
 script_name="$(basename -- "$0")"
 
-trap "echo 'Something went wrong! Tidying up...' && exit 1" ERR
+trap err_exit ERR
+
+err_exit () {
+	echo "echo ⚠️  Something went wrong! Tidying up..."
+	stop_db
+	down
+	exit 1
+}
 
 help_text()
 {
@@ -25,8 +35,6 @@ help_text()
     echo "  nuke        Remove any docker volumes related to this project"
     echo "  teamcity    Print the 'setParameter' strings that TeamCity uses to set parameters in a build config"
 }
-
-# Helper function: Exit with error
 
 
 check_required_env_variables()
@@ -124,7 +132,7 @@ lint()
 
 up()
 {
-	docker-ci docker run -d --name webapp -p 8080:8080 --restart=no \
+	docker-ci docker run -d --name ${WEBAPP_CONTAINER_NAME} -p 8080:8080 --restart=no \
 			  		 	 --network global-network \
 						 --env DEBUG=True \
 						 --env POSTGRES_HOST=postgres \
@@ -229,7 +237,7 @@ if [[ -n $1 ]]; then
 			set_common_env_variables
 			start_db
 			up
-			healthcheck
+			healthcheck ${WEBAPP_CONTAINER_NAME}
 			down
 			stop_db
 			exit 0
@@ -270,7 +278,7 @@ if [[ -n $1 ]]; then
 			unit_tests
 			lint
 			up
-			healthcheck
+			healthcheck "${WEBAPP_CONTAINER_NAME}"
 			down
 			stop_db
 			publish_image ${WEBAPP_IMAGE_REPOSITORY} ${WEBAPP_IMAGE_TAG}
