@@ -7,7 +7,7 @@
 set -Eeuo pipefail
 
 script_name="$(basename -- "$0")"
-script_dir="$(basename $PWD)"
+script_dir="$(dirname "$0")"
 
 trap err_exit ERR
 
@@ -25,7 +25,7 @@ help_text()
     echo ""
     echo "⚠️  This must be run from the root of the repository."
     echo ""
-    echo "Usage:        ./$script_dir/$script_name COMMAND"
+    echo "Usage:        $script_dir/$script_name COMMAND"
     echo ""
     echo "Available Commands:"
     echo "  build         🔨 Build ci and webapp docker images"
@@ -94,7 +94,7 @@ docker-ci() {
 
 build_ci_image() {
 	printf "Building ci docker image ${CI_IMAGE_REPOSITORY}:${CI_IMAGE_TAG}...\n"
-	if docker manifest inspect ${CI_IMAGE_REPOSITORY}:${CI_IMAGE_TAG} >/dev/null 2>&1; then
+	if ! docker manifest inspect ${CI_IMAGE_REPOSITORY}:${CI_IMAGE_TAG} >/dev/null 2>&1; then
 		echo Docker image ${CI_IMAGE_REPOSITORY}:${CI_IMAGE_TAG} already exists on Dockerhub! Not building.
 		docker pull ${CI_IMAGE_REPOSITORY}:${CI_IMAGE_TAG}
 	else \
@@ -206,7 +206,7 @@ if [[ -n $1 ]]; then
 			printf "🔨 Building ci and webapp docker images...\n"
 			set_common_env_variables
 			build_ci_image
-			build_webapp_image
+			# build_webapp_image
 			exit 0
 			;;
 		start_db)

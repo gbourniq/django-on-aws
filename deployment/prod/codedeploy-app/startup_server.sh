@@ -1,1 +1,1 @@
-../../local/app/startup_server.sh
+../../config/startup_server.sh

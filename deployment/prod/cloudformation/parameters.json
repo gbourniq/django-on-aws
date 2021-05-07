@@ -1,0 +1,50 @@
+[
+  {
+    "ParameterKey": "ASGCPUTargetValue",
+    "ParameterValue": "60"
+  },
+  {
+    "ParameterKey": "ASGDesiredCapacity",
+    "ParameterValue": "2"
+  },
+  {
+    "ParameterKey": "CloudFrontExistingCertArn",
+    "ParameterValue": "arn:aws:acm:us-east-1:164045463835:certificate/26654aed-53fe-4033-9866-9b072ad88ed8"
+  },
+  {
+    "ParameterKey": "EC2LatestLinuxAmiId",
+    "ParameterValue": "/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2"
+  },
+  {
+    "ParameterKey": "EC2InstanceType",
+    "ParameterValue": "t2.micro"
+  },
+  {
+    "ParameterKey": "EC2VolumeSize",
+    "ParameterValue": "8"
+  },
+  {
+    "ParameterKey": "R53HostedZoneName",
+    "ParameterValue": "bournique.fr"
+  },
+  {
+    "ParameterKey": "SSMParamSlackWebhookUrl",
+    "ParameterValue": "/SLACK/INCOMING_WEBHOOK_URL"
+  },
+  {
+    "ParameterKey": "SSMParamNameRdsPostgresPassword",
+    "ParameterValue": "/RDS/POSTGRES_PASSWORD/SECURE"
+  },
+  {
+    "ParameterKey": "SubnetListStr",
+    "ParameterValue": "subnet-103a1a79,subnet-28219264"
+  },
+  {
+    "ParameterKey": "VpcId",
+    "ParameterValue": "vpc-e82c7280"
+  },
+  {
+    "ParameterKey": "Environment",
+    "ParameterValue": "/DEPLOYMENT/ENVIRONMENT"
+  }
+]

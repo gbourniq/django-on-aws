@@ -23,6 +23,16 @@ cp terraform.tfvars.template terraform.tfvars
 
 The `terraform.tfvars` is used to specify Terraform variables such as the number of ec2 instances to create, and the local machine IP or VPN IP range which should be allowed for inbound ssh connection.
 
+Example of `terraform.tfvars` file:
+```
+aws_pem_key_name  = "mypersonalkeypair"
+environment       = "dev"
+instance_count    = 1
+provisioning_logs = "~/path/to/tf_provisioning.log"
+tag_name          = "Dev deployment"
+vpn_ip            = "123.123.123.123/32"
+```
+
 ### 2. Configure Ansible
 
 Configure ansible variables as per the instructions under `## How to run the playbook`.

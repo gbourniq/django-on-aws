@@ -49,9 +49,8 @@ Parameters:
     MinValue: 8
     MaxValue: 20
   Environment:
-    Description: Stage name which is used as the R53 DNS subdomain, the CodeDeploy deployment group, and to determine RDS DeletePolicy
-    Type: String
-    AllowedValues: [dev, demo]
+    Description: SSM Parameter for environment name which is used as the R53 DNS subdomain, the CodeDeploy deployment group, and to determine RDS DeletePolicy
+    Type: AWS::SSM::Parameter::Value<String>
   R53HostedZoneName:
     Description: The DNS name of an existing Amazon Route 53 hosted zone. For example, "mydomain.com"
     AllowedPattern: (?!-)[a-zA-Z0-9-.]{1,63}(?<!-)
