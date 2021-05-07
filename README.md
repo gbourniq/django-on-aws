@@ -111,21 +111,11 @@ make pre-commit                  <-- Install git-hooks hooks (setup once)
 
 The following make commands are available:
 ```
-make runserver                   <-- Start django server + spin up postgres & redis containers
-make recreatedb                  <-- Wipe database content
+make runserver                   <-- Start local django server + spin up postgres & redis containers
+make up                          <-- Start dockerised django webserver + postgres/redis
 make tests                       <-- Run tests with pytest-django
-make open-cov-report             <-- Open unit-tests coverage html report
-```
-
-### Build, test, and publish docker image
-
-The following make commands are available:
-```
-make image                       <-- Package django application as a docker image
-make up                          <-- Start django webserver (docker run), postgres/redis (docker-compose) as containers
-make healthcheck                 <-- Ensure django webserver container is up and running
-make down                        <-- Stop and remove all containers
-make publish                     <-- Push django app docker image to Dockerhub
+make cov                         <-- Open unit-tests coverage html report
+make clean                       <-- Stop and remove all containers
 ```
 
 ### Run the application container on a remote server with Terraform and Ansible
@@ -133,10 +123,8 @@ make publish                     <-- Push django app docker image to Dockerhub
 Terraform and ansible files located in `./deployment/dev/` can be used to quickly create an ec2 instance (or multiple) using Terraform code, and deploy the docker image to the server via Ansible playbooks. Note these commands are not covered by the CI/CD pipeline and are mainly intended for a quick ad-hoc deployment testing.
 
 ```
-make create-instances            <-- TF creates EC2s + inbound ports & generates Ansible inventory file 
-make deploy-to-instances         <-- Ansible installs packages, git clone repo, docker pull images and runs the app
-make show-urls                   <-- command to display the URL(s) of the deployed app instances
-make destroy-instances           <-- TF destroys all created infrastructure
+make tf-deploy            <-- TF creates EC2s, generates Ansible inventory file for Ansible to install packages, git clone repo, docker pull images and run the app
+make tf-destroy           <-- TF destroys all created infrastructure
 ```
 
 > To configure terraform and ansible, please review the `deployment/dev/README.md` file.
@@ -183,9 +171,9 @@ Before creating the cloudformation stack, the following prerequisites must be co
 - Load an existing [free SSL certificate](https://itnext.io/using-letsencrypt-ssl-certificates-in-aws-certificate-manager-c2bc3c6ae10) to the AWS Certificate Manager service in the main region and us-east-1 region for CF.
 - Create the following AWS SSM Parameters to store sensitive variables: `/RDS/POSTGRES_PASSWORD/SECURE` (type: SecureString); and `/SLACK/INCOMING_WEBHOOK_URL` (type: String)
 
-The aws resources can then be deployed as a CloudFormation stack by simply running the `make cfn-create` command. Please make sure to review the stack parameters in `Makefile` under the `cfn-create` target beforehand.
+The aws resources can then be deployed as a CloudFormation stack by simply running the `./build_steps/cd.sh cfn_create` command.
 
-> Note it can take up to 30mn for all resources to be created. The stack resources can then be updated with `make cfn-create` or deleted with `make cfn-delete`.
+> Note it can take up to 30mn for all resources to be created. The stack resources can then be updated with `./build_steps/cd.sh cfn_update` or deleted with `./build_steps/cd.sh cfn_destroy`.
 
 > To renew the certificate:
 ```
@@ -226,7 +214,7 @@ codedeploy-app
 └── startup_server.sh            <-- Script copied to the host & mounted to the container
 ```
 
-Run the `make deploy` command to deploy or update a new application version that was pushed to a docker image repository.
+Run the `./build_steps/cd.sh code_deploy` command to deploy or update a new application version that was pushed to a docker image repository.
 
 > Note that CodeDeploy is currently set up to update one instance at a time, while keeping a minimum of 50% healthy hosts. Deployment configurations can be found in `deployment/cloudformation/compute/template.yaml` under `# CodeDeploy`.
 
@@ -257,12 +245,12 @@ The conda environment is provisioned with the `locust` python package to run loa
 
 <p align="center">
   <img src=".github/load-testing-ui.png">
-  <i>Load testing UI, started with the `make load-testing-ui` command</i>
+  <i>Load testing UI, started with the `./build_steps/cd.sh load_testing` command</i>
 </p>
 
 ### EC2 Auto Scaling and cost considerations
 
-The Auto Scaling group (currently defined in the `deployment/cloudformation/compute/template.yaml` template) make use of `ScheduledAction` resources to fully scale down the website at night by terminating all EC2 instances. 
+The Auto Scaling group (currently defined in the `deployment/cloudformation/compute/template.yaml` template) uses of `ScheduledAction` resources behind the scenes to fully scale down the website at night by terminating all EC2 instances. 
 
 Using `ScheduledActions` can also achieve significant cost savings by scaling the number of instances appropriately when increased or reduced traffic is anticipated.
 

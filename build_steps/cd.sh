@@ -4,7 +4,7 @@
 # -E (-o errtrace): Ensures that ERR traps get inherited by functions and subshells.
 # -u (-o nounset): Treats unset variables as errors.
 # -o pipefail: This option will propagate intermediate errors when using pipes.
-set -Eeuo pipefail
+set -Eeo pipefail
 # set -ex
 
 script_name="$(basename -- "$0")"
@@ -24,7 +24,9 @@ help_text()
     echo ""
     echo "⚠️  This must be run from the root of the repository."
     echo ""
-    echo "Usage:        $script_dir/$script_name COMMAND"
+    echo "Usage:        $script_dir/$script_name <COMMAND>"
+    echo ""
+    echo "Example:      'CFN_STACK_NAME=myapp $script_dir/$script_name cfn_create'"
     echo ""
     echo "Available Commands:"
     echo "  tf_launch           🚀 Run Terraform to launch new instance(s)"
@@ -36,7 +38,6 @@ help_text()
     echo "  cfn_destroy_async   ⏳ Run Cloudformation to destroy AWS infrastructure (async call)"
 	echo "  code_deploy         🚚 Run AWS CodeDeploy to deploy application to launched instances"
     echo "  load_testing        📈 Run load testing on deployed web application"
-    echo "  load_testing_ui     📈 Start UI for load testing on deployed web application"
 }
 
 check_required_env_variables()
@@ -56,7 +57,7 @@ set_common_env_variables()
 	export DOCKER_USER=gbournique
 
 	# Image which contains required cli packages such as awscli, terraform, etc.
-	export CD_IMAGE=${DOCKER_USER}/cicd-with-deps:19590890
+	export CD_IMAGE=${DOCKER_USER}/cicd-with-deps:latest
 
 	# Terraform
 	export TF_DIR=./deployment/dev/terraform
@@ -71,7 +72,7 @@ set_common_env_variables()
 	export ANSIBLE_GIT_BRANCH_NAME=main
 
 	# Cloudformation
-	export CFN_STACK_NAME=demo
+	export CFN_STACK_NAME=${CFN_STACK_NAME:-demo}
 	export CFN_TEMPLATES_S3_BUCKET_NAME=gbournique-sam-artifacts
 	export CFN_DIR="./deployment/prod/cloudformation/"
 	export CFN_PARENT_TEMPLATE_FILE="${CFN_DIR}/parent-stack.yaml"
@@ -89,9 +90,9 @@ set_common_env_variables()
 
 	# Load testing
 	export WEBSERVER_URL=https://${CFN_STACK_NAME}.bournique.fr
-	export USERS=100
+	export USERS=200
 	export SPAWN_RATE_PS=50
-	export RUN_TIME=1mn
+	export RUN_TIME=30s
 
 	check_required_env_variables
 }
@@ -187,7 +188,7 @@ wait_for_stack_status() {
 				--stack-name=${CFN_STACK_NAME} | jq -r '.Stacks[0].StackStatus' 2>/dev/null || true)
 		if [[ -z $status ]]; then
 			# empty status, i.e stack does not exist (likely deleted)
-			echo "empty_status"
+			echo ""
 		else
 			echo $status
 		fi;
@@ -195,7 +196,7 @@ wait_for_stack_status() {
 
 	until [[ $(get_stack_status) != $status_in_progress ]];
 	do
-		echo "🕵️‍♂️  Current status: $status_in_progress..."
+		echo "🕵️‍♂️  Current stack status: $status_in_progress..."
 		sleep 30
 	done
 
@@ -208,23 +209,19 @@ wait_for_stack_status() {
 	if [[ $status_complete == $(get_stack_status) || $status_complete == "DELETE_COMPLETE" ]]; then
 		# Expected complete status was reached, or
 		# Stack Deletion case: could not retrieve status because the stack does not exist (deleted). All good.
-		echo "✅  Complete!"
+		echo "✅  Stack operation complete!"
 		exit 0
 	fi
 
-	echo "❌  Oops, something went wrong!"
+	echo "❌  Oops, something went wrong during stack operation!"
 	exit 1
 }
 
 
 # CodeDeploy related functions
 get_stack_output() {
-	echo $(docker-cd aws cloudformation describe-stacks \
-						--stack-name demo \
-						--output json | jq -r ".Stacks[0].Outputs \
-												| map({key: .OutputKey, value: .OutputValue}) \
-												| from_entries \
-												| .$1")
+	stack_output=$(docker-cd "aws cloudformation describe-stacks --stack-name ${CFN_STACK_NAME} --output text | grep -i $1")
+	echo $stack_output | awk '{print $NF}' | sed 's/[^-a-zA-Z0-9._]//g'
 }
 
 code_deploy_push() {
@@ -271,45 +268,42 @@ wait_for_codedeploy_status() {
 	status_complete=$2
 
 	get_codedeploy_deployment_status() {
-		latest_deployment_id=$(aws deploy list-deployments \
+		latest_deployment_id=$(docker-cd aws deploy list-deployments \
 										--application-name $(get_stack_output $STACK_OUTPUT_APP_NAME) \
 										--deployment-group-name $(get_stack_output $STACK_OUTPUT_CODEDEPLOY_GROUP_NAME) \
 										--query "deployments" \
 										--max-items 1 | jq '.[]' | sed 's/\"//g')
-		echo $(aws deploy get-deployment --deployment-id $latest_deployment_id --query "deploymentInfo.status")
+		latest_deployment_status=$(docker-cd aws deploy get-deployment --deployment-id $latest_deployment_id --query "deploymentInfo.status")
+		# remove whitespaces and double quotes
+		echo ${latest_deployment_status} | sed 's/\"[[:space:]]*//g'
 	}
 
 	until [[ $(get_codedeploy_deployment_status) != $status_in_progress ]];
 	do
-		echo "🕵️‍♂️  Current status: $status_in_progress..."
+		echo "🕵️‍♂️  Current deployment status: $status_in_progress..."
 		sleep 30
 	done
 
-	if [[ $status_complete == $(get_codedeploy_deployment_status) ]]; then
-		echo "✅  Complete!"
+	if [[ $(get_codedeploy_deployment_status) == $status_complete ]]; then
+		echo "✅  Deployment successful!"
 		exit 0
 	fi
 
-	echo "❌  Oops, something went wrong!"
+	echo "❌  Oops, something went wrong during the deployment!"
 	exit 1
 }
 
 
 # Load testing related functions
 load_testing() {
-	echo "Load testing ${WEBSERVER_URL} by spawning ${USERS} users \
-		  at a rate of ${SPAWN_RATE_PS}/s and maintain a full load for ${RUN_TIME} minutes."
-	docker-ci locust -f utils/locustfile.py \
+	echo "Load testing ${WEBSERVER_URL} by spawning ${USERS} users at a rate of ${SPAWN_RATE_PS}/s and maintain a full load for ${RUN_TIME} minute(s)."
+	echo "(To run the UI, you can use the following command 'locust -f utils/locustfile.py --host <WEBSERVER_URL>')"
+	docker-cd locust -f utils/locustfile.py \
 		--host ${WEBSERVER_URL} \
 		--headless --users ${USERS} \
 		--spawn-rate ${SPAWN_RATE_PS} \
 		--run-time ${RUN_TIME} \
 		--only-summary
-}
-
-load_testing_ui() {
-	echo "Starting load testing UI"
-	docker-ci locust -f utils/locustfile.py --host ${WEBSERVER_URL}
 }
 
 
@@ -361,17 +355,12 @@ if [[ -n $1 ]]; then
 			printf "🚚 Run AWS CodeDeploy to deploy application to launched instances...\n"
 			code_deploy_push
 			code_deploy_create
-			wait_for_codedeploy_status '"InProgress"' '"Succeeded"'
+			wait_for_codedeploy_status "InProgress" "Succeeded"
 			exit 0
 			;;
 		load_testing)
 			printf "📈 	Run load testing on deployed web application...\n"
 			load_testing
-			exit 0
-			;;
-		load_testing_ui)
-			printf "📈  Start UI for load testing on deployed web application...\n"
-			load_testing_ui
 			exit 0
 			;;
 		*)

@@ -4,7 +4,8 @@
 # -E (-o errtrace): Ensures that ERR traps get inherited by functions and subshells.
 # -u (-o nounset): Treats unset variables as errors.
 # -o pipefail: This option will propagate intermediate errors when using pipes.
-set -Eeuo pipefail
+set -Eeo pipefail
+# set -ex
 
 script_name="$(basename -- "$0")"
 script_dir="$(dirname "$0")"
@@ -50,7 +51,7 @@ check_required_env_variables()
         var_not_set "AWS_DEFAULT_REGION; AWS_ACCESS_KEY_ID; AWS_SECRET_ACCESS_KEY"
     fi
     if [[ ! $DOCKER_PASSWORD ]]; then
-        var_not_set "DOCKER_PASSWORD"
+        var_not_setf "DOCKER_PASSWORD"
     fi
 }
 
@@ -61,17 +62,10 @@ set_common_env_variables()
     export DOCKER_CLI_EXPERIMENTAL=enabled
 
 	# CI/CD docker image
-	export CI_IMAGE_TAG=$(cat environment.yml poetry.lock | cksum | cut -c -8)
 	export CI_IMAGE_REPOSITORY=${DOCKER_USER}/cicd-with-deps
 
 	# Webapp docker image
-	WEBAPP_DEPENDENCIES_FILES=(\
-		Dockerfile environment.yml poetry.lock \
-		$(find ./app -type f -not -name "*.pyc" -not -name "*.log") \
-	)
-	CKSUM=$(cat ${WEBAPP_DEPENDENCIES_FILES} | cksum | cut -c -8)
-	PROJECT_VERSION=$(awk '/^version/' pyproject.toml | sed 's/[^0-9\.]//g')
-	export WEBAPP_IMAGE_TAG=${PROJECT_VERSION}-${CKSUM}
+	export DEPLOYMENT_DIR="./deployment/"
 	export WEBAPP_IMAGE_REPOSITORY=${DOCKER_USER}/django-on-aws
 	export WEBAPP_CONTAINER_NAME=webapp
 	export DEBUG=False
@@ -89,40 +83,51 @@ docker-ci() {
 		-e AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION} \
 		-e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} \
 		-e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} \
-		${CI_IMAGE_REPOSITORY}:${CI_IMAGE_TAG} bash -c "$*"
+		${CI_IMAGE_REPOSITORY}:$(ci_image_tag) bash -c "$*"
+}
+
+ci_image_tag() {
+	echo $(cat ./build_steps/cicd.Dockerfile environment.yml poetry.lock | cksum | cut -c -8)
 }
 
 build_ci_image() {
-	printf "Building ci docker image ${CI_IMAGE_REPOSITORY}:${CI_IMAGE_TAG}...\n"
-	if ! docker manifest inspect ${CI_IMAGE_REPOSITORY}:${CI_IMAGE_TAG} >/dev/null 2>&1; then
-		echo Docker image ${CI_IMAGE_REPOSITORY}:${CI_IMAGE_TAG} already exists on Dockerhub! Not building.
-		docker pull ${CI_IMAGE_REPOSITORY}:${CI_IMAGE_TAG}
+	printf "Building ci docker image ${CI_IMAGE_REPOSITORY}:$(ci_image_tag)...\n"
+	if docker manifest inspect ${CI_IMAGE_REPOSITORY}:$(ci_image_tag) >/dev/null 2>&1; then
+		echo Docker image ${CI_IMAGE_REPOSITORY}:$(ci_image_tag) already exists on Dockerhub! Not building.
+		docker pull ${CI_IMAGE_REPOSITORY}:$(ci_image_tag)
 	else \
-		docker build -t ${CI_IMAGE_REPOSITORY}:${CI_IMAGE_TAG} -f .circleci/cicd.Dockerfile .
+		docker build -t ${CI_IMAGE_REPOSITORY}:$(ci_image_tag) -f ./build_steps/cicd.Dockerfile .
 	fi
 }
 
+webapp_image_tag() {
+	WEBAPP_DEPENDENCIES_FILES=$(echo $(find ./app -type f -not -name "*.pyc" -not -name "*.log") \
+								"./deployment/webapp.Dockerfile" "environment.yml" "poetry.lock")
+	CKSUM=$(cat ${WEBAPP_DEPENDENCIES_FILES} | cksum | cut -c -8)
+	PROJECT_VERSION=$(awk '/^version/' pyproject.toml | sed 's/[^0-9\.]//g')
+	echo ${PROJECT_VERSION}-${CKSUM}
+}
+
 build_webapp_image() {
-	printf "Building webapp docker image ${WEBAPP_IMAGE_REPOSITORY}:${WEBAPP_IMAGE_TAG}...\n"
-	if docker manifest inspect ${WEBAPP_IMAGE_REPOSITORY}:${WEBAPP_IMAGE_TAG} >/dev/null 2>&1; then
-		echo Docker image ${WEBAPP_IMAGE_REPOSITORY}:${WEBAPP_IMAGE_TAG} already exists on Dockerhub! Not building.
-		docker pull ${WEBAPP_IMAGE_REPOSITORY}:${WEBAPP_IMAGE_TAG}
+	printf "Building webapp docker image ${WEBAPP_IMAGE_REPOSITORY}:$(webapp_image_tag)...\n"
+	if docker manifest inspect ${WEBAPP_IMAGE_REPOSITORY}:$(webapp_image_tag) >/dev/null 2>&1; then
+		echo Docker image ${WEBAPP_IMAGE_REPOSITORY}:$(webapp_image_tag) already exists on Dockerhub! Not building.
+		docker pull ${WEBAPP_IMAGE_REPOSITORY}:$(webapp_image_tag)
 	else \
 		rm -rf dist
 		docker-ci poetry build
-		docker build -t ${WEBAPP_IMAGE_REPOSITORY}:${WEBAPP_IMAGE_TAG} .
+		docker build -t ${WEBAPP_IMAGE_REPOSITORY}:$(webapp_image_tag) -f ./deployment/webapp.Dockerfile .
 	fi
 }
 
 start_db()
 {
-	echo "um $(pwd)"
-	docker-ci docker-compose up -d || true
+	docker-ci "cd ${DEPLOYMENT_DIR}; docker-compose up -d" || true
 }
 
 stop_db()
 {
-	docker-ci docker-compose down --remove-orphans >/dev/null 2>&1 || true
+	docker-ci "cd ${DEPLOYMENT_DIR}; docker-compose down --remove-orphans" >/dev/null 2>&1 || true
 }
 
 unit_tests()
@@ -144,7 +149,7 @@ up()
 						 --env POSTGRES_PASSWORD=postgres \
 						 --env REDIS_ENDPOINT=redis:6379 \
 						 --env SNS_TOPIC_ARN= \
-						 ${WEBAPP_IMAGE_REPOSITORY}:${WEBAPP_IMAGE_TAG} || true; \
+						 ${WEBAPP_IMAGE_REPOSITORY}:$(webapp_image_tag) || true; \
 }
 
 down()
@@ -206,7 +211,7 @@ if [[ -n $1 ]]; then
 			printf "🔨 Building ci and webapp docker images...\n"
 			set_common_env_variables
 			build_ci_image
-			# build_webapp_image
+			build_webapp_image
 			exit 0
 			;;
 		start_db)
@@ -262,14 +267,14 @@ if [[ -n $1 ]]; then
 		push_images)
 			printf "🐳 Publishing images to Dockerhub...\n"
 			set_common_env_variables
-			publish_image ${WEBAPP_IMAGE_REPOSITORY} ${WEBAPP_IMAGE_TAG}
-			publish_image ${CI_IMAGE_REPOSITORY} ${CI_IMAGE_TAG}
+			publish_image ${WEBAPP_IMAGE_REPOSITORY} $(webapp_image_tag)
+			publish_image ${CI_IMAGE_REPOSITORY} $(ci_image_tag)
 			exit 0
 			;;
 		put_ssm_vars)
 			printf "☁️ Updating AWS ssm parameters...\n"
 			set_common_env_variables
-			put_ssm_parameter_str "/CODEDEPLOY/DOCKER_IMAGE_NAME_DEMO" "${WEBAPP_IMAGE_REPOSITORY}:latest"
+			put_ssm_parameter_str "/CODEDEPLOY/DOCKER_IMAGE_NAME_DEMO" "${WEBAPP_IMAGE_REPOSITORY}:$(webapp_image_tag)"
 			put_ssm_parameter_str "/CODEDEPLOY/DEBUG_DEMO" "${DEBUG}"
 			exit 0
 			;;
@@ -285,8 +290,8 @@ if [[ -n $1 ]]; then
 			healthcheck "${WEBAPP_CONTAINER_NAME}"
 			down
 			stop_db
-			publish_image ${WEBAPP_IMAGE_REPOSITORY} ${WEBAPP_IMAGE_TAG}
-			publish_image ${CI_IMAGE_REPOSITORY} ${CI_IMAGE_TAG}
+			publish_image ${WEBAPP_IMAGE_REPOSITORY} $(webapp_image_tag)
+			publish_image ${CI_IMAGE_REPOSITORY} $(ci_image_tag)
 			put_ssm_parameters
 			clean
 			exit 0

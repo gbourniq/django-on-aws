@@ -154,9 +154,9 @@ APP_DIR = Path(__file__).resolve().parent.parent.parent
 LOG_DIR_PATH = APP_DIR / "logs"
 LOG_DIR_PATH.mkdir(parents=True, exist_ok=True)
 LOG_INFO_FILE_PATH = LOG_DIR_PATH / "info.log"
-# if not LOG_INFO_FILE_PATH.is_file():
-#     with open(LOG_INFO_FILE_PATH, "w", encoding="utf-8") as f:
-#         f.write("\n")
+if not LOG_INFO_FILE_PATH.is_file():
+    with open(LOG_INFO_FILE_PATH, "w", encoding="utf-8") as f:
+        f.write("\n")
 
 LOGGING = {
     "version": 1,

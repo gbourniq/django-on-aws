@@ -6,7 +6,7 @@ ARG WORKDIR=/root/cicd
 ENV PYTHONUNBUFFERED=1 \
     # prevents python creating .pyc files
     PYTHONDONTWRITEBYTECODE=1 \
-    # make poetry install to this location
+    # install poetry to this location
     POETRY_HOME=${POETRY_HOME} \
     # prevent poetry from creating a virtual environment in the project's root
     POETRY_VIRTUALENVS_IN_PROJECT=false \
@@ -18,12 +18,13 @@ ENV PYTHONUNBUFFERED=1 \
 
 RUN apt-get update \
     && apt-get install --no-install-recommends -yq \
+    # jq: for parsing json responses
     # vim: for any troubleshooting
     # curl, wget and unzip: to install software and packages
     # build-essential: for building python deps
     # docker.io: for running docker commands
     # gcc libpq-dev python3-dev: psycopg2 source dependencies
-    curl vim wget unzip build-essential docker.io gcc libpq-dev python3-dev \
+    jq curl vim wget unzip build-essential docker.io gcc libpq-dev python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
 ARG DOCKER_COMPOSE_VERSION=1.27.4

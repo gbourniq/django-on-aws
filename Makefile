@@ -12,8 +12,9 @@ CONDA_ACTIVATE=source $$(conda info --base)/etc/profile.d/conda.sh ; conda activ
 
 include utils/helpers.mk
 
-### Environment and pre-commit hooks ###
+### Environment and githooks ###
 .PHONY: env env-update pre-commit
+
 env:
 	@ ${INFO} "Creating ${CONDA_ENV_NAME} conda environment and poetry dependencies"
 	@ $(CONDA_CREATE) -f environment.yml -n $(CONDA_ENV_NAME)
@@ -32,8 +33,8 @@ pre-commit:
 	@ ${SUCCESS} "pre-commit set up"
 
 
-### Development ###
-.PHONY: runserver tests open-cov-report
+### Development (CI) ###
+.PHONY: runserver up tests cov clean
 
 runserver:
 	python app/manage.py collectstatic --no-input -v 0
@@ -41,10 +42,41 @@ runserver:
 	python app/manage.py migrate --run-syncdb
 	python app/manage.py runserver 0.0.0.0:8080
 
-### CI/CD scripts
-.PHONY: ci cd
-ci:
-	./build_steps/ci.sh help
+up:
+	@ ${INFO} "Start webapp container"
+	@ ./build_steps/ci.sh up
 
-cd:
-	./build_steps/cd.sh help
+tests:
+	@ ${INFO} "Run unit tests inside container"
+	@ ./build_steps/ci.sh unit_tests
+
+cov:
+	@ ${INFO} "Open test coverage results"
+	@ open htmlcov/index.html
+
+clean:
+	@ ${INFO} "Stopping and removing all containers"
+	@ ./build_steps/ci.sh clean
+
+
+### Terraform deployment (CD) ###
+.PHONY: tf-deploy tf-destroy
+
+tf-deploy:
+	@ ${INFO} "Deploying application to a new ec2 instance with Terraform+Ansible"
+	@ ${INFO} "For a production level deployment, use the cfn scripts in ./cd.sh"
+	@ ./build_steps/cd.sh tf_launch
+	@ ./build_steps/cd.sh tf_provision
+
+tf-destroy:
+	@ ./build_steps/cd.sh tf_destroy
+
+
+### CI/CD scripts ###
+.PHONY: ci-help cd-help
+
+ci-help:
+	@ ./build_steps/ci.sh || true
+
+cd-help:
+	@ ./build_steps/cd.sh || true

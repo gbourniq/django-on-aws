@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+set -ex
 # Verify the deployment was completed successfully
 
 # Helper functions

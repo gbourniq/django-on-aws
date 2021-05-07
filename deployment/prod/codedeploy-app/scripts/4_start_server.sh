@@ -26,6 +26,12 @@ CONTAINER_NAME=myapp
 
 echo "Pulling and running docker container for ${IMAGE_NAME}"
 docker pull ${IMAGE_NAME}
+
+echo 'Create app-logs volume and change permissions to non-root user'
+docker volume create app-logs
+chown -R 1000:1000 /var/lib/docker/volumes/
+
+echo 'Start webapp container'
 docker run -d \
     -p 80:8080 \
     --name=${CONTAINER_NAME} \
@@ -47,4 +53,4 @@ echo "Write instance details to the footer.html file"
 EC2_INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
 EC2_AZ=$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone)
 HTML_PAGE=/home/portfoliouser/app/main/templates/main/includes/footer.html
-docker exec $CONTAINER_NAME sed -i "s/aws-ec2-details-placeholder/Running on AWS | $(hostname -f) | $EC2_INSTANCE_ID | $EC2_AZ/g" $HTML_PAGE
+sudo docker exec $CONTAINER_NAME sed -i "s/aws-ec2-details-placeholder/Running on AWS | $(hostname -f) | $EC2_INSTANCE_ID | $EC2_AZ/g" $HTML_PAGE
