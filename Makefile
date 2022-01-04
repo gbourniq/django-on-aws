@@ -11,7 +11,7 @@ CONDA_CREATE=source $$(conda info --base)/etc/profile.d/conda.sh ; conda env cre
 CONDA_ACTIVATE=source $$(conda info --base)/etc/profile.d/conda.sh ; conda activate
 
 # Cloudformation
-ENVIRONMENT?=tari-kitchen
+ENVIRONMENT?=live
 STACK_NAME=$(ENVIRONMENT)
 S3_BUCKET_NAME_CFN_TEMPLATES=gbournique-sam-artifacts
 CFN_PARENT_TEMPLATE_FILE="deployment/aws/cloudformation/parent-stack.yaml"
