@@ -173,7 +173,6 @@ Before creating the cloudformation stack, the following prerequisites must be co
 4. Update parameters in `deployment/prod/cloudformation/parameters.json`
 5. Build and push the webapp docker image: `./build_steps/ci.sh build` then `./build_steps/ci.sh push_images`
 6. Create the following AWS SSM Parameters to store variables used for deployment: `/RDS/POSTGRES_PASSWORD/SECURE` (type: SecureString); `/SLACK/INCOMING_WEBHOOK_URL` (type: String); and `/CODEDEPLOY/DOCKER_IMAGE_NAME_DEMO` (type string)
-7. Deploy the application via code deploy: `./build_steps/ci.sh put_ssm_vars` and `./build_steps/cd.sh code_deploy`
 
 The aws resources can then be deployed as a CloudFormation stack by simply running the `CFN_STACK_NAME=live ./build_steps/cd.sh cfn_create` command.
 
@@ -197,9 +196,26 @@ codedeploy-app
 └── startup_server.sh            <-- Script copied to the host & mounted to the container
 ```
 
-Run the `./build_steps/cd.sh code_deploy` command to deploy or update a new application version that was pushed to a docker image repository.
+Run the `./build_steps/ci.sh put_ssm_vars` and `./build_steps/cd.sh code_deploy` commands to deploy or update a new application version that was pushed to a docker image repository.
 
 > Note that CodeDeploy is currently set up to update one instance at a time, while keeping a minimum of 50% healthy hosts. Deployment configurations can be found in `deployment/cloudformation/compute/template.yaml` under `# CodeDeploy`.
+
+### Migrate website data between AWS accounts
+
+1. Migrate the database (make sure to open a SG inbound rule to your IP)
+```
+brew install postgresql
+pg_dump -h <public-domain-old-rds>.eu-west-2.rds.amazonaws.com -U postgres -Fc portfoliodb > pg_backup.dump
+pg_restore -h <public-domain-new-rds>.eu-west-2.rds.amazonaws.com --no-owner --no-privileges -U postgres --role=postgres -d portfoliodb pg_backup.dump
+```
+
+2. Restore static
+```
+mkdir staticdatabackup
+aws s3 cp s3://<old-bucket-static-files> staticdatabackup --recursive --profile oldaws
+aws s3 cp staticdatabackup s3://<new-bucket-static-files> --recursive --profile newaws
+```
+
 
 ### CloudWatch Dashboard to monitor application
 
