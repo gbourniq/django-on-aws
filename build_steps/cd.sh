@@ -26,7 +26,7 @@ help_text()
     echo ""
     echo "Usage:        $script_dir/$script_name <COMMAND>"
     echo ""
-    echo "Example:      'CFN_STACK_NAME=myapp $script_dir/$script_name cfn_create'"
+    echo "Example:      'CFN_STACK_NAME=live $script_dir/$script_name cfn_create'"
     echo ""
     echo "Available Commands:"
     echo "  tf_launch           🚀 Run Terraform to launch new instance(s)"
@@ -72,8 +72,8 @@ set_common_env_variables()
 	export ANSIBLE_GIT_BRANCH_NAME=main
 
 	# Cloudformation
-	export CFN_STACK_NAME=${CFN_STACK_NAME:-demo}
-	export CFN_TEMPLATES_S3_BUCKET_NAME=gbournique-sam-artifacts
+	export CFN_STACK_NAME=${CFN_STACK_NAME:-live}
+	export CFN_TEMPLATES_S3_BUCKET_NAME=gbournique-cfn-templates
 	export CFN_DIR="./deployment/prod/cloudformation/"
 	export CFN_PARENT_TEMPLATE_FILE="${CFN_DIR}/parent-stack.yaml"
 	export CFN_PACKAGED_TEMPLATE_FILE="${CFN_DIR}/nested-stacks.yaml"
@@ -89,7 +89,7 @@ set_common_env_variables()
 	export STACK_OUTPUT_CODEDEPLOY_S3_BUCKET_NAME="CodeDeployS3BucketName"
 
 	# Load testing
-	export WEBSERVER_URL=https://${CFN_STACK_NAME}.bournique.fr
+	export WEBSERVER_URL=https://${CFN_STACK_NAME}.tari.kitchen
 	export USERS=200
 	export SPAWN_RATE_PS=50
 	export RUN_TIME=30s

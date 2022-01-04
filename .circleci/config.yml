@@ -65,17 +65,17 @@ jobs:
       - run:
           name: Create AWS infrastructure
           no_output_timeout: 30m
-          command: CFN_STACK_NAME=dev << pipeline.parameters.cd_script >> cfn_create
+          command: CFN_STACK_NAME=demo << pipeline.parameters.cd_script >> cfn_create
       - run:
           name: Deploy application to AWS
-          command: CFN_STACK_NAME=dev << pipeline.parameters.cd_script >> code_deploy
+          command: CFN_STACK_NAME=demo << pipeline.parameters.cd_script >> code_deploy
       - run:
           name: Load Testing application
-          command: CFN_STACK_NAME=dev << pipeline.parameters.cd_script >> load_testing
+          command: CFN_STACK_NAME=demo << pipeline.parameters.cd_script >> load_testing
       - run:
           name: Delete AWS infrastructure
-          command: CFN_STACK_NAME=dev << pipeline.parameters.cd_script >> cfn_destroy_async
+          command: CFN_STACK_NAME=demo << pipeline.parameters.cd_script >> cfn_destroy_async
       - run:
           name: CD build has failed! Cleaning up any created AWS resources...
-          command: CFN_STACK_NAME=dev << pipeline.parameters.cd_script >> cfn_destroy_async || true
+          command: CFN_STACK_NAME=demo << pipeline.parameters.cd_script >> cfn_destroy_async || true
           when: on_fail

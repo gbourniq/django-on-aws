@@ -33,7 +33,7 @@ Parameters:
   CodeDeployDeploymentGroupName:
     Description: Name for the CodeDeploy Deployment Group
     Type: String
-    AllowedValues: [live]
+    AllowedValues: [live, demo]
   EC2SecurityGroupId:
     Type: String
   EC2InstanceType:
@@ -192,7 +192,7 @@ Resources:
             Version: "2012-10-17"
             Statement:
               - Effect: Allow
-                Action: [s3:PutObject*, s3:PutBucketPublicAccessBlock, s3:DeleteObject]
+                Action: [s3:*] # [s3:ListBucket*, s3:PutObject*, s3:PutBucketPublicAccessBlock, s3:DeleteObject]
                 Resource:
                   - !Join ['', [!Ref S3BucketArnStaticFiles, '/*']]
                   - !Join ['', [!Ref S3BucketArnStaticFiles]]

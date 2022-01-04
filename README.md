@@ -167,12 +167,15 @@ cloudformation
 ```
 
 Before creating the cloudformation stack, the following prerequisites must be completed manually in the AWS Console:
-- Create Route 53 Hosted Zone ($0.50/month)
-- Create a domain in Route53, eg. mydomain.com (~$15/year)
-- Create a free public SSL certificate in AWS Certificate Manager service in the main region and us-east-1 region for CF, and add its arn to the `CloudFrontExistingCertArn` parameter in `deployment/prod/cloudformation/parameters.json`.
-- Create the following AWS SSM Parameters to store sensitive variables: `/RDS/POSTGRES_PASSWORD/SECURE` (type: SecureString); and `/SLACK/INCOMING_WEBHOOK_URL` (type: String)
+1. Create Route 53 Hosted Zone ($0.50/month)
+2. Create a domain in Route53, eg. mydomain.com (~$15/year)
+3. Create 2 public SSL certificates in AWS ACM in us-east-1 for CF, for the root domain and sub domains, e.g. `mydomain.com` and `*.mydomain.com`.
+4. Update parameters in `deployment/prod/cloudformation/parameters.json`
+5. Build and push the webapp docker image: `./build_steps/ci.sh build` then `./build_steps/ci.sh push_images`
+6. Create the following AWS SSM Parameters to store variables used for deployment: `/RDS/POSTGRES_PASSWORD/SECURE` (type: SecureString); `/SLACK/INCOMING_WEBHOOK_URL` (type: String); and `/CODEDEPLOY/DOCKER_IMAGE_NAME_DEMO` (type string)
+7. Deploy the application via code deploy: `./build_steps/ci.sh put_ssm_vars` and `./build_steps/cd.sh code_deploy`
 
-The aws resources can then be deployed as a CloudFormation stack by simply running the `./build_steps/cd.sh cfn_create` command.
+The aws resources can then be deployed as a CloudFormation stack by simply running the `CFN_STACK_NAME=live ./build_steps/cd.sh cfn_create` command.
 
 > Note it can take up to 30mn for all resources to be created. The stack resources can then be updated with `./build_steps/cd.sh cfn_update` or deleted with `./build_steps/cd.sh cfn_destroy`.
 
