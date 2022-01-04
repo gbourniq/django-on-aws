@@ -4,11 +4,11 @@
   <nav style="background-color:white">
 
     <div class="nav-wrapper container">
-      <a id="logo-container" href="/" class="brand-logo">
-        <img class="img-responsive" style="width:60px; height:50px; margin-top:4px" src="{% static 'Logo.png' %}">
+      <a id="logo-container" href="/" class="brand-logo center">
+        <img class="img-responsive" style="width:250px; height:32px; margin-top:14px" src="{% static 'Logo.png' %}">
       </a>
 
-      <a href="#" data-target="nav-mobile" class="sidenav-trigger"><i class="material-icons">menu</i></a>
+      <!-- <a href="#" data-target="nav-mobile" class="sidenav-trigger"><i class="material-icons">menu</i></a> -->
 
       <ul class="right hide-on-med-and-down">
         {% if user.is_authenticated %}

@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "app"
-version = "1.0.0"
-description = "Personal Portfolio Project running on Django deployed to AWS"
+version = "0.1.0"
+description = "Tari Kitchen Django website running on AWS"
 authors = ["Guillaume Bournique <gbournique@gmail.com>"]
 repository = "https://github.com/gbourniq/django-on-aws"
 readme = "README.md"

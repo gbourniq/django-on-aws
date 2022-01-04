@@ -4,16 +4,22 @@
 
   <div class="row"> 
     <br>
-    <div class="col l8 m12 s12">
+    <div class="col l9 m9 s12">
       <div class="container-fluid" align="left" >
-      <h4 style="text-align:center">{{item.item_name}}</h4>
-      {% comment %} <p style="font-size:70%">Published {{item.date_published}}</p> {% endcomment %}
+        <div class="center">
+          <h3>{{item.item_name}}</h3>
+          <!-- <p style="font-size:70%">Published {{item.date_published}}</p> -->
+          <br>
+          <img class="img-responsive" src="{{ item.image.url }}"></img>
+          <hr style="width:80%">
+          <br>
+        </div>
       {{item.content|safe}}
       </div>
     </div>
     
     <br>
-    <div class="col l4 m12 s12">
+    <div class="col l3 m3 s12">
       <ul class="collapsible popout" data-collapsible="accordion" style='font-size:85%; padding-left:30px'>
         {% for item in sidebar %}
           {% if forloop.counter0 == this_item_idx %}

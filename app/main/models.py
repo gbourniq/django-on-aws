@@ -52,6 +52,7 @@ class Item(models.Model, BaseModelMixin):
     id = models.AutoField(primary_key=True)
     item_name = models.CharField(max_length=200, unique=True)
     summary = models.CharField(max_length=200)
+    image = models.ImageField(upload_to=settings.UPLOADS_FOLDER_PATH)
     content = models.TextField()
     date_published = models.DateTimeField("date published", default=timezone.now)
     item_slug = models.CharField(max_length=200, unique=True)
@@ -64,6 +65,12 @@ class Item(models.Model, BaseModelMixin):
     def create(cls, dictionary):
         """Instantiate Item objects using dictionaries."""
         return cls(**dictionary)
+
+    # pylint: disable=signature-differs
+    # def save(self, *args, **kwargs):
+    #     """Resize the image on category.save()"""
+    #     self.image = self.resize_image(self.image)
+    #     super().save(*args, **kwargs)
 
     def increment_views(self):
         """Instance method to increment the views variable"""

@@ -24,9 +24,9 @@
 
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
 	<meta name="viewport" content="width=device-width, initial-scale=1"/>
-	<meta name="description" content="Personal portfolio Template">
+	<meta name="description" content="Tari Kitchen Website">
 	<meta name="author" content="Guillaume Bournique">
-	<title>Portfolio App Demo</title>
+	<title>Tari Kitchen</title>
 
 	{% load static %}
 	<!-- Loading css from tinyMCE app -->
@@ -37,11 +37,24 @@
 	<link href="{% static 'css/googleapis.css' %}" type="text/css" rel="stylesheet">
 	<link href="{% static 'css/style.css' %}" type="text/css" rel="stylesheet" media="screen,projection"/>
 	<link rel="shortcut icon" href="{% static 'favicon.ico' type='image/x-icon' %}">
+	<link rel="apple-touch-icon" href="{% static 'apple-touch-icon.png' %}">
 
 	<!-- Load JS files in head for MaterializeCSS Toasts -->
 	<script src="{% static 'js/jquery-2.1.1.min.js' %}"></script>
 	<script src="{% static 'js/materialize.js' %}"></script>
 	<script src="{% static 'js/init.js' %}"></script>
+
+	<style>
+		spanblack {
+			background-color: #212121;
+		}
+	
+		img {
+			max-width: 100%;
+			height: auto;
+			width: auto\9; /* ie8 */
+		}
+	</style>
 
 </head>
 
