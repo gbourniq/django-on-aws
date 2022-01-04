@@ -10,36 +10,6 @@ CONDA_ENV_NAME=django-on-aws
 CONDA_CREATE=source $$(conda info --base)/etc/profile.d/conda.sh ; conda env create
 CONDA_ACTIVATE=source $$(conda info --base)/etc/profile.d/conda.sh ; conda activate
 
-<<<<<<< HEAD
-=======
-# Cloudformation
-ENVIRONMENT?=live
-STACK_NAME=$(ENVIRONMENT)
-S3_BUCKET_NAME_CFN_TEMPLATES=gbournique-sam-artifacts
-CFN_PARENT_TEMPLATE_FILE="deployment/aws/cloudformation/parent-stack.yaml"
-CFN_PACKAGED_TEMPLATE_FILE="deployment/aws/cloudformation/nested-stacks.yaml"
-CFN_PARAMETERS_FILE="deployment/aws/cloudformation/cfn-parameters.json"
-TAG_NAME="Guillaume Bournique"
-TAG_EMAIL="gbournique.dev1@gmail.com"
-TAG_MODIFIED_DATE="$$(date +%F_%T)"
-
-# Deployment
-DOCKER_USER=gbournique
-IMAGE_REPOSITORY=${DOCKER_USER}/tarikitchen
-TAG=$(shell poetry version | awk '{print $$NF}')
-DEBUG=False
-CODEDEPLOY_APP_DIR=deployment/aws/codedeploy-app
-
-# Database
-RDS_POSTGRES_HOST=$$(echo "$$($(call get_stack_output, PostgresRdsEndpoint))")
-
-# Load testing
-WEBSERVER_URL=https://${STACK_NAME}.bournique.fr
-USERS=100
-SPAWN_RATE=50
-RUN_TIME=1mn
-
->>>>>>> tari-kitchen
 include utils/helpers.mk
 
 ### Environment and githooks ###

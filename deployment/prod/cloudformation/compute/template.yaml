@@ -33,7 +33,7 @@ Parameters:
   CodeDeployDeploymentGroupName:
     Description: Name for the CodeDeploy Deployment Group
     Type: String
-    AllowedValues: [tari-kitchen]
+    AllowedValues: [live]
   EC2SecurityGroupId:
     Type: String
   EC2InstanceType:
