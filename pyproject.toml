@@ -20,11 +20,11 @@ django-storages = "^1.9.1"                          # BSD 3
 django-tinymce4-lite = "1.7.5"                      # MIT
 gunicorn = "^19.9"                                  # MIT
 pillow = "^7.0.0"                                   # HPND
-psycopg2 = "^2.8.4"                                 # GNU
 python = "^3.8.0"                                   # PSF
 requests = "^2.22"                                  # Apache 2.0
 starlette = "^0.14.1"                               # BSD 3
-
+setuptools = "57.5.0"
+psycopg2-binary = "^2.9.3"
 
 [tool.poetry.dev-dependencies]
 ansible = "2.10.6"                                  # GNU

@@ -51,7 +51,7 @@ check_required_env_variables()
         var_not_set "AWS_DEFAULT_REGION; AWS_ACCESS_KEY_ID; AWS_SECRET_ACCESS_KEY"
     fi
     if [[ ! $DOCKER_PASSWORD ]]; then
-        var_not_setf "DOCKER_PASSWORD"
+        var_not_set "DOCKER_PASSWORD"
     fi
 }
 

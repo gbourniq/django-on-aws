@@ -16,7 +16,8 @@ ENV PYTHONUNBUFFERED=1 \
     DOCKER_CLI_EXPERIMENTAL=enabled \
     PYTHONPATH=${WORKDIR}
 
-RUN apt-get update \
+RUN apt-get --allow-releaseinfo-change update \
+    && apt-get update \
     && apt-get install --no-install-recommends -yq \
     # jq: for parsing json responses
     # vim: for any troubleshooting
@@ -24,8 +25,7 @@ RUN apt-get update \
     # build-essential: for building python deps
     # docker.io: for running docker commands
     # gcc libpq-dev python3-dev: psycopg2 source dependencies
-    jq curl vim wget unzip build-essential docker.io gcc libpq-dev python3-dev \
-    && rm -rf /var/lib/apt/lists/*
+    jq curl vim wget unzip build-essential docker.io gcc libpq-dev python3-dev
 
 ARG DOCKER_COMPOSE_VERSION=1.27.4
 ARG POETRY_VERSION=1.0.10
