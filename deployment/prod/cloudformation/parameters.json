@@ -8,8 +8,8 @@
     "ParameterValue": "2"
   },
   {
-    "ParameterKey": "CloudFrontExistingCertArn",
-    "ParameterValue": "arn:aws:acm:us-east-1:091361846328:certificate/99101444-af27-46b8-88c9-17d0808f016b"
+    "ParameterKey": "ACMPublicSSLCertArn",
+    "ParameterValue": "arn:aws:acm:us-east-1:091361846328:certificate/159956e1-4993-4268-a3c6-23ba05d4abca"
   },
   {
     "ParameterKey": "EC2LatestLinuxAmiId",
@@ -46,5 +46,9 @@
   {
     "ParameterKey": "Environment",
     "ParameterValue": "live"
+  },
+  {
+    "ParameterKey": "SetR53SubDomain",
+    "ParameterValue": "False"
   }
 ]

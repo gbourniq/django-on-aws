@@ -13,8 +13,8 @@ Parameters:
   ALBSubnetsString:
     Description: List of subnets the application load balancer will be deployed across
     Type: String
-  CloudFrontExistingCertArn:
-    Description: SSL Cert Arn stored in ACM in region us-east-1 for CF
+  ACMPublicSSLCertArn:
+    Description: Public SSL Cert Arn stored in ACM. Must be in the same region as CloudFront (us-east-1).
     Type: String
   OAIUserId:
     Description: CloudFront Origin Access Identity User Id to serve private S3 resources through CF
@@ -25,7 +25,7 @@ Parameters:
     Type: String
     ConstraintDescription: Must be a valid DNS zone name.
   R53Subdomain:
-    Description: The subdomain of the dns entry. For example, app -> app.mydomain.com.
+    Description: The subdomain of the dns entry (optional). For example, app -> app.mydomain.com.
     Type: String
   S3BucketDomainNameLogging:
     Description: Domain Name for the S3 bucket to store CloudFront, ALB, VPC access logs
@@ -43,13 +43,16 @@ Parameters:
     Description: Vpc Id of the existing Virtual Private Cloud (VPC)
     Type: String
 
+Conditions:
+  IsEmptySubDomain: !Equals [!Ref R53Subdomain, '']
+
 Resources:
   # Route 53
   WebsiteDNSName:
     Type: AWS::Route53::RecordSet
     Properties:
       HostedZoneName: !Join ['', [!Ref R53HostedZoneName, .]]
-      Name: !Join ['', [!Ref R53Subdomain, ., !Ref R53HostedZoneName]]
+      Name: !If [IsEmptySubDomain, !Ref R53HostedZoneName, !Join ['', [!Ref R53Subdomain, ., !Ref R53HostedZoneName]]]
       Comment: Zone apex alias targeted to the CloudFront distribution
       Type: A
       AliasTarget:
@@ -81,7 +84,8 @@ Resources:
     Properties:
       DistributionConfig:
         Comment: CDN for ALB, S3 website, and private S3 static files
-        Aliases: [!Join ['', [!Ref R53Subdomain, ., !Ref R53HostedZoneName]]]
+        Aliases:
+          - !If [IsEmptySubDomain, !Ref R53HostedZoneName, !Join ['', [!Ref R53Subdomain, ., !Ref R53HostedZoneName]]]
         Enabled: true
         DefaultCacheBehavior:
           AllowedMethods: [GET, HEAD, OPTIONS, PUT, PATCH, POST, DELETE]
@@ -131,7 +135,7 @@ Resources:
             Id: s3-oai-origin
             DomainName: !Ref S3BucketDomainNameWebappStaticFiles
         ViewerCertificate:
-          AcmCertificateArn: !Ref CloudFrontExistingCertArn
+          AcmCertificateArn: !Ref ACMPublicSSLCertArn
           SslSupportMethod: sni-only
         Logging:
           Bucket: !Ref S3BucketDomainNameLogging
