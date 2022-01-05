@@ -209,7 +209,7 @@ pg_dump -h <public-domain-old-rds>.eu-west-2.rds.amazonaws.com -U postgres -Fc p
 pg_restore -h <public-domain-new-rds>.eu-west-2.rds.amazonaws.com --no-owner --no-privileges -U postgres --role=postgres -d portfoliodb pg_backup.dump
 ```
 
-2. Restore static
+2. Restore static files
 ```
 mkdir staticdatabackup
 aws s3 cp s3://<old-bucket-static-files> staticdatabackup --recursive --profile oldaws
