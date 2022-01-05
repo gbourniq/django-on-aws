@@ -13,7 +13,7 @@
       <ul class="right hide-on-med-and-down">
         {% if user.is_authenticated %}
         <li><a href="/logout">Log out</a></li>
-        <li><a href="#">{{user.username|title}}</a></li>
+        <li><a href="/admin">{{user.username|title}}</a></li>
         {% else %}
         <li><a href="/login">Log in</a></li>
         <li><a href="/register">Sign up</a></li>
