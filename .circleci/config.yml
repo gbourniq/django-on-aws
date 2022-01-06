@@ -12,6 +12,7 @@ workflows:
   ci_pipeline_only:
     jobs:
       - ci-pipeline
+      - cd-pipeline
   scheduled_ci_cd_pipeline:
     triggers:
       - schedule:
