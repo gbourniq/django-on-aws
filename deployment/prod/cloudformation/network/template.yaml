@@ -24,9 +24,10 @@ Parameters:
     AllowedPattern: (?!-)[a-zA-Z0-9-.]{1,63}(?<!-)
     Type: String
     ConstraintDescription: Must be a valid DNS zone name.
-  R53Subdomain:
+  R53SubDomain:
     Description: The subdomain of the dns entry (optional). For example, app -> app.mydomain.com.
     Type: String
+    Default: ''
   S3BucketDomainNameLogging:
     Description: Domain Name for the S3 bucket to store CloudFront, ALB, VPC access logs
     Type: String
@@ -44,7 +45,7 @@ Parameters:
     Type: String
 
 Conditions:
-  IsEmptySubDomain: !Equals [!Ref R53Subdomain, '']
+  IsEmptySubDomain: !Equals [!Ref R53SubDomain, '']
 
 Resources:
   # Route 53
@@ -52,7 +53,7 @@ Resources:
     Type: AWS::Route53::RecordSet
     Properties:
       HostedZoneName: !Join ['', [!Ref R53HostedZoneName, .]]
-      Name: !If [IsEmptySubDomain, !Ref R53HostedZoneName, !Join ['', [!Ref R53Subdomain, ., !Ref R53HostedZoneName]]]
+      Name: !If [IsEmptySubDomain, !Ref R53HostedZoneName, !Join ['', [!Ref R53SubDomain, ., !Ref R53HostedZoneName]]]
       Comment: Zone apex alias targeted to the CloudFront distribution
       Type: A
       AliasTarget:
@@ -85,7 +86,7 @@ Resources:
       DistributionConfig:
         Comment: CDN for ALB, S3 website, and private S3 static files
         Aliases:
-          - !If [IsEmptySubDomain, !Ref R53HostedZoneName, !Join ['', [!Ref R53Subdomain, ., !Ref R53HostedZoneName]]]
+          - !If [IsEmptySubDomain, !Ref R53HostedZoneName, !Join ['', [!Ref R53SubDomain, ., !Ref R53HostedZoneName]]]
         Enabled: true
         DefaultCacheBehavior:
           AllowedMethods: [GET, HEAD, OPTIONS, PUT, PATCH, POST, DELETE]

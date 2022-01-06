@@ -49,14 +49,13 @@ Parameters:
     MinValue: 8
     MaxValue: 20
   Environment:
-    Description: Stage name which is used as the R53 DNS subdomain (optional), the CodeDeploy deployment group, and to determine RDS DeletePolicy
+    Description: Stack name which is used as the CodeDeploy deployment group name, and to determine RDS DeletePolicy
     Type: String
     AllowedValues: [live, demo]
-  SetR53SubDomain:
-    Description: Set to True so that the website is exposed on <Environment>.domain.com. Otherwise the root domain is used.
+  R53SubDomain:
+    Description: Optional name for the route 53 sub domain. If empty string, then the website is exposed on the root domain name.
     Type: String
-    AllowedValues: ['True', 'False']
-    Default: 'True'
+    Default: ''
   R53HostedZoneName:
     Description: The DNS name of an existing Amazon Route 53 hosted zone. For example, "mydomain.com"
     AllowedPattern: (?!-)[a-zA-Z0-9-.]{1,63}(?<!-)
@@ -77,9 +76,6 @@ Parameters:
     Description: VpcId of the existing Virtual Private Cloud (VPC)
     Type: AWS::EC2::VPC::Id
 
-Conditions:
-  IsEmptyR53SubDomain: !Equals [!Ref SetR53SubDomain, 'True']
-
 Resources:
   NetworkStack:
     Type: AWS::CloudFormation::Stack
@@ -90,7 +86,7 @@ Resources:
         ACMPublicSSLCertArn: !Ref ACMPublicSSLCertArn
         OAIUserId: !GetAtt StorageStack.Outputs.OAIUserId
         R53HostedZoneName: !Ref R53HostedZoneName
-        R53Subdomain: !If [IsEmptyR53SubDomain, '', !Ref Environment]
+        R53SubDomain: !Ref R53SubDomain
         S3BucketDomainNameLogging: !GetAtt StorageStack.Outputs.S3BucketDomainNwameLogging
         S3BucketNameLogging: !GetAtt StorageStack.Outputs.S3BucketNameLogging
         S3BucketDomainNameWebappStaticFiles: !GetAtt StorageStack.Outputs.S3BucketDomainNameWebappStaticFiles
@@ -131,7 +127,7 @@ Resources:
         ASGScheduledActionUpTimeHour: !Ref ASGScheduledActionUpTimeHour
         ASGScheduledActionDownTimeHour: !Ref ASGScheduledActionDownTimeHour
         R53HostedZoneName: !Ref R53HostedZoneName
-        R53Subdomain: !Ref Environment
+        R53SubDomain: !Ref R53SubDomain
   ServerlessStack:
     Type: AWS::CloudFormation::Stack
     Properties:

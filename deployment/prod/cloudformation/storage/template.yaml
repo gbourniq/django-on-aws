@@ -29,9 +29,13 @@ Parameters:
     AllowedPattern: (?!-)[a-zA-Z0-9-.]{1,63}(?<!-)
     Type: String
     ConstraintDescription: Must be an existing DNS zone name.
-  R53Subdomain:
-    Description: The subdomain of the dns entry. For example, app -> app.mydomain.com.
+  R53SubDomain:
+    Description: The subdomain of the dns entry (optional). For example, app -> app.mydomain.com.
     Type: String
+    Default: ''
+
+Conditions:
+  IsEmptySubDomain: !Equals [!Ref R53SubDomain, '']
 
 Resources:
   # S3 Buckets
@@ -41,7 +45,7 @@ Resources:
     UpdateReplacePolicy: Retain
     Properties:
       # S3 website bucket name must match the DNS Name served by the CF distribution custom origin
-      BucketName: !Join ['', [!Ref R53Subdomain, ., !Ref R53HostedZoneName]]
+      BucketName: !If [IsEmptySubDomain, !Ref R53HostedZoneName, !Join ['', [!Ref R53SubDomain, ., !Ref R53HostedZoneName]]]
       AccessControl: PublicRead
       WebsiteConfiguration:
         IndexDocument: index.html
@@ -51,7 +55,7 @@ Resources:
     DeletionPolicy: Delete
     UpdateReplacePolicy: Retain
     Properties:
-      BucketName: !Join ['', [!Ref R53Subdomain, ., !Ref R53HostedZoneName, -, codedeploy-artifacts]]
+      BucketName: !Join ['-', [!If [IsEmptySubDomain, !Ref R53HostedZoneName, !Join ['', [!Ref R53SubDomain, ., !Ref R53HostedZoneName]]], codedeploy-artifacts]]
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
         BlockPublicPolicy: true
@@ -64,7 +68,7 @@ Resources:
     DeletionPolicy: Delete
     UpdateReplacePolicy: Retain
     Properties:
-      BucketName: !Join ['', [!Ref R53Subdomain, ., !Ref R53HostedZoneName, -, static-files]]
+      BucketName: !Join ['-', [!If [IsEmptySubDomain, !Ref R53HostedZoneName, !Join ['', [!Ref R53SubDomain, ., !Ref R53HostedZoneName]]], static-files]]
       PublicAccessBlockConfiguration:
         BlockPublicAcls: false
         BlockPublicPolicy: false
@@ -75,7 +79,7 @@ Resources:
     DeletionPolicy: Delete
     UpdateReplacePolicy: Retain
     Properties:
-      BucketName: !Join ['', [!Ref R53Subdomain, ., !Ref R53HostedZoneName, -, logging-bucket]]
+      BucketName: !Join ['-', [!If [IsEmptySubDomain, !Ref R53HostedZoneName, !Join ['', [!Ref R53SubDomain, ., !Ref R53HostedZoneName]]], logging-bucket]]
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
         BlockPublicPolicy: true
@@ -158,7 +162,7 @@ Resources:
         <head>
           <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
           <meta name="viewport" content="width=device-width, initial-scale=1"/>
-          <meta name="description" content="Failover page for ${R53Subdomain}.${R53HostedZoneName}">
+          <meta name="description" content="Failover page for ${R53HostedZoneName}">
           <title>Failover page</title>
           <link href="https://s3.${AWS::Region}.amazonaws.com/${S3BucketWebappStaticFiles}/staticfiles/css/materialize.css" type="text/css" rel="stylesheet" media="screen,projection"/>
           <link href="https://s3.${AWS::Region}.amazonaws.com/${S3BucketWebappStaticFiles}/staticfiles/css/style.css" type="text/css" rel="stylesheet" media="screen,projection"/>
@@ -183,7 +187,7 @@ Resources:
               <div class="row">
                 <center>
                   <br><br><br><br><br>
-                  <h5>Oops.. ${R53Subdomain}.${R53HostedZoneName} is currently unavailable. Please try again between ${ASGScheduledActionUpTimeHour}.00-${ASGScheduledActionDownTimeHour}.00 (GMT).</h5>
+                  <h5>Oops.. ${R53HostedZoneName} is currently unavailable. Please try again between ${ASGScheduledActionUpTimeHour}.00-${ASGScheduledActionDownTimeHour}.00 (GMT).</h5>
                   <br>
                   <a href="/" id="refresh-button" class="btn-large waves-effect waves-light gray darken-1">Try again</a>
                 </center>
@@ -207,7 +211,7 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       Description: Lambda function to manage S3 buckets lifecycle
-      FunctionName: !Join ['', [!Ref R53Subdomain, -, StorageStack, -, lambda-s3]]
+      FunctionName: !Join ['', [!Ref R53SubDomain, -, StorageStack, -, lambda-s3]]
       Handler: index.handler
       Role: !GetAtt LambdaRoleCustomResourceForS3.Arn
       Timeout: 30

@@ -48,7 +48,7 @@
     "ParameterValue": "live"
   },
   {
-    "ParameterKey": "SetR53SubDomain",
-    "ParameterValue": "False"
+    "ParameterKey": "R53SubDomain",
+    "ParameterValue": ""
   }
 ]
