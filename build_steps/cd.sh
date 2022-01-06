@@ -312,7 +312,7 @@ load_testing() {
 put_ssm_parameter_str()
 {
 	printf "Updating parameter '$1' with value '$2'\n"
-	docker-ci aws ssm put-parameter \
+	docker-cd aws ssm put-parameter \
 				  --name $1 \
 				  --value $2 \
 				  --type "String" \
