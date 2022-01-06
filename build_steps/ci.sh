@@ -274,7 +274,7 @@ if [[ -n $1 ]]; then
 		put_ssm_vars)
 			printf "☁️ Updating AWS ssm parameters...\n"
 			set_common_env_variables
-			put_ssm_parameter_str "/CODEDEPLOY/DOCKER_IMAGE_NAME_DEMO" "${WEBAPP_IMAGE_REPOSITORY}:$(webapp_image_tag)"
+			put_ssm_parameter_str "/CODEDEPLOY/DOCKER_IMAGE_NAME" "${WEBAPP_IMAGE_REPOSITORY}:$(webapp_image_tag)"
 			put_ssm_parameter_str "/CODEDEPLOY/DEBUG_DEMO" "${DEBUG}"
 			exit 0
 			;;

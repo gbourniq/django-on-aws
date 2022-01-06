@@ -48,14 +48,9 @@ Parameters:
     Type: Number
     MinValue: 8
     MaxValue: 20
-  Environment:
-    Description: Stack name which is used as the CodeDeploy deployment group name, and to determine RDS DeletePolicy
-    Type: String
-    AllowedValues: [live, demo]
-  R53SubDomain:
-    Description: Optional name for the route 53 sub domain. If empty string, then the website is exposed on the root domain name.
-    Type: String
-    Default: ''
+  SetR53SubDomainAsStackName:
+    Description: SSM parameter to set a R53 sub domain name as the stack name. Allowed values are [True, False]. If False, the root domain name is used.
+    Type: AWS::SSM::Parameter::Value<String>
   R53HostedZoneName:
     Description: The DNS name of an existing Amazon Route 53 hosted zone. For example, "mydomain.com"
     AllowedPattern: (?!-)[a-zA-Z0-9-.]{1,63}(?<!-)
@@ -76,6 +71,9 @@ Parameters:
     Description: VpcId of the existing Virtual Private Cloud (VPC)
     Type: AWS::EC2::VPC::Id
 
+Conditions:
+  SetR53SubDomainAsStackNameCondition: !Equals [!Ref SetR53SubDomainAsStackName, 'True']
+
 Resources:
   NetworkStack:
     Type: AWS::CloudFormation::Stack
@@ -86,8 +84,8 @@ Resources:
         ACMPublicSSLCertArn: !Ref ACMPublicSSLCertArn
         OAIUserId: !GetAtt StorageStack.Outputs.OAIUserId
         R53HostedZoneName: !Ref R53HostedZoneName
-        R53SubDomain: !Ref R53SubDomain
-        S3BucketDomainNameLogging: !GetAtt StorageStack.Outputs.S3BucketDomainNwameLogging
+        R53SubDomain: !If [SetR53SubDomainAsStackNameCondition, !Ref AWS::StackName, '']
+        S3BucketDomainNameLogging: !GetAtt StorageStack.Outputs.S3BucketDomainNameLogging
         S3BucketNameLogging: !GetAtt StorageStack.Outputs.S3BucketNameLogging
         S3BucketDomainNameWebappStaticFiles: !GetAtt StorageStack.Outputs.S3BucketDomainNameWebappStaticFiles
         S3WebsiteBucketDomainName: !GetAtt StorageStack.Outputs.S3WebsiteBucketDomainName
@@ -102,7 +100,6 @@ Resources:
         ASGScheduledActionUpTimeHour: !Ref ASGScheduledActionUpTimeHour
         ASGScheduledActionDownTimeHour: !Ref ASGScheduledActionDownTimeHour
         ASGSubnetsString: !Ref SubnetListStr
-        CodeDeployDeploymentGroupName: !Ref Environment
         EC2SecurityGroupId: !GetAtt NetworkStack.Outputs.EC2SecurityGroupId
         EC2InstanceType: !Ref EC2InstanceType
         EC2AmiId: !Ref EC2LatestLinuxAmiId
@@ -127,7 +124,7 @@ Resources:
         ASGScheduledActionUpTimeHour: !Ref ASGScheduledActionUpTimeHour
         ASGScheduledActionDownTimeHour: !Ref ASGScheduledActionDownTimeHour
         R53HostedZoneName: !Ref R53HostedZoneName
-        R53SubDomain: !Ref R53SubDomain
+        R53SubDomain: !If [SetR53SubDomainAsStackNameCondition, !Ref AWS::StackName, '']
   ServerlessStack:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -135,7 +132,6 @@ Resources:
       Parameters:
         CodeDeployDimensionName: !Ref CodeDeployDimensionName
         CodeDeployMetricName: !Ref CodeDeployMetricName
-        Environment: !Ref Environment
         SlackWebhookUrl: !Ref SSMParamSlackWebhookUrl
   DatabaseStack:
     Type: AWS::CloudFormation::Stack
@@ -144,7 +140,6 @@ Resources:
       Parameters:
         AddRDSReadReplica: 'false'
         ElasticacheSecurityGroupId: !GetAtt NetworkStack.Outputs.ElastiCacheSecurityGroupId
-        Environment: !Ref Environment
         RDSSecurityGroupName: !GetAtt NetworkStack.Outputs.RDSSecurityGroupName
         SSMParamNameRdsPostgresPassword: !Ref SSMParamNameRdsPostgresPassword
   DashboardStack:

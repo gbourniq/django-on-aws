@@ -26,7 +26,7 @@ help_text()
     echo ""
     echo "Usage:        $script_dir/$script_name <COMMAND>"
     echo ""
-    echo "Example:      'CFN_STACK_NAME=live $script_dir/$script_name cfn_create'"
+    echo "Example:      'CFN_STACK_NAME=live R53_SUB_DOMAIN=False $script_dir/$script_name cfn_create'"
     echo ""
     echo "Available Commands:"
     echo "  tf_launch           🚀 Run Terraform to launch new instance(s)"
@@ -72,7 +72,8 @@ set_common_env_variables()
 	export ANSIBLE_GIT_BRANCH_NAME=main
 
 	# Cloudformation
-	export CFN_STACK_NAME=${CFN_STACK_NAME:-live}
+	export CFN_STACK_NAME=${CFN_STACK_NAME:-demo}
+	export R53_SUB_DOMAIN=${R53_SUB_DOMAIN:-True}
 	export CFN_TEMPLATES_S3_BUCKET_NAME=gbournique-cfn-templates
 	export CFN_DIR="./deployment/prod/cloudformation/"
 	export CFN_PARENT_TEMPLATE_FILE="${CFN_DIR}/parent-stack.yaml"
@@ -89,7 +90,11 @@ set_common_env_variables()
 	export STACK_OUTPUT_CODEDEPLOY_S3_BUCKET_NAME="CodeDeployS3BucketName"
 
 	# Load testing
-	export WEBSERVER_URL=https://${CFN_STACK_NAME}.tari.kitchen
+	if [ -z "$R53_SUB_DOMAIN" ]; then
+		export WEBSERVER_URL=https://tari.kitchen
+	else
+		export WEBSERVER_URL=https://${CFN_STACK_NAME}.tari.kitchen
+	fi
 	export USERS=200
 	export SPAWN_RATE_PS=50
 	export RUN_TIME=30s
@@ -144,12 +149,10 @@ cfn_package() {
 	# Validating CloudFormation template
 	docker-cd aws cloudformation validate-template --template-body file://${CFN_PACKAGED_TEMPLATE_FILE} > /dev/null
 
-	# The stack name (dev/demo) is used as the subdomain name, eg. demo.mydomain.com
-	# If set to 'demo', then an RDS database snapshot will be created on stack deletion 
-	docker-cd aws ssm put-parameter \
-		--name /DEPLOYMENT/ENVIRONMENT \
-		--value ${CFN_STACK_NAME} \
-		--type "String" --overwrite >/dev/null
+	# If CFN_STACK_NAME set to 'demo', then an RDS database snapshot will be created on stack deletion
+	# If R53_SUB_DOMAIN set to 'True', then stack name is used as the subdomain name, eg. demo.mydomain.com
+	put_ssm_parameter_str "/DEPLOYMENT/STACK_NAME" "${CFN_STACK_NAME}"
+	put_ssm_parameter_str "/DEPLOYMENT/R53_SUB_DOMAIN" "${R53_SUB_DOMAIN}"
 }
 
 cfn_create() {
@@ -306,6 +309,15 @@ load_testing() {
 		--only-summary
 }
 
+put_ssm_parameter_str()
+{
+	printf "Updating parameter '$1' with value '$2'\n"
+	docker-ci aws ssm put-parameter \
+				  --name $1 \
+				  --value $2 \
+				  --type "String" \
+				  --overwrite >/dev/null; \
+}
 
 # Script starting point
 if [[ -n $1 ]]; then

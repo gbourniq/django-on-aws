@@ -73,10 +73,29 @@ tf-destroy:
 
 
 ### CI/CD scripts ###
-.PHONY: ci-help cd-help
+.PHONY: ci-help cd-help ci-all cd-all
 
 ci-help:
 	@ ./build_steps/ci.sh || true
 
 cd-help:
 	@ ./build_steps/cd.sh || true
+
+ci-all:
+	@ ${INFO} "Running the CI pipeline build steps locally"
+	./build_steps/ci.sh build
+	./build_steps/ci.sh start_db
+	./build_steps/ci.sh unit_tests
+	./build_steps/ci.sh lint
+	./build_steps/ci.sh healthcheck
+	./build_steps/ci.sh clean
+	./build_steps/ci.sh push_images
+	./build_steps/ci.sh put_ssm_vars
+
+cd-all:
+	@ ${INFO} "Running the CD pipeline build steps locally"
+	CFN_STACK_NAME=demo R53_SUB_DOMAIN=True ./build_steps/cd.sh cfn_create
+	CFN_STACK_NAME=demo ./build_steps/cd.sh code_deploy
+	CFN_STACK_NAME=demo R53_SUB_DOMAIN=True ./build_steps/cd.sh cfn_update
+	CFN_STACK_NAME=demo R53_SUB_DOMAIN=True ./build_steps/cd.sh load_testing
+	CFN_STACK_NAME=demo ./build_steps/cd.sh cfn_destroy_async

@@ -15,10 +15,6 @@ Parameters:
   ElasticacheSecurityGroupId:
     Description: Security Group Id for ElastiCache to allow incoming request from EC2s
     Type: String
-  Environment:
-    Description: Stage environment name to determine RDS DeletionPolicy
-    Type: String
-    AllowedValues: [live, demo]
   RDSSecurityGroupName:
     Description: Security Group Name for RDS to allow incoming request from EC2s
     Type: String
@@ -28,9 +24,9 @@ Parameters:
     Type: String
 
 Conditions:
-  RDSReadReplica: !And [!Equals [ !Ref AddRDSReadReplica, 'true' ], !Not [!Equals [ !Ref Environment, demo]]]
-  DevEnvironment: !Equals [ !Ref Environment, demo]
-  ProdEnvironment: !Not [!Equals [ !Ref Environment, demo]]
+  RDSReadReplica: !And [!Equals [ !Ref AddRDSReadReplica, 'true' ], !Not [!Equals [ !Ref AWS::StackName, demo]]]
+  DevEnvironment: !Equals [ !Ref AWS::StackName, demo]
+  ProdEnvironment: !Not [!Equals [ !Ref AWS::StackName, demo]]
 
 Resources:
   DevRDSPostgresDB:

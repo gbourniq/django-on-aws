@@ -15,10 +15,6 @@ Parameters:
   CodeDeployMetricName:
     Description: Metric Name for the Custom Metric API to push the codedeploy deployment state to
     Type: String
-  Environment:
-    Description: Stage environment name as a suffix to Lambda function names
-    Type: String
-    AllowedValues: [live, demo]
   SlackWebhookUrl:
     NoEcho: 'true'
     Description: Slack WebHook Url to forward ASG/CodeDeploy events SNS notifications to Slack
@@ -47,7 +43,7 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       Description: Push custom metrics for CodeDeploy deployment event state changes
-      FunctionName: !Join ['', [!Ref Environment, -, ServerlessStack, -, lambda-codedeploy]]
+      FunctionName: !Join ['-', [!Ref AWS::StackName, lambda-codedeploy]]
       Handler: codedeploy_lambda_handler.handler
       Role: !GetAtt LambdaRoleForwardMessagesToSlack.Arn
       Timeout: 30
@@ -69,7 +65,7 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       Description: Forward messages from Amazon SNS to Slack.
-      FunctionName: !Join ['', [!Ref Environment, -, ServerlessStack, -, lambda-sns]]
+      FunctionName: !Join ['-', [!Ref AWS::StackName, lambda-sns]]
       Handler: sns_lambda_handler.handler
       Role: !GetAtt LambdaRoleForwardMessagesToSlack.Arn
       Timeout: 30
@@ -90,7 +86,7 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       Description: Forward messages from Amazon SQS to Slack.
-      FunctionName: !Join ['', [!Ref Environment, -, ServerlessStack, -, lambda-sqs]]
+      FunctionName: !Join ['-', [!Ref AWS::StackName, lambda-sqs]]
       Handler: sqs_lambda_handler.handler
       Role: !GetAtt LambdaRoleForwardMessagesToSlack.Arn
       Timeout: 30
@@ -113,7 +109,7 @@ Resources:
     Type: AWS::SNS::Topic
     Properties:
       DisplayName: cfn-info
-      TopicName: !Join ['', [!Ref Environment, -, CloudFormationNotifications]]
+      TopicName: !Join ['-', [!Ref AWS::StackName, CloudFormationNotifications]]
       Subscription:
         - Protocol: lambda
           Endpoint: !GetAtt LambdaForwardSNSToSlack.Arn

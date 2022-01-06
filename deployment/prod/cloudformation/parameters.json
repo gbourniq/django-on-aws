@@ -44,11 +44,7 @@
     "ParameterValue": "vpc-0e47d190752f51544"
   },
   {
-    "ParameterKey": "Environment",
-    "ParameterValue": "live"
-  },
-  {
-    "ParameterKey": "R53SubDomain",
-    "ParameterValue": ""
+    "ParameterKey": "SetR53SubDomainAsStackName",
+    "ParameterValue": "/DEPLOYMENT/R53_SUB_DOMAIN"
   }
 ]
