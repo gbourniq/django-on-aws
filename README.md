@@ -302,4 +302,4 @@ AWS_ACCESS_KEY_ID                <-- used by the awscli (cd pipeline)
 AWS_DEFAULT_REGION               <-- used by the awscli	(cd pipeline)
 AWS_SECRET_ACCESS_KEY            <-- used by the awscli	(cd pipeline)
 ```
-> To troubleshoot the pipelines locally, run `make ci-all` and `make cd-all`. You will need to have the aws cli configured and the `DOCKER_PASSWORD` environment variable set.
+> To troubleshoot the pipelines locally, run `make ci-all` and `make cd-all`.
