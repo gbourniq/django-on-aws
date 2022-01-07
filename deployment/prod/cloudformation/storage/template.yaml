@@ -211,6 +211,8 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       Description: Lambda function to manage S3 buckets lifecycle
+      # Function name must remain unchanged across stack updates, otherwise the
+      # following error occurs "ServiceToken not allowed to change on CustomResources
       FunctionName: !Join ['', [!Ref R53SubDomain, -, StorageStack, -, lambda-s3]]
       Handler: index.handler
       Role: !GetAtt LambdaRoleCustomResourceForS3.Arn
