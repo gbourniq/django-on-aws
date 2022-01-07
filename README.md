@@ -119,6 +119,8 @@ make cov                         <-- Open unit-tests coverage html report
 make clean                       <-- Stop and remove all containers
 ```
 
+> To run the unit tests outside of docker, use `POSTGRES_HOST=localhost REDIS_ENDPOINT=localhost:6379 pytest app -x`
+
 To run the dockerised app locally:
 ```bash
 make build                       <-- Builds docker image used to run CI steps
