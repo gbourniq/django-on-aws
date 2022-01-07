@@ -3,7 +3,6 @@ This module defines Admin models to map our Category and Item models so that
 they can be managed via the Django admin page /admin
 """
 from django.contrib import admin
-from django.contrib.auth.models import Group, User
 from django.db import models
 from tinymce.widgets import TinyMCE
 
@@ -49,7 +48,3 @@ class CategoryAdmin(DontLog, admin.ModelAdmin):
 # Register models
 admin.site.register(Item, ItemAdmin)
 admin.site.register(Category, CategoryAdmin)
-
-# Hide auth section
-admin.site.unregister(User)
-admin.site.unregister(Group)
