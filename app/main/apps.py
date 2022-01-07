@@ -14,3 +14,4 @@ class MainConfig(AppConfig):
     """
 
     name = "main"
+    verbose_name = "Gestion des Recettes"

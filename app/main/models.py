@@ -47,7 +47,8 @@ class Category(models.Model, BaseModelMixin):
         )
 
     class Meta:
-        verbose_name_plural = "Categories"
+        verbose_name = "Catégorie"
+        verbose_name_plural = "Catégories"
         app_label = "main"
 
 
@@ -95,5 +96,6 @@ class Item(models.Model, BaseModelMixin):
         )
 
     class Meta:
-        verbose_name_plural = "Items"
+        verbose_name = "Recettes"
+        verbose_name_plural = "Recettes"
         app_label = "main"

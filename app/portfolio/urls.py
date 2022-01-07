@@ -2,6 +2,7 @@
 
 import debug_toolbar
 from django.conf import settings
+from django.conf.urls.i18n import i18n_patterns
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.core.cache.backends.base import DEFAULT_TIMEOUT
@@ -34,7 +35,14 @@ CACHE_TTL = getattr(settings, "CACHE_TTL", DEFAULT_TIMEOUT)
 CAT_PREFIX = "api/v1/categories"
 ITEMS_PREFIX = "api/v1/items"
 
-urlpatterns = [
+# For admin page automated translation from set locale region
+urlpatterns = i18n_patterns(
+    path("admin/", admin.site.urls),
+    # If no prefix is given, use the default language
+    prefix_default_language=True,
+)
+
+urlpatterns += [
     # Django rest framework
     # path(f"{CAT_PREFIX}/", CategoryList.as_view()),
     # path(f"{CAT_PREFIX}/new", CategoryCreate.as_view()),
@@ -71,7 +79,6 @@ urlpatterns = [
         name="items_view",
     ),
     # Extra apps
-    path("admin/", admin.site.urls),
     path("tinymce/", include("tinymce.urls")),
     # No url matched
     re_path(r"^.*/$", url_error, name="error404"),
@@ -85,3 +92,7 @@ urlpatterns = (
 
 # Custom views for errors
 handler404 = "main.errors.handler404"
+
+# Customise admin page titles
+admin.site.index_title = ""
+admin.site.site_header = "Tari Kitchen Admin"
