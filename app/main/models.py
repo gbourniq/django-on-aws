@@ -1,10 +1,14 @@
 """This module defines the Django models Item and Category to manage blog posts"""
+from pathlib import Path
 
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
+from django.utils.text import slugify
 
 from .mixins import BaseModelMixin
+
+HTML_TEMPLATE_PATH = Path(__file__).resolve().parent / "item_content_template.html"
 
 
 class Category(models.Model, BaseModelMixin):
@@ -17,17 +21,18 @@ class Category(models.Model, BaseModelMixin):
     category_slug = models.CharField(max_length=200, unique=True)
 
     @classmethod
-    def create(cls, dictionary):
+    def create(cls, kwargs) -> "Category":
         """
         Instantiate a Category objects using dictionaries.
         Usage: new_category = Category.create(datadict)
         """
-        return cls(**dictionary)
+        return cls(**kwargs)
 
     # pylint: disable=signature-differs
     def save(self, *args, **kwargs):
-        """Resize the image on category.save()"""
+        """Any modification on the item attributes before saving the object."""
         self.image = self.resize_image(self.image)
+        self.category_slug = slugify(self.category_name)
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -53,7 +58,8 @@ class Item(models.Model, BaseModelMixin):
     item_name = models.CharField(max_length=200, unique=True)
     summary = models.CharField(max_length=200)
     image = models.ImageField(upload_to=settings.UPLOADS_FOLDER_PATH)
-    content = models.TextField()
+    with open(HTML_TEMPLATE_PATH) as f:
+        content = models.TextField(default=f.read())
     date_published = models.DateTimeField("date published", default=timezone.now)
     item_slug = models.CharField(max_length=200, unique=True)
     category_name = models.ForeignKey(
@@ -62,15 +68,16 @@ class Item(models.Model, BaseModelMixin):
     views = models.IntegerField(default=0)
 
     @classmethod
-    def create(cls, dictionary):
-        """Instantiate Item objects using dictionaries."""
-        return cls(**dictionary)
+    def create(cls, kwargs: dict) -> "Item":
+        """Instantiate Item objects using dictionaries. Used by tests"""
+        return cls(**kwargs)
 
     # pylint: disable=signature-differs
-    # def save(self, *args, **kwargs):
-    #     """Resize the image on category.save()"""
-    #     self.image = self.resize_image(self.image)
-    #     super().save(*args, **kwargs)
+    def save(self, *args, **kwargs):
+        """Any modification on the item attributes before saving the object."""
+        # self.image = self.resize_image(self.image)
+        self.item_slug = slugify(self.item_name)
+        super().save(*args, **kwargs)
 
     def increment_views(self):
         """Instance method to increment the views variable"""
