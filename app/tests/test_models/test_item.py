@@ -26,7 +26,6 @@ class TestItems:
             mock_default_item.summary: f"{MockItem.DEFAULT_SUMMARY}{_id}",
             mock_default_item.content: f"{MockItem.DEFAULT_CONTENT}{_id}",
             mock_default_item.date_published: f"{MockItem.DEFAULT_DATE}",
-            mock_default_item.item_slug: f"{MockItem.DEFAULT_ITEM_SLUG}{_id}",
             mock_default_item.category_name: mock_default_category,
         }
         # Then: Item object fields have been assigned correctly
