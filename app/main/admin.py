@@ -9,20 +9,7 @@ from tinymce.widgets import TinyMCE
 from .models import Category, Item
 
 
-class DontLog:
-    "Do not log action history in the Admin panel."
-
-    def log_addition(self, *args):
-        return
-
-    def log_change(self, *args):
-        return
-
-    def log_deletion(self, *args):
-        return
-
-
-class ItemAdmin(DontLog, admin.ModelAdmin):
+class ItemAdmin(admin.ModelAdmin):
     """
     Class to add an Item from the Django admin page with the TinyMCE
     plugin which provides text formatting options
@@ -39,7 +26,7 @@ class ItemAdmin(DontLog, admin.ModelAdmin):
     }
 
 
-class CategoryAdmin(DontLog, admin.ModelAdmin):
+class CategoryAdmin(admin.ModelAdmin):
     """Class to add a Category from the Django admin page."""
 
     fieldsets = [("Category details", {"fields": ["category_name", "image"]},)]
