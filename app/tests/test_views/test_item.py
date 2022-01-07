@@ -22,10 +22,8 @@ class TestViewItems:
     # pylint: disable=no-self-use
     def test_view_items_no_data(self, client):
         """Test view Category page when no category exist in the database"""
-        # When: GET request to /cat-slug-1
-        response = client.get(
-            reverse("items_view", kwargs={"category_slug": "cat-slug-1"},)
-        )
+        # When: GET request to /cat-1
+        response = client.get(reverse("items_view", kwargs={"category_slug": "cat-1"},))
         # Then: Users is redirected to go-back-home page and 404 handled
         assert TemplateNames.GO_BACK_HOME.value in [t.name for t in response.templates]
         assert response.status_code == HTTPStatus.OK.value
@@ -36,12 +34,12 @@ class TestViewItems:
     # pylint: disable=no-self-use
     def test_view_items_valid_url(self, client, load_default_item: Item):
         """Test that GET /<category>/ are redirected to /<category>/<first_item>/"""
-        # When: GET request to /cat-slug-1
+        # When: GET request to /cat-1
         response = client.get(
-            reverse("items_view", kwargs={"category_slug": "cat-slug-1"})
+            reverse("items_view", kwargs={"category_slug": "category-1"})
         )
-        # Then: User redirected to /items/cat-slug-1/
-        assert response.request["PATH_INFO"] == "/items/cat-slug-1/"
+        # Then: User redirected to /items/cat-1/
+        assert response.request["PATH_INFO"] == "/items/category-1/"
         assert response.status_code == HTTPStatus.FOUND.value
         assert len(response.templates) == 0
 
@@ -50,9 +48,9 @@ class TestViewItems:
     # pylint: disable=no-self-use
     def test_view_items_invalid_url(self, client, load_default_item: Item):
         """Test that 404 is handled when category_slug path is invalid"""
-        # When: GET request to /unknown-cat-slug
+        # When: GET request to /unknown-cat
         response = client.get(
-            reverse("items_view", kwargs={"category_slug": "unknown-cat-slug"})
+            reverse("items_view", kwargs={"category_slug": "unknown-cat"})
         )
         # Then: 404 handled and go-back-home template is rendered
         assert response.status_code == HTTPStatus.OK.value
@@ -71,11 +69,11 @@ class TestViewItem:
     # pylint: disable=no-self-use
     def test_view_item_no_data(self, client):
         """Test view Item page when no item exist in the database"""
-        # GET request to /items/cat-slug-1/item-slug-1-1/ which does not exist
+        # GET request to /items/cat-1/item-1-1/ which does not exist
         response = client.get(
             reverse(
                 "item_view",
-                kwargs={"category_slug": "cat-slug-1", "item_slug": "item-slug-1-1",},
+                kwargs={"category_slug": "cat-1", "item_slug": "item-1-1",},
             )
         )
         # Then: go-back-home page rendered and 404 handled
@@ -92,15 +90,15 @@ class TestViewItem:
         load_default_item: Item,
     ):
         """Test Item page rendered with a valid GET /<category>/<first_item>/"""
-        # Given: GET request to a valid endpoint `/cat-slug-1/item-slug-1-1/`
+        # Given: GET request to a valid endpoint `/cat-1/item-1-1/`
         response = client.get(
             reverse(
                 "item_view",
-                kwargs={"category_slug": "cat-slug-1", "item_slug": "item-slug-1-1",},
+                kwargs={"category_slug": "category-1", "item_slug": "item-1-1",},
             )
         )
         # Then: the items template is rendered with the expected context object
-        assert response.request["PATH_INFO"] == "/items/cat-slug-1/item-slug-1-1/"
+        assert response.request["PATH_INFO"] == "/items/category-1/item-1-1/"
         assert response.status_code == HTTPStatus.OK.value
         assert TemplateNames.ITEMS.value in [t.name for t in response.templates]
         assert isinstance(response.context["item"], Item)
@@ -122,11 +120,11 @@ class TestViewItem:
         response = client.get(
             reverse(
                 "item_view",
-                kwargs={"category_slug": "cat-slug-1", "item_slug": "item-slug-1-1",},
+                kwargs={"category_slug": "category-1", "item_slug": "item-1-1",},
             )
         )
         # Then: item view is incremented
-        assert response.request["PATH_INFO"] == "/items/cat-slug-1/item-slug-1-1/"
+        assert response.request["PATH_INFO"] == "/items/category-1/item-1-1/"
         assert response.status_code == HTTPStatus.OK.value
         assert TemplateNames.ITEMS.value in [t.name for t in response.templates]
         assert response.context["item"].views == initial_view_count + 1
@@ -136,8 +134,8 @@ class TestViewItem:
         "category_slug, item_slug",
         [
             ("invalid-slug", "invalid-slug"),
-            ("cat-slug-1", "item-slug-1-2"),
-            ("cat-slug-2", "item-slug-1-1"),
+            ("cat-1", "item-1-2"),
+            ("cat-2", "item-1-1"),
         ],
     )
     # pylint: disable=unused-argument
@@ -146,7 +144,7 @@ class TestViewItem:
         self, client, category_slug: str, item_slug: str, load_default_item: Item,
     ):
         """Test 404 in handled with invalid items endpoints are visited"""
-        # When: GET Request to an invalid endpoints - (not `/cat-slug-1/item-slug-1-1/`)
+        # When: GET Request to an invalid endpoints - (not `/cat-1/item-1-1/`)
         response = client.get(
             reverse(
                 "item_view",
@@ -161,7 +159,7 @@ class TestViewItem:
     @pytest.mark.integration
     @pytest.mark.parametrize(
         "category_slug, item_slug",
-        [("cat-slug-1", "item-slug-1-2"), ("cat-slug-1", "item-slug-1-3"),],
+        [("category-1", "item-1-2"), ("category-1", "item-1-3"),],
     )
     # pylint: disable=no-self-use
     def test_view_item_valid_url_multiple_items(
@@ -174,7 +172,7 @@ class TestViewItem:
     ):
         """
         Test the view Item page is rendered with valid /<category>/<first_item>/
-        Valid endpoints are: `/cat-slug-<1>/item-slug-<1>-<1:5>/`
+        Valid endpoints are: `/category-<1>/item-<1>-<1:5>/`
         """
         # When: GET request to valid endpoints
         response = client.get(
@@ -197,10 +195,10 @@ class TestViewItem:
         "category_slug, item_slug",
         [
             ("invalid-slug", "invalid-slug"),
-            ("cat-slug-1", "item-slug-1-9"),
-            ("cat-slug-2", "item-slug-2-1"),
-            ("cat-slug-3", "item-slug-3-1"),
-            ("cat-slug-9", "item-slug-1-1"),
+            ("category-1", "item-1-9"),
+            ("category-2", "item-2-1"),
+            ("category-3", "item-3-1"),
+            ("category-9", "item-1-1"),
         ],
     )
     # pylint: disable=no-self-use
@@ -214,7 +212,7 @@ class TestViewItem:
     ):
         """
         Test 404 in handled with invalid /<category>/<first_item>/ endpoints
-        Valid endpoints are: `/cat-slug-<1>/item-slug-<1>-<1:5>/`
+        Valid endpoints are: `/category-<1>/item-<1>-<1:5>/`
         """
         # When: GET request to valid endpoints
         response = client.get(
@@ -232,11 +230,11 @@ class TestViewItem:
     @pytest.mark.parametrize(
         "category_slug, item_slug",
         [
-            ("cat-slug-1", "item-slug-1-4"),
-            ("cat-slug-2", "item-slug-2-3"),
-            ("cat-slug-3", "item-slug-3-1"),
-            ("cat-slug-4", "item-slug-4-5"),
-            ("cat-slug-5", "item-slug-5-2"),
+            ("category-1", "item-1-4"),
+            ("category-2", "item-2-3"),
+            ("category-3", "item-3-1"),
+            ("category-4", "item-4-5"),
+            ("category-5", "item-5-2"),
         ],
     )
     # pylint: disable=no-self-use
@@ -251,7 +249,7 @@ class TestViewItem:
         """
         Test the view Item page is rendered with valid
         /<category>/<first_item>/ endpoints
-        Valid endpoints are: `/cat-slug-<1:5>/item-slug-<1:5>-<1:5>/`
+        Valid endpoints are: `/category-<1:5>/item-<1:5>-<1:5>/`
         """
         # When: GET request to valid endpoints
         response = client.get(
@@ -274,10 +272,10 @@ class TestViewItem:
         "category_slug, item_slug",
         [
             ("invalid-slug", "invalid-slug"),
-            ("cat-slug-1", "item-slug-1-9"),
-            ("cat-slug-2", "item-slug-2-9"),
-            ("cat-slug-7", "item-slug-7-1"),
-            ("cat-slug-8", "item-slug-8-1"),
+            ("category-1", "item-1-9"),
+            ("category-2", "item-2-9"),
+            ("category-7", "item-7-1"),
+            ("category-8", "item-8-1"),
         ],
     )
     # pylint: disable=no-self-use
@@ -291,7 +289,7 @@ class TestViewItem:
     ):
         """
         Test 404 in handled with invalid /<category>/<first_item>/ endpoints
-        Valid endpoints are: `/cat-slug-<1:5>/item-slug-<1:5>-<1:5>/`
+        Valid endpoints are: `/category-<1:5>/item-<1:5>-<1:5>/`
         """
         # When: GET request to invalid endpoints
         response = client.get(

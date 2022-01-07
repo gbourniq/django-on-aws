@@ -15,12 +15,6 @@ ENV PATH="/opt/venv/bin:${PATH}" \
     # prevents python creating .pyc files
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
-    
-# Copy application code, startup script, and dependencies
-COPY ${APP_DIR}/ /home/${USERNAME}/${APP_DIR}
-COPY ${STARTUP_SCRIPT} /home/${USERNAME}/${MOUNT_DIR}/
-# hadolint ignore=DL3020
-ADD $APP_WHEEL /tmp
 
 # hadolint ignore=DL3008
 RUN apt-get update && \
@@ -29,19 +23,26 @@ RUN apt-get update && \
     # * curl: to healthcheck services with http response
     # * vim: editing files
     # * procps: useful utilities such as ps, top, vmstat, pgrep,...
-    apt-get install -yq --no-install-recommends gcc libpq-dev python3-dev curl vim procps && \
+    apt-get install -yq --no-install-recommends gcc libpq-dev python3-dev curl vim procps
     # Clean the apt cache
-    rm -rf /var/lib/apt/lists/*
+    # rm -rf /var/lib/apt/lists/*
 
+# Copy and install dependencies
+# hadolint ignore=DL3020
+ADD $APP_WHEEL /tmp
 # hadolint ignore=DL3013
 RUN python -m venv /opt/venv && \
     # Install python dependencies
     pip install /tmp/*.whl && \
-    rm -rf /tmp/* && \
-    # Add user
-    adduser --disabled-password --gecos "" "${USERNAME}" && \
-    chown -R "${USERNAME}":"${USERNAME}" /home
+    rm -rf /tmp/*
 
+# Copy application code and startup script
+COPY ${APP_DIR}/ /home/${USERNAME}/${APP_DIR}
+COPY ${STARTUP_SCRIPT} /home/${USERNAME}/${MOUNT_DIR}/
+
+# Add user
+RUN adduser --disabled-password --gecos "" "${USERNAME}" && \
+    chown -R "${USERNAME}":"${USERNAME}" /home
 USER ${USERNAME}
 
 # Webserver will be running on this port

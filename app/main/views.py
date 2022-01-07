@@ -53,8 +53,9 @@ class SignUpFormView(View):
         if form.is_valid():
             user = form.save()
             username = form.cleaned_data.get("username")
-            messages.success(request, strings.SIGNUP_MSG.format(username))
-            logger.info(strings.SIGNUP_MSG, username)
+            signup_message = strings.SIGNUP_MSG.format(account_name=username)
+            messages.success(request, signup_message)
+            logger.info(signup_message)
             login(request, user)
             return redirect("/")
         for msg in form.error_messages:
@@ -96,12 +97,13 @@ class LoginFormView(View):
         user = authenticate(username=username, password=password)
         login(request, user)
 
-        messages.info(request, strings.LOGIN.format(username))
-        logger.info(strings.LOGIN, username)
+        login_msg = strings.LOGIN.format(username=username)
+        messages.info(request, login_msg)
+        logger.info(login_msg)
 
         if secure_page := request.GET.get("next"):
             # Redirect to the restricted page
-            logger.info(strings.REDIRECT_AFTER_LOGIN, secure_page)
+            logger.info(strings.REDIRECT_AFTER_LOGIN.format(secure_page=secure_page))
             return redirect(secure_page)
         return redirect("/")
 
@@ -155,7 +157,6 @@ class ItemsView(generic.ListView):
         self.category = get_object_or_404(
             Category, category_slug=self.kwargs["category_slug"]
         )
-
         self.item = get_object_or_404(Item, item_slug=self.kwargs["item_slug"])
 
         self.ordered_items_in_category = Item.objects.filter(
@@ -218,7 +219,8 @@ class ContactUsFormView(RequireLoginMixin, View):
             TargetArn=settings.SNS_TOPIC_ARN,
             Message=json.dumps({"default": form.cleaned_data}),
         )
-        logger.info(strings.SNS_SERVICE_RESPONSE, response)
+        sns_response = strings.SNS_SERVICE_RESPONSE.format(response=response)
+        logger.info(sns_response)
 
         return render(
             request,

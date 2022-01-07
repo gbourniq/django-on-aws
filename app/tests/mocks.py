@@ -49,7 +49,6 @@ class MockCategory:
     DEFAULT_SUMMARY = "summary for category "
     DEFAULT_IMG_NAME = "img-url"
     DEFAULT_IMG_EXT = "png"
-    DEFAULT_CATEGORY_SLUG = "cat-slug-"
 
     @staticmethod
     def default_category(_id: int = DEFAULT_ID, **kwargs) -> Category:
@@ -64,7 +63,6 @@ class MockCategory:
         custom_category=MockCategory.default_category(
             _id=235,
             category_name="Super Category "
-            category_slug="supercat-"
         )
         will generates a Category object with the following
         attributes:
@@ -72,7 +70,6 @@ class MockCategory:
             * category_name = "Super Category 235"
             * summary = "summary for category 235"
             * image = "img-url-235.png"
-            * category_slug = "cat-slug-235"
         """
 
         category_data = {
@@ -84,9 +81,6 @@ class MockCategory:
             "image": kwargs.get(
                 "image",
                 f"{MockCategory.DEFAULT_IMG_NAME}{_id}.{MockCategory.DEFAULT_IMG_EXT}",
-            ),
-            "category_slug": kwargs.get(
-                "category_slug", f"{MockCategory.DEFAULT_CATEGORY_SLUG}{_id}"
             ),
         }
 
@@ -105,7 +99,6 @@ class MockCategory:
         custom_categories=MockCategory.default_categories(
             categories_count=5
             category_name="Super Category "
-            category_slug="supercat-"
         )
         """
 
@@ -128,7 +121,6 @@ class MockItem:
     DEFAULT_IMG_EXT = "png"
     DEFAULT_CONTENT = "content for item "
     DEFAULT_DATE = "2020-05-22 19:49:50+00:00"
-    DEFAULT_ITEM_SLUG = "item-slug-"
     DEFAULT_CATEGORY = MockCategory.DEFAULT_ID
 
     @staticmethod
@@ -161,7 +153,6 @@ class MockItem:
             ),
             "content": kwargs.get("content", f"{MockItem.DEFAULT_CONTENT}{_id}"),
             "date_published": kwargs.get("date_published", f"{MockItem.DEFAULT_DATE}",),
-            "item_slug": kwargs.get("item_slug", f"{MockItem.DEFAULT_ITEM_SLUG}{_id}"),
             "category_name": parent_category,
         }
 

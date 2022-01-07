@@ -28,12 +28,10 @@ class TestCategory:
         # Given: Default field values defined in mock.py
         # When: the mock_default_category fixture is called
         _id = MockCategory.DEFAULT_ID
-
         attr_mapping = {
             mock_default_category.category_name: f"{MockCategory.DEFAULT_CATEGORY_NAME}{_id}",  # pylint: disable=line-too-long
             mock_default_category.summary: f"{MockCategory.DEFAULT_SUMMARY}{_id}",
             mock_default_category.image: f"{MockCategory.DEFAULT_IMG_NAME}{_id}.{MockCategory.DEFAULT_IMG_EXT}",  # pylint: disable=line-too-long
-            mock_default_category.category_slug: f"{MockCategory.DEFAULT_CATEGORY_SLUG}{_id}",  # pylint: disable=line-too-long
         }
 
         # Then: Category object fields have been assigned correctly

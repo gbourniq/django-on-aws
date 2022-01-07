@@ -34,16 +34,25 @@ pre-commit:
 
 
 ### Development (CI) ###
-.PHONY: runserver up tests cov clean
+.PHONY: build start_db runserver up tests cov clean
+
+build:
+	@ ${INFO} "Build CI and webapp images"
+	@ ./build_steps/ci.sh build
+
+start_db:
+	@ ${INFO} "Start databases containers"
+	@ ./build_steps/ci.sh start_db
 
 runserver:
-	python app/manage.py collectstatic --no-input -v 0
-	python app/manage.py makemigrations main
-	python app/manage.py migrate --run-syncdb
-	python app/manage.py runserver 0.0.0.0:8080
+	POSTGRES_HOST=localhost REDIS_ENDPOINT=localhost:6379 python app/manage.py collectstatic --no-input -v 0
+	POSTGRES_HOST=localhost REDIS_ENDPOINT=localhost:6379 python app/manage.py makemigrations main
+	POSTGRES_HOST=localhost REDIS_ENDPOINT=localhost:6379 python app/manage.py migrate --run-syncdb
+	POSTGRES_HOST=localhost REDIS_ENDPOINT=localhost:6379 DJANGO_SUPERUSER_PASSWORD=test python app/manage.py createsuperuser --username test --email gbournique@gmail.com --noinput || true
+	POSTGRES_HOST=localhost REDIS_ENDPOINT=localhost:6379 python app/manage.py runserver 0.0.0.0:8080
 
 up:
-	@ ${INFO} "Start webapp container"
+	@ ${INFO} "Start databases and webapp containers"
 	@ ./build_steps/ci.sh up
 
 tests:
