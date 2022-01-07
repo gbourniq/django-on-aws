@@ -109,13 +109,21 @@ make pre-commit                  <-- Install git-hooks hooks (setup once)
 
 ### Run django webserver locally and unit-tests
 
-The following make commands are available:
-```
-./build_steps/ci.sh build        <-- Builds docker image used to run CI steps
-make runserver                   <-- Start local django server + spin up postgres & redis containers
-make up                          <-- Start dockerised django webserver + postgres/redis
-make tests                       <-- Run tests with pytest-django
+For development purposes, use the following commands:
+```bash
+make start_db                    <-- Start postgres & redis containers
+make runserver                   <-- Start django app locally
+pre-commit run --all-files       <-- Lint all files
+pytest app -x                    <-- Run unit tests
 make cov                         <-- Open unit-tests coverage html report
+make clean                       <-- Stop and remove all containers
+```
+
+To run the dockerised app locally:
+```bash
+make build                       <-- Builds docker image used to run CI steps
+make up                          <-- Start dockerised django webserver + postgres/redis
+./build_steps/ci.sh healthcheck  <-- Ensure webapp container is up and running
 make clean                       <-- Stop and remove all containers
 ```
 
