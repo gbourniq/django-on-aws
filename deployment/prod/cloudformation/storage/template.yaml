@@ -168,6 +168,14 @@ Resources:
           <link href="https://s3.${AWS::Region}.amazonaws.com/${S3BucketWebappStaticFiles}/staticfiles/css/style.css" type="text/css" rel="stylesheet" media="screen,projection"/>
           <link rel="shortcut icon" href="https://s3.${AWS::Region}.amazonaws.com/${S3BucketWebappStaticFiles}/staticfiles/favicon.ico">
           <link rel="apple-touch-icon" href="https://s3.${AWS::Region}.amazonaws.com/${S3BucketWebappStaticFiles}/staticfiles/apple-touch-icon.png">
+          <style>
+            img {
+              width: 100%;
+              height: 100%;
+              max-width: 30vw;
+              max-height: 15vw;
+            }
+          </style>
         </head>
         <body>
           <header>
