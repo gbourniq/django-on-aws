@@ -88,9 +88,9 @@ Resources:
       LaunchConfigurationName: !Ref LaunchConfig
       DesiredCapacity: !Ref ASGDesiredCapacity
       MaxSize: '5'
-      # Minimum of 2 instances because CodeDeploy deployment configuration
-      # requires a minimum of 1 healthy instance for rolling updates
-      MinSize: '2'
+      # If MinInstancesInService set to 1, then MinSize must be >= 2 since
+      # CodeDeploy would require at least 1 healthy instance for rolling updates
+      MinSize: '1'
       HealthCheckType: ELB
       HealthCheckGracePeriod: 300
       TargetGroupARNs: [!Ref TargetGroupArn]
@@ -111,7 +111,8 @@ Resources:
         Timeout: PT10M
     UpdatePolicy:
       AutoScalingRollingUpdate:
-        MinInstancesInService: 1
+        # if MinInstancesInService = 1, then we need at least 2 instances running
+        MinInstancesInService: 0
         MaxBatchSize: 1
         PauseTime: PT10M
         WaitOnResourceSignals: true
@@ -127,9 +128,9 @@ Resources:
       AutoScalingGroupName: !Ref AutoScalingGroup
       DesiredCapacity: 2
       MaxSize: 5
-      # Minimum of 2 instances because CodeDeploy deployment configuration
-      # requires a minimum of 1 healthy instance for rolling updates
-      MinSize: 2
+      # If MinInstancesInService set to 1, then MinSize must be >= 2 since
+      # CodeDeploy would require at least 1 healthy instance for rolling updates
+      MinSize: 1
       Recurrence: !Join [' ', ['0', !Ref ASGScheduledActionUpTimeHour, '*', '*', '*',]]
   ScheduledActionDown:
     Type: AWS::AutoScaling::ScheduledAction

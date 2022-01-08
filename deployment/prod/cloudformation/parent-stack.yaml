@@ -13,17 +13,17 @@ Parameters:
     Description: Auto Scaling Group Desired Capacity
     Type: String
   ASGScheduledActionUpTimeHour:
-    Default: '17'
+    Default: '8'
     Type: String
     Description: Scale up time, for eg. '8' will cause the ASG to scale up at 8AM GMT.
-    AllowedValues: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12',
-                    '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23', '24']
+    AllowedValues: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12',
+                    '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23']
   ASGScheduledActionDownTimeHour:
-    Default: '23'
+    Default: '1'
     Type: String
     Description: Scale down time, for eg. '23' will cause the ASG to scale down at 11PM GMT.
-    AllowedValues: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12',
-                    '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23', '24']
+    AllowedValues: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12',
+                    '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23']
   ACMPublicSSLCertArn:
     Description: Public SSL Cert Arn stored in ACM. Must be in the same region as CloudFront (us-east-1).
     Type: String

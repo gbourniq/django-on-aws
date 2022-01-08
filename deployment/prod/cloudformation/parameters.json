@@ -5,7 +5,7 @@
   },
   {
     "ParameterKey": "ASGDesiredCapacity",
-    "ParameterValue": "2"
+    "ParameterValue": "1"
   },
   {
     "ParameterKey": "ACMPublicSSLCertArn",
