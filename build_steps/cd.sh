@@ -46,8 +46,8 @@ check_required_env_variables()
 		echo "❌ Environment variable not set: $1" 1>&2
 		exit 1
 	}
-    if [[ ! $AWS_DEFAULT_REGION || ! $AWS_ACCESS_KEY_ID || ! $AWS_SECRET_ACCESS_KEY ]]; then
-        var_not_set "AWS_DEFAULT_REGION; AWS_ACCESS_KEY_ID; AWS_SECRET_ACCESS_KEY"
+    if [[ ! $AWS_DEFAULT_REGION || ! $AWS_ACCESS_KEY_ID || ! $AWS_SECRET_ACCESS_KEY || ! $CFN_STACK_NAME ]]; then
+        var_not_set "AWS_DEFAULT_REGION; AWS_ACCESS_KEY_ID; AWS_SECRET_ACCESS_KEY; CFN_STACK_NAME"
     fi
 }
 
@@ -72,7 +72,6 @@ set_common_env_variables()
 	export ANSIBLE_GIT_BRANCH_NAME=main
 
 	# Cloudformation
-	export CFN_STACK_NAME=${CFN_STACK_NAME:-demo}
 	export R53_SUB_DOMAIN=${R53_SUB_DOMAIN:-True}
 	export CFN_TEMPLATES_S3_BUCKET_NAME=gbournique-cfn-templates
 	export CFN_DIR="./deployment/prod/cloudformation/"
