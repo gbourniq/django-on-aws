@@ -16,9 +16,9 @@ class ItemAdmin(admin.ModelAdmin):
     """
 
     fieldsets = [
-        ("Title", {"fields": ["item_name"]}),
-        ("Parent Element", {"fields": ["category_name"]}),
-        ("Content", {"fields": ["image", "content"]}),
+        ("1. Entrer le nom de la recette", {"fields": ["item_name"]}),
+        ("2. Selectionner une catégorie", {"fields": ["category_name"]}),
+        ("3. Ajouter une photo et les instructions", {"fields": ["image", "content"]}),
     ]
     # Add TinyMCE Widget to textfield property
     formfield_overrides = {
@@ -29,7 +29,7 @@ class ItemAdmin(admin.ModelAdmin):
 class CategoryAdmin(admin.ModelAdmin):
     """Class to add a Category from the Django admin page."""
 
-    fieldsets = [("Category details", {"fields": ["category_name", "image"]},)]
+    fields = ("category_name", "image")
 
 
 # Register models

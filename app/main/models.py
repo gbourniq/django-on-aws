@@ -15,9 +15,13 @@ class Category(models.Model, BaseModelMixin):
     """Django model to manage blog post categories"""
 
     id = models.AutoField(primary_key=True)
-    category_name = models.CharField(max_length=200, unique=True)
+    category_name = models.CharField(
+        max_length=200, unique=True, verbose_name="Nom de la catégorie"
+    )
     summary = models.TextField()
-    image = models.ImageField(upload_to=settings.UPLOADS_FOLDER_PATH)
+    image = models.ImageField(
+        upload_to=settings.UPLOADS_FOLDER_PATH, verbose_name="Photo"
+    )
     category_slug = models.CharField(max_length=200, unique=True)
 
     @classmethod
@@ -56,15 +60,19 @@ class Item(models.Model, BaseModelMixin):
     """Django model to manage blog post items"""
 
     id = models.AutoField(primary_key=True)
-    item_name = models.CharField(max_length=200, unique=True)
+    item_name = models.CharField(
+        max_length=200, unique=True, verbose_name="Nom de la recette"
+    )
     summary = models.CharField(max_length=200)
-    image = models.ImageField(upload_to=settings.UPLOADS_FOLDER_PATH)
+    image = models.ImageField(
+        upload_to=settings.UPLOADS_FOLDER_PATH, verbose_name="Photo"
+    )
     with open(HTML_TEMPLATE_PATH) as f:
-        content = models.TextField(default=f.read())
+        content = models.TextField(default=f.read(), verbose_name="Contenu")
     date_published = models.DateTimeField("date published", default=timezone.now)
     item_slug = models.CharField(max_length=200, unique=True)
     category_name = models.ForeignKey(
-        Category, default=1, verbose_name="Category", on_delete=models.SET_DEFAULT,
+        Category, default=1, verbose_name="Catégorie", on_delete=models.SET_DEFAULT,
     )
     views = models.IntegerField(default=0)
 
