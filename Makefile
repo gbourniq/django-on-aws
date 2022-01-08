@@ -108,3 +108,6 @@ cd-all:
 	CFN_STACK_NAME=demo R53_SUB_DOMAIN=True ./build_steps/cd.sh cfn_update
 	CFN_STACK_NAME=demo R53_SUB_DOMAIN=True ./build_steps/cd.sh load_testing
 	CFN_STACK_NAME=demo ./build_steps/cd.sh cfn_destroy_async
+
+backup:
+	CFN_STACK_NAME="live" R53_SUB_DOMAIN=False S3_DATA_BACKUP_URI="s3://gbournique-artefacts/tari.kitchen-backups" ./build_steps/cd.sh create_backup

@@ -216,21 +216,9 @@ Run the following commands to deploy or update a new application version.
 
 > Note that CodeDeploy is currently set up to update one instance at a time, while keeping a minimum of 50% healthy hosts. Deployment configurations can be found in `deployment/cloudformation/compute/template.yaml` under `# CodeDeploy`.
 
-### Migrate website data between AWS accounts
+### Backups and data migrations
 
-1. Migrate the database (make sure to open a SG inbound rule to your IP)
-```
-brew install postgresql
-pg_dump -h <public-domain-old-rds>.eu-west-2.rds.amazonaws.com -U postgres -Fc portfoliodb > pg_backup.dump
-pg_restore -h <public-domain-new-rds>.eu-west-2.rds.amazonaws.com --no-owner --no-privileges -U postgres --role=postgres -d portfoliodb pg_backup.dump
-```
-
-2. Restore static files
-```
-mkdir staticdatabackup
-aws s3 cp s3://<old-bucket-static-files> staticdatabackup --recursive --profile oldaws
-aws s3 cp staticdatabackup s3://<new-bucket-static-files> --recursive --profile newaws
-```
+To backup the postgres data and django media files, run the `make backup` command. Restore instructions will be printed in the terminal as part of the command output.
 
 
 ### CloudWatch Dashboard to monitor application

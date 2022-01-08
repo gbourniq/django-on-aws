@@ -38,16 +38,17 @@ help_text()
     echo "  cfn_destroy_async   ⏳ Run Cloudformation to destroy AWS infrastructure (async call)"
 	echo "  code_deploy         🚚 Run AWS CodeDeploy to deploy application to launched instances"
     echo "  load_testing        📈 Run load testing on deployed web application"
+	echo "  create_backup       💾 Create website data backup stored in S3"
 }
 
-check_required_env_variables()
+check_aws_env_variables()
 {
 	var_not_set() {
 		echo "❌ Environment variable not set: $1" 1>&2
 		exit 1
 	}
-    if [[ ! $AWS_DEFAULT_REGION || ! $AWS_ACCESS_KEY_ID || ! $AWS_SECRET_ACCESS_KEY || ! $CFN_STACK_NAME ]]; then
-        var_not_set "AWS_DEFAULT_REGION; AWS_ACCESS_KEY_ID; AWS_SECRET_ACCESS_KEY; CFN_STACK_NAME"
+    if [[ ! $AWS_DEFAULT_REGION || ! $AWS_ACCESS_KEY_ID || ! $AWS_SECRET_ACCESS_KEY ]]; then
+        var_not_set "AWS_DEFAULT_REGION; AWS_ACCESS_KEY_ID; AWS_SECRET_ACCESS_KEY"
     fi
 }
 
@@ -55,6 +56,7 @@ set_common_env_variables()
 {
 	# Docker (experimental cli to use docker manifest)
 	export DOCKER_USER=gbournique
+	export R53_ROOT_DOMAIN=tari.kitchen
 
 	# Image which contains required cli packages such as awscli, terraform, etc.
 	export CD_IMAGE=${DOCKER_USER}/cicd-with-deps:latest
@@ -80,7 +82,7 @@ set_common_env_variables()
 	export CFN_PARAMETERS_FILE="${CFN_DIR}/parameters.json"
 	export CFN_TAG_NAME="Guillaume Bournique"
 	export CFN_TAG_EMAIL="gbournique.dev1@gmail.com"
-	export CFN_TAG_MODIFIED_DATE="$(date +%F_%T)"
+	export CURRENT_DATETIME="$(date +%F_%T)"
 
 	# CodeDeploy
 	export CODEDEPLOY_APP_DIR="./deployment/prod/codedeploy-app"
@@ -89,16 +91,24 @@ set_common_env_variables()
 	export STACK_OUTPUT_CODEDEPLOY_S3_BUCKET_NAME="CodeDeployS3BucketName"
 
 	# Load testing
-	if [ -z "$R53_SUB_DOMAIN" ]; then
-		export WEBSERVER_URL=https://tari.kitchen
+	if [ "${R53_SUB_DOMAIN}" == "False" ]; then
+		export WEBSERVER_URL=https://$R53_ROOT_DOMAIN
 	else
-		export WEBSERVER_URL=https://${CFN_STACK_NAME}.tari.kitchen
+		export WEBSERVER_URL=https://${CFN_STACK_NAME}.${R53_ROOT_DOMAIN}
 	fi
 	export USERS=200
 	export SPAWN_RATE_PS=50
 	export RUN_TIME=30s
 
-	check_required_env_variables
+	# Backup
+	export STACK_OUTPUT_RDS_ENDPOINT="PostgresRdsEndpoint"
+	if [ "${R53_SUB_DOMAIN}" == "False" ]; then
+		export S3_STATIC_FILES="${R53_ROOT_DOMAIN}-static-files"
+	else
+		export S3_STATIC_FILES="${CFN_STACK_NAME}.${R53_ROOT_DOMAIN}-static-files"
+	fi
+
+	check_aws_env_variables
 }
 
 # To run command within a container which has all required packages installed
@@ -160,7 +170,7 @@ cfn_create() {
 		--template-body=file://"${CFN_PACKAGED_TEMPLATE_FILE}" \
 		--parameters file://"${CFN_PARAMETERS_FILE}" \
 		--tags "Key"="Name","Value"=\"${CFN_TAG_NAME}\" \
-			   "Key"="Modified_Date","Value"="${CFN_TAG_MODIFIED_DATE}" \
+			   "Key"="Modified_Date","Value"="${CURRENT_DATETIME}" \
 			   "Key"="Email","Value"="${CFN_TAG_EMAIL}" \
 		--capabilities=CAPABILITY_NAMED_IAM
 }
@@ -171,7 +181,7 @@ cfn_update() {
 		--template-body=file://"${CFN_PACKAGED_TEMPLATE_FILE}" \
 		--parameters file://"${CFN_PARAMETERS_FILE}" \
 		--tags "Key"="Name","Value"=\"${CFN_TAG_NAME}\" \
-			   "Key"="Modified_Date","Value"="${CFN_TAG_MODIFIED_DATE}" \
+			   "Key"="Modified_Date","Value"="${CURRENT_DATETIME}" \
 			   "Key"="Email","Value"="${CFN_TAG_EMAIL}" \
 		--capabilities=CAPABILITY_NAMED_IAM
 }
@@ -308,6 +318,31 @@ load_testing() {
 		--only-summary
 }
 
+create_backup(){
+    if [[ ! "$S3_DATA_BACKUP_URI" || ! "$CFN_STACK_NAME" || ! "$R53_SUB_DOMAIN" ]]; then
+		echo "❌ Environment variable(s) not set: S3_DATA_BACKUP_URI; CFN_STACK_NAME; R53_SUB_DOMAIN" 1>&2
+		exit 1
+    fi
+	S3_BACKUP_LOCATION="$S3_DATA_BACKUP_URI/$CURRENT_DATETIME"
+	echo "Backing up data for $WEBSERVER_URL to $S3_BACKUP_LOCATION"
+	PGPASSWORD=$(aws ssm get-parameter --name /RDS/POSTGRES_PASSWORD/SECURE --with-decryption --query "Parameter.Value" --output text)
+	PGHOST=$(get_stack_output "$STACK_OUTPUT_RDS_ENDPOINT")
+	PGPASSWORD=$PGPASSWORD pg_dump -h "$PGHOST" -U postgres -Fc portfoliodb --no-password > pg_backup.dump
+	aws s3 cp pg_backup.dump "$S3_BACKUP_LOCATION"/ 1> /dev/null
+	rm pg_backup.dump
+	echo "✅  postgres backup successful from host $PGHOST"
+	aws s3 sync s3://"$S3_STATIC_FILES"/mediafiles "$S3_BACKUP_LOCATION"/mediafiles 1> /dev/null
+	echo "✅  django media files backup successful from s3://$S3_STATIC_FILES/mediafiles/*"
+    echo "To restore the backup in a new environment, run the following commands:"
+    echo ""
+    echo "	Postgres:"
+    echo "		aws s3 cp $S3_BACKUP_LOCATION/pg_backup.dump ."
+    echo "		pg_restore -h <new-rds-host> --no-owner --no-privileges -U postgres --role=postgres -d portfoliodb pg_backup.dump"
+    echo ""
+    echo "	Django media files:"
+    echo "		aws s3 sync $S3_BACKUP_LOCATION/mediafiles s3://<my-bucket-static-files>/mediafiles"
+}
+
 put_ssm_parameter_str()
 {
 	printf "Updating parameter '$1' with value '$2'\n"
@@ -372,6 +407,12 @@ if [[ -n $1 ]]; then
 		load_testing)
 			printf "📈 	Run load testing on deployed web application...\n"
 			load_testing
+			exit 0
+			;;
+		create_backup)
+			printf "💾 Create backup and store artefacts in S3...\n"
+			set_common_env_variables
+			create_backup
 			exit 0
 			;;
 		*)
