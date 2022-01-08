@@ -38,7 +38,7 @@ Resources:
       BackupRetentionPeriod: 0 # disables automated backups
       DeletionProtection: false
       Engine: postgres
-      EngineVersion: '12.4'
+      EngineVersion: '12.7'
       DBInstanceClass: db.t2.micro
       AllocatedStorage: '5'
       DBName: portfoliodb
@@ -62,7 +62,7 @@ Resources:
       BackupRetentionPeriod: 0 # The number of days for which automated backups are retained
       DeletionProtection: false
       Engine: postgres
-      EngineVersion: '12.4'
+      EngineVersion: '12.7'
       DBInstanceClass: db.t2.micro
       AllocatedStorage: '5'
       DBName: portfoliodb
