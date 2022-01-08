@@ -39,7 +39,7 @@ ITEMS_PREFIX = "api/v1/items"
 urlpatterns = i18n_patterns(
     path("admin/", admin.site.urls),
     # If no prefix is given, use the default language
-    prefix_default_language=True,
+    prefix_default_language=False,
 )
 
 urlpatterns += [
