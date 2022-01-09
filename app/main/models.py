@@ -22,7 +22,7 @@ class Category(models.Model, BaseModelMixin):
     image = models.ImageField(
         upload_to=settings.UPLOADS_FOLDER_PATH, verbose_name="Photo"
     )
-    category_slug = models.CharField(max_length=200, unique=True)
+    category_slug = models.SlugField(max_length=50, unique=True)
 
     @classmethod
     def create(cls, kwargs) -> "Category":
@@ -70,7 +70,7 @@ class Item(models.Model, BaseModelMixin):
     with open(HTML_TEMPLATE_PATH) as f:
         content = models.TextField(default=f.read(), verbose_name="Contenu")
     date_published = models.DateTimeField("date published", default=timezone.now)
-    item_slug = models.CharField(max_length=200, unique=True)
+    item_slug = models.SlugField(max_length=50, unique=True)
     category_name = models.ForeignKey(
         Category, default=1, verbose_name="Catégorie", on_delete=models.SET_DEFAULT,
     )
