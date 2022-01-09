@@ -111,7 +111,7 @@ Resources:
         Timeout: PT10M
     UpdatePolicy:
       AutoScalingRollingUpdate:
-        # if MinInstancesInService = 1, then we need at least 2 instances running
+        # if MinInstancesInService = 1 and FLEET_PERCENT = 50, then we need at least 2 instances running
         MinInstancesInService: 0
         MaxBatchSize: 1
         PauseTime: PT10M
@@ -126,9 +126,9 @@ Resources:
     Type: AWS::AutoScaling::ScheduledAction
     Properties:
       AutoScalingGroupName: !Ref AutoScalingGroup
-      DesiredCapacity: 2
+      DesiredCapacity: 1
       MaxSize: 5
-      # If MinInstancesInService set to 1, then MinSize must be >= 2 since
+      # If MinInstancesInService set to 1 and FLEET_PERCENT = 50, then MinSize must be >= 2 since
       # CodeDeploy would require at least 1 healthy instance for rolling updates
       MinSize: 1
       Recurrence: !Join [' ', ['0', !Ref ASGScheduledActionUpTimeHour, '*', '*', '*',]]
@@ -556,7 +556,9 @@ Resources:
     Properties:
       MinimumHealthyHosts:
         Type: FLEET_PERCENT
-        Value: 50
+        # If MinInstancesInService set to 1 and FLEET_PERCENT = 50, then MinSize must be >= 2 since
+        # CodeDeploy would require at least 1 healthy instance for rolling updates
+        Value: 0
 
   DockerLogGroup:
     Type: AWS::Logs::LogGroup
