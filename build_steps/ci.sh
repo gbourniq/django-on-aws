@@ -29,16 +29,15 @@ help_text()
     echo "Usage:        $script_dir/$script_name COMMAND"
     echo ""
     echo "Available Commands:"
-    echo "  build         🔨 Build ci and webapp docker images"
-    echo "  start_db      🟢  Start redis and postgres containers"
-    echo "  stop_db       🔴 Stop redis and postgres containers"
-    echo "  up            🆙 Start webapp container"
-    echo "  unit_tests    🕵  Run unit tests"
-    echo "  lint          ✨ Run pre-commit hooks (linting)"
-    echo "  healthcheck   🚑 Check webapp container health"
-    echo "  push_images   🐳 Publish images to Dockerhub"
-    echo "  put_ssm_vars  ☁️  Update AWS ssm parameters"
-    echo "  run           🚀 Run all CI steps (for local troubleshooting)"
+    echo "  build               🔨 Build ci and webapp docker images"
+    echo "  start_db            🟢 Start redis and postgres containers"
+    echo "  stop_db             🔴 Stop redis and postgres containers"
+    echo "  up                  🆙 Start webapp container"
+    echo "  unit_tests          🕵 Run unit tests"
+    echo "  lint                ✨ Run pre-commit hooks (linting)"
+    echo "  healthcheck         🚑 Check webapp container health"
+    echo "  push_images         🐳 Publish images to Dockerhub"
+    echo "  put_ssm_vars        ☁️ Update AWS ssm parameters"
 }
 
 check_required_env_variables()
@@ -276,24 +275,6 @@ if [[ -n $1 ]]; then
 			set_common_env_variables
 			put_ssm_parameter_str "/CODEDEPLOY/DOCKER_IMAGE_NAME" "${WEBAPP_IMAGE_REPOSITORY}:$(webapp_image_tag)"
 			put_ssm_parameter_str "/CODEDEPLOY/DEBUG_DEMO" "${DEBUG}"
-			exit 0
-			;;
-		run)
-			printf "🚀 Running CI pipeline steps (for local troubleshooting)...\n"
-			set_common_env_variables
-			build_ci_image
-			build_webapp_image
-			start_db
-			unit_tests
-			lint
-			up
-			healthcheck "${WEBAPP_CONTAINER_NAME}"
-			down
-			stop_db
-			publish_image ${WEBAPP_IMAGE_REPOSITORY} $(webapp_image_tag)
-			publish_image ${CI_IMAGE_REPOSITORY} $(ci_image_tag)
-			put_ssm_parameters
-			clean
 			exit 0
 			;;
 		*)
