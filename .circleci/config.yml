@@ -57,6 +57,9 @@ jobs:
       - run:
           name: "Push variables to ssm paramter store for CD pipeline"
           command: << pipeline.parameters.ci_script >> put_ssm_vars
+      - run:
+          name: "Deploy newest application image on the live stack ec2 instances"
+          command: CFN_STACK_NAME=live << pipeline.parameters.cd_script >> code_deploy
   cd-pipeline:
     machine:
       image: ubuntu-2004:202010-01
