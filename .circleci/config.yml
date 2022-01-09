@@ -11,16 +11,16 @@ parameters:
 workflows:
   ci_pipeline_only:
     jobs:
-      - ci-pipeline
+      - ci-pipeline:
+          filters:
+            branches:
+              only:
+                - main
   scheduled_ci_cd_pipeline:
     triggers:
       - schedule:
           # Runs At 20:00 on day-of-month 1
           cron: "0 20 1 * *"
-          filters:
-            branches:
-              only:
-                - main
     jobs:
       - ci-pipeline
       - cd-pipeline:
