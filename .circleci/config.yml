@@ -11,7 +11,7 @@ parameters:
 workflows:
   ci_pipeline_only:
     jobs:
-      - ci-pipeline:
+      - ci-pipeline
       - cd-pipeline-app-deployment:
           filters:
             branches:
