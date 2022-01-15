@@ -142,6 +142,7 @@ class Item(models.Model, BaseModelMixin):
                 ),
             }
             for user in User.objects.all()
+            if user.username and user.email
         ]
 
         if not SES_IDENTITY_ARN:
