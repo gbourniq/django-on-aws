@@ -1,7 +1,11 @@
 """This module defines the Django models Item and Category to manage blog posts"""
+import json
+import logging
 from pathlib import Path
 
+import boto3
 from django.conf import settings
+from django.contrib.auth.models import User
 from django.db import models
 from django.utils import timezone
 from django.utils.text import slugify
@@ -10,6 +14,8 @@ from .mixins import BaseModelMixin
 
 HTML_TEMPLATE_PATH = Path(__file__).resolve().parent / "item_content_template.html"
 THUMBNAIL_SUFFIX = "_resized"
+
+logger = logging.getLogger(__name__)
 
 
 class Category(models.Model, BaseModelMixin):
@@ -92,6 +98,7 @@ class Item(models.Model, BaseModelMixin):
         self.image_thumbnail = self.resize_image(self.image, suffix=THUMBNAIL_SUFFIX)
         self.item_slug = slugify(self.item_name)
         super().save(*args, **kwargs)
+        self.notify_registered_users()
 
     def increment_views(self):
         """Instance method to increment the views variable"""
@@ -107,6 +114,47 @@ class Item(models.Model, BaseModelMixin):
         return (
             f"Item=(id={self.id},item_name={self.item_name},item_slug={self.item_slug})"
         )
+
+    def notify_registered_users(self):
+        """
+        Notify users via AWS SES.
+        Registered emails must be manually added as SES verified identifies from
+        within the AWS Console, because of the limited / sandbox environment.
+        For a production use case, raise a ticket with AWS.
+        """
+        ses_client = boto3.client("ses")
+
+        destinations = [
+            {
+                "Destination": {"ToAddresses": [user.email],},
+                "ReplacementTemplateData": json.dumps(
+                    {
+                        "base_url": "https://tari.kitchen",
+                        "item_name": self.item_name,
+                        "item_url_path": f"/items/{self.category_name.category_slug}/{self.item_slug}",
+                        "recette_image_url_path": f"{Path(self.image_thumbnail).with_suffix('')}{THUMBNAIL_SUFFIX}.jpg",
+                        "username": user.username.title(),
+                        "email": user.email,
+                    }
+                ),
+            }
+            for user in User.objects.all()
+        ]
+
+        try:
+            response = ses_client.send_bulk_templated_email(
+                Source="tari-alerts@tari.kitchen",
+                SourceArn="arn:aws:ses:eu-west-2:091361846328:identity/tari.kitchen",
+                ReplyToAddresses=[],
+                DefaultTags=[],
+                Template="ItemCreatedNotification",
+                DefaultTemplateData='{ "base_url":"https://tari.kitchen" }',
+                Destinations=destinations,
+            )
+        except Exception as ses_err:
+            logger.error(f"Failed to send SES email notification: {repr(ses_err)}")
+
+        logger.info(f"SES notification was successful. response: {response}")
 
     class Meta:
         verbose_name = "Recettes"
