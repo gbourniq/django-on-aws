@@ -135,7 +135,7 @@ class Item(models.Model, BaseModelMixin):
                         "base_url": "https://tari.kitchen",  # TODO: remove hardcoded base url
                         "item_name": self.item_name,
                         "item_url_path": f"/items/{self.category_name.category_slug}/{self.item_slug}",
-                        "recette_image_url_path": f"{Path(self.image_thumbnail).with_suffix('')}{THUMBNAIL_SUFFIX}.jpg",
+                        "recette_image_url_path": f"{Path(self.image_thumbnail.url).with_suffix('')}{THUMBNAIL_SUFFIX}.jpg",
                         "username": user.username.title(),
                         "email": user.email,
                     }
