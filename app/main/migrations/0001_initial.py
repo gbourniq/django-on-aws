@@ -43,7 +43,6 @@ class Migration(migrations.Migration):
                 ),
                 ("summary", models.CharField(max_length=200)),
                 ("image", models.ImageField(upload_to="images/", verbose_name="Photo")),
-                ("image_thumbnail", models.ImageField(default="", upload_to="images/")),
                 (
                     "content",
                     models.TextField(
