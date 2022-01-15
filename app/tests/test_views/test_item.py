@@ -119,7 +119,7 @@ class TestViewItem:
         monkeypatch.setattr(Item, "resize_image", mock_resize_image)
         mock_default_item.save()
         mock_resize_image.assert_called_once_with(
-            mock_default_item.image, suffix="resized"
+            mock_default_item.image, suffix="_resized"
         )
 
         # When: GET request the item page

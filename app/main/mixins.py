@@ -57,7 +57,7 @@ class BaseModelMixin:
         img_temp = img_temp.convert("RGB")
         img_temp.save(output_io_stream := BytesIO(), format="JPEG", quality=90)
         output_io_stream.seek(0)
-        new_filename = f"{uploaded_image.name.split('.')[0]}_{suffix}.jpg"
+        new_filename = f"{uploaded_image.name.split('.')[0]}{suffix}.jpg"
         uploaded_image = InMemoryUploadedFile(
             output_io_stream,
             "ImageField",

@@ -30,7 +30,7 @@ def save_mock_item(monkeypatch, item: Item) -> None:
     mock_resize_image = Mock(return_value=item.image)
     monkeypatch.setattr(Item, "resize_image", mock_resize_image)
     item.save()
-    mock_resize_image.assert_called_once_with(item.image, suffix="resized")
+    mock_resize_image.assert_called_once_with(item.image, suffix="_resized")
 
 
 ##########################

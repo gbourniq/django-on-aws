@@ -9,6 +9,7 @@ from django.utils.text import slugify
 from .mixins import BaseModelMixin
 
 HTML_TEMPLATE_PATH = Path(__file__).resolve().parent / "item_content_template.html"
+THUMBNAIL_SUFFIX = "_resized"
 
 
 class Category(models.Model, BaseModelMixin):
@@ -88,7 +89,7 @@ class Item(models.Model, BaseModelMixin):
     # pylint: disable=signature-differs
     def save(self, *args, **kwargs):
         """Any modification on the item attributes before saving the object."""
-        self.image_thumbnail = self.resize_image(self.image, suffix="resized")
+        self.image_thumbnail = self.resize_image(self.image, suffix=THUMBNAIL_SUFFIX)
         self.item_slug = slugify(self.item_name)
         super().save(*args, **kwargs)
 
