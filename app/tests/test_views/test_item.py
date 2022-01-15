@@ -1,7 +1,7 @@
 """This module defines tests for the items page"""
-
 from http import HTTPStatus
 from typing import List
+from unittest.mock import Mock
 
 import pytest
 from django.db.models.query import QuerySet
@@ -110,12 +110,18 @@ class TestViewItem:
     @pytest.mark.parametrize("initial_view_count", [0, 2, 5, 10, 100])
     # pylint: disable=no-self-use
     def test_views_incremented(
-        self, client, initial_view_count: int, mock_default_item: Item,
+        self, monkeypatch, client, initial_view_count: int, mock_default_item: Item,
     ):
         """Test the views field is incremented when a valid item url is visited."""
         # Given: An initial view count for a given item object
         mock_default_item.views = initial_view_count
+        mock_resize_image = Mock(return_value=mock_default_item.image)
+        monkeypatch.setattr(Item, "resize_image", mock_resize_image)
         mock_default_item.save()
+        mock_resize_image.assert_called_once_with(
+            mock_default_item.image, suffix="resized"
+        )
+
         # When: GET request the item page
         response = client.get(
             reverse(
