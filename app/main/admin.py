@@ -42,12 +42,10 @@ class ItemAdmin(admin.ModelAdmin):
     ):
         print("test")
         super().save_model(request, item, form, change)
-        if not change:
-            # Item was created and not modified
-            self.notify_registered_users(item)
+        self.notify_registered_users(item, is_modified=change)
 
     @staticmethod
-    def notify_registered_users(item: Item) -> NoReturn:
+    def notify_registered_users(item: Item, is_modified: bool) -> NoReturn:
         """
         Notify users via AWS SES.
         Registered emails must be manually added as SES verified identifies from
@@ -65,6 +63,10 @@ class ItemAdmin(admin.ModelAdmin):
                         "item_name": item.item_name,
                         "item_page_url": f"https://{AWS_S3_CUSTOM_DOMAIN}/items/{item.category_name.category_slug}/{item.item_slug}",
                         "item_image_url": item.image_thumbnail.url,
+                        "action": "modifiée" if is_modified else "ajoutée",
+                        "subject": "🍚 Tari-Recette mise à jour!"
+                        if is_modified
+                        else "🍚 Nouvelle Tari-Recette disponible!",
                         "username": user.username.title(),
                         "email": user.email,
                     }
@@ -86,7 +88,7 @@ class ItemAdmin(admin.ModelAdmin):
                 SourceArn=SES_IDENTITY_ARN,
                 ReplyToAddresses=[],
                 DefaultTags=[],
-                Template="ItemCreatedNotification",  # TODO: remove hardcoded TemplateName. Could use TemplateArn from Cfn
+                Template="ItemCreatedOrModifiedNotification",  # TODO: remove hardcoded TemplateName. Could use TemplateArn from Cfn
                 DefaultTemplateData=json.dumps(
                     {"base_url": f"https://{AWS_S3_CUSTOM_DOMAIN}"}
                 ),

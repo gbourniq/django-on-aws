@@ -250,10 +250,10 @@ Resources:
     Type: Custom::Template
     Properties:
       ServiceToken: !GetAtt CustomResourceLambdaFunctionForSES.Arn
-      TemplateName: "ItemCreatedNotification"
-      SubjectPart: "🍚 Nouvelle Tari-Recette disponible!"
+      TemplateName: "ItemCreatedOrModifiedNotification"
+      SubjectPart: "{{ subject }}"
       TextPart: |
-          {{username}}, une nouvelle recette a été ajoutée par le Chef Tari. Viens vite decouvrir tous les secrets du {{ item_name }}, en exclusivité sur {{ base_url }} !
+          {{username}}, une recette a été {{ action }} par le Chef Tari. Viens vite decouvrir tous les secrets du {{ item_name }}, en exclusivité sur {{ base_url }} !
 
           - The Tari Newletter Team.
       HtmlPart: |
@@ -303,7 +303,7 @@ Resources:
                 </div>
                 <div class="row">
                   <div class="col s12 center">
-                    <p class="left-align light">{{ username }}, une nouvelle recette a été ajoutée par le Chef Tari. Viens vite decouvrir tous les secrets du {{ item_name }}, en exclusivité sur <a href="{{ base_url }}/"><u>tari.kitchen</u></a> !</p>
+                    <p class="left-align light">{{ username }}, une recette a été {{ action }} par le Chef Tari. Viens vite decouvrir tous les secrets du {{ item_name }}, en exclusivité sur <a href="{{ base_url }}/"><u>tari.kitchen</u></a> !</p>
                   </div>
                 </div>
               </div>
