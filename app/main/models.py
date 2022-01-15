@@ -1,24 +1,16 @@
 """This module defines the Django models Item and Category to manage blog posts"""
-import json
-import logging
 from pathlib import Path
-from typing import NoReturn
 
-import boto3
 from django.conf import settings
-from django.contrib.auth.models import User
 from django.db import models
 from django.utils import timezone
 from django.utils.text import slugify
 
-from app.config import AWS_REGION, AWS_S3_CUSTOM_DOMAIN, SES_IDENTITY_ARN
+from app.helpers.constants import THUMBNAIL_SUFFIX
 
 from .mixins import BaseModelMixin
 
 HTML_TEMPLATE_PATH = Path(__file__).resolve().parent / "item_content_template.html"
-THUMBNAIL_SUFFIX = "_thumbnail"
-
-logger = logging.getLogger(__name__)
 
 
 class Category(models.Model, BaseModelMixin):
@@ -101,7 +93,6 @@ class Item(models.Model, BaseModelMixin):
         self.image_thumbnail = self.resize_image(self.image, suffix=THUMBNAIL_SUFFIX)
         self.item_slug = slugify(self.item_name)
         super().save(*args, **kwargs)
-        self.notify_registered_users()
 
     def increment_views(self):
         """Instance method to increment the views variable"""
@@ -117,55 +108,6 @@ class Item(models.Model, BaseModelMixin):
         return (
             f"Item=(id={self.id},item_name={self.item_name},item_slug={self.item_slug})"
         )
-
-    def notify_registered_users(self) -> NoReturn:
-        """
-        Notify users via AWS SES.
-        Registered emails must be manually added as SES verified identifies from
-        within the AWS Console, because of the limited / sandbox environment.
-        For a production use case, raise a ticket with AWS.
-        """
-        ses_client = boto3.client("ses", region_name=AWS_REGION)
-
-        destinations = [
-            {
-                "Destination": {"ToAddresses": [user.email],},
-                "ReplacementTemplateData": json.dumps(
-                    {
-                        "base_url": f"https://{AWS_S3_CUSTOM_DOMAIN}",
-                        "item_name": self.item_name,
-                        "item_page_url": f"https://{AWS_S3_CUSTOM_DOMAIN}/items/{self.category_name.category_slug}/{self.item_slug}",
-                        "item_image_url": self.image_thumbnail.url,
-                        "username": user.username.title(),
-                        "email": user.email,
-                    }
-                ),
-            }
-            for user in User.objects.all()
-            if user.username and user.email
-        ]
-
-        if not SES_IDENTITY_ARN:
-            logger.info(
-                f"SES_IDENTITY_ARN not set, therefore email notifications are disabled."
-            )
-            return
-
-        try:
-            response = ses_client.send_bulk_templated_email(
-                Source="tari-alerts@tari.kitchen",
-                SourceArn=SES_IDENTITY_ARN,
-                ReplyToAddresses=[],
-                DefaultTags=[],
-                Template="ItemCreatedNotification",  # TODO: remove hardcoded TemplateName. Could use TemplateArn from Cfn
-                DefaultTemplateData=json.dumps(
-                    {"base_url": f"https://{AWS_S3_CUSTOM_DOMAIN}"}
-                ),
-                Destinations=destinations,
-            )
-            logger.info(f"SES notification was successful. response: {response}")
-        except Exception as ses_err:
-            logger.error(f"Failed to send SES email notification: {repr(ses_err)}")
 
     class Meta:
         verbose_name = "Recettes"

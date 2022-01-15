@@ -7,6 +7,7 @@ import pytest
 from django.db.models.query import QuerySet
 from django.urls import reverse
 
+from app.helpers.constants import THUMBNAIL_SUFFIX
 from helpers.constants import TemplateNames
 from main.models import Category, Item
 
@@ -119,7 +120,7 @@ class TestViewItem:
         monkeypatch.setattr(Item, "resize_image", mock_resize_image)
         mock_default_item.save()
         mock_resize_image.assert_called_once_with(
-            mock_default_item.image, suffix="_thumbnail"
+            mock_default_item.image, suffix=THUMBNAIL_SUFFIX
         )
 
         # When: GET request the item page

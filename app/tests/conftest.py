@@ -6,6 +6,7 @@ from unittest.mock import Mock
 import pytest
 from django.contrib.auth.models import User
 
+from app.helpers.constants import THUMBNAIL_SUFFIX
 from main.forms import ContactForm
 from main.models import Category, Item
 from tests.mocks import MockCategory, MockItem, MockUser
@@ -30,7 +31,7 @@ def save_mock_item(monkeypatch, item: Item) -> None:
     mock_resize_image = Mock(return_value=item.image)
     monkeypatch.setattr(Item, "resize_image", mock_resize_image)
     item.save()
-    mock_resize_image.assert_called_once_with(item.image, suffix="_thumbnail")
+    mock_resize_image.assert_called_once_with(item.image, suffix=THUMBNAIL_SUFFIX)
 
 
 ##########################

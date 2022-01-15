@@ -9,6 +9,7 @@ DIMS = namedtuple("DIMS", "width height")
 CROP_SIZE = DIMS(300, 300)
 THUMBNAIL_SIZE = DIMS(500, 500)
 IMG_EXT = ".jpg"
+THUMBNAIL_SUFFIX = "_thumbnail"
 
 
 class TemplateNames(Enum):
