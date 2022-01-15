@@ -56,6 +56,9 @@ Parameters:
     AllowedPattern: (?!-)[a-zA-Z0-9-.]{1,63}(?<!-)
     Type: String
     ConstraintDescription: Must be an existing DNS zone name.
+  SESIdentityArn:
+    Description: SES Identity Arn for email notifications to registered users when new content is added. Used by the Django webapp.
+    Type: String
   SSMParamSlackWebhookUrl:
     NoEcho: 'true'
     Description: SSM Parameter Name for the Slack WebHook Url used for ASG/CodeDeploy notifications. Create an empty SSM variable to disable.
@@ -111,6 +114,7 @@ Resources:
         S3BucketArnStaticFiles: !GetAtt StorageStack.Outputs.S3BucketArnStaticFiles
         S3BucketNameStaticFiles: !GetAtt StorageStack.Outputs.S3BucketNameWebappStaticFiles
         SNSTopicArn: !GetAtt ServerlessStack.Outputs.SNSTopicArn
+        SESIdentityArn: !Ref SESIdentityArn
         SQSQueueArn: !GetAtt ServerlessStack.Outputs.SQSQueueArn
         SQSQueueUrl: !GetAtt ServerlessStack.Outputs.SQSQueueUrl
         TargetGroupArn: !GetAtt NetworkStack.Outputs.TargetGroupArn

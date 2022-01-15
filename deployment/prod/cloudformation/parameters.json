@@ -28,6 +28,10 @@
     "ParameterValue": "tari.kitchen"
   },
   {
+    "ParameterKey": "SESIdentityArn",
+    "ParameterValue": "arn:aws:ses:eu-west-2:091361846328:identity/tari.kitchen"
+  },
+  {
     "ParameterKey": "SSMParamSlackWebhookUrl",
     "ParameterValue": "/SLACK/INCOMING_WEBHOOK_URL"
   },

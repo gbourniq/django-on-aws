@@ -81,6 +81,7 @@
       POSTGRES_PASSWORD: "postgres"
       REDIS_ENDPOINT: "redis:6379"
       SNS_TOPIC_ARN: ""
+      SES_IDENTITY_ARN: ""
     image: "{{ docker_image_name }}:{{ image_tag.stdout }}"
   vars:
     ansible_python_interpreter: /usr/bin/python3

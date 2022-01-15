@@ -2,6 +2,7 @@
 import json
 import logging
 from pathlib import Path
+from typing import NoReturn
 
 import boto3
 from django.conf import settings
@@ -9,6 +10,8 @@ from django.contrib.auth.models import User
 from django.db import models
 from django.utils import timezone
 from django.utils.text import slugify
+
+from app.config import SES_IDENTITY_ARN
 
 from .mixins import BaseModelMixin
 
@@ -115,7 +118,7 @@ class Item(models.Model, BaseModelMixin):
             f"Item=(id={self.id},item_name={self.item_name},item_slug={self.item_slug})"
         )
 
-    def notify_registered_users(self):
+    def notify_registered_users(self) -> NoReturn:
         """
         Notify users via AWS SES.
         Registered emails must be manually added as SES verified identifies from
@@ -129,7 +132,7 @@ class Item(models.Model, BaseModelMixin):
                 "Destination": {"ToAddresses": [user.email],},
                 "ReplacementTemplateData": json.dumps(
                     {
-                        "base_url": "https://tari.kitchen",
+                        "base_url": "https://tari.kitchen",  # TODO: remove hardcoded base url
                         "item_name": self.item_name,
                         "item_url_path": f"/items/{self.category_name.category_slug}/{self.item_slug}",
                         "recette_image_url_path": f"{Path(self.image_thumbnail).with_suffix('')}{THUMBNAIL_SUFFIX}.jpg",
@@ -141,20 +144,25 @@ class Item(models.Model, BaseModelMixin):
             for user in User.objects.all()
         ]
 
+        if not SES_IDENTITY_ARN:
+            logger.info(
+                f"SES_IDENTITY_ARN not set, therefore email notifications are disabled."
+            )
+            return
+
         try:
             response = ses_client.send_bulk_templated_email(
                 Source="tari-alerts@tari.kitchen",
-                SourceArn="arn:aws:ses:eu-west-2:091361846328:identity/tari.kitchen",
+                SourceArn=SES_IDENTITY_ARN,
                 ReplyToAddresses=[],
                 DefaultTags=[],
-                Template="ItemCreatedNotification",
-                DefaultTemplateData='{ "base_url":"https://tari.kitchen" }',
+                Template="ItemCreatedNotification",  # TODO: remove hardcoded TemplateName
+                DefaultTemplateData='{ "base_url":"https://tari.kitchen" }',  # TODO: remove hardcoded base url
                 Destinations=destinations,
             )
+            logger.info(f"SES notification was successful. response: {response}")
         except Exception as ses_err:
             logger.error(f"Failed to send SES email notification: {repr(ses_err)}")
-
-        logger.info(f"SES notification was successful. response: {response}")
 
     class Meta:
         verbose_name = "Recettes"

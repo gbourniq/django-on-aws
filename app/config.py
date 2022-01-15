@@ -56,3 +56,8 @@ AWS_S3_CUSTOM_DOMAIN: str = getenv(
 
 # Forward ContactForm emails to AWS SNS Topic
 SNS_TOPIC_ARN: str = getenv("SNS_TOPIC_ARN", config("SNS_TOPIC_ARN", default=None))
+
+# SES identity for email notifications
+SES_IDENTITY_ARN: str = getenv(
+    "SES_IDENTITY_ARN", config("SES_IDENTITY_ARN", default=None)
+)

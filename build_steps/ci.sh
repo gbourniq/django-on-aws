@@ -148,6 +148,7 @@ up()
 						 --env POSTGRES_PASSWORD=postgres \
 						 --env REDIS_ENDPOINT=redis:6379 \
 						 --env SNS_TOPIC_ARN= \
+						 --env SES_IDENTITY_ARN= \
 						 ${WEBAPP_IMAGE_REPOSITORY}:$(webapp_image_tag) || true; \
 }
 

@@ -180,9 +180,10 @@ Before creating the cloudformation stack, the following prerequisites must be co
 1. Create Route 53 Hosted Zone ($0.50/month)
 2. Create a domain in Route53, eg. mydomain.com (~$15/year)
 3. Create a free Amazon Issued public SSL certificate in ACM for both the root domain and sub domains, e.g. `mydomain.com` and `*.mydomain.com`. Must be created in us-east-1 to be in the same region as cloud front. 
-4. Update parameters in `deployment/prod/cloudformation/parameters.json`
-5. Build the CI docker image: `./build_steps/ci.sh build`.
-6. Create the following AWS SSM Parameters to store variables used for deployment: `/RDS/POSTGRES_PASSWORD/SECURE` (type: SecureString) and `/SLACK/INCOMING_WEBHOOK_URL` (type: String)
+4. Create a AWS SES Domain and SES Identity to enable email notifications to registered users (optional)
+5. Update parameters in `deployment/prod/cloudformation/parameters.json`
+6. Build the CI docker image: `./build_steps/ci.sh build`.
+7. Create the following AWS SSM Parameters to store variables used for deployment: `/RDS/POSTGRES_PASSWORD/SECURE` (type: SecureString) and `/SLACK/INCOMING_WEBHOOK_URL` (type: String)
 
 The aws resources can then be deployed as a CloudFormation stack by simply running the `CFN_STACK_NAME=live ./build_steps/cd.sh cfn_create` command.
 
