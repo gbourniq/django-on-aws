@@ -11,11 +11,14 @@ parameters:
 workflows:
   ci_pipeline_only:
     jobs:
-      - ci-pipeline:
+      - ci-pipeline
+      - cd-pipeline-app-deployment:
           filters:
             branches:
               only:
                 - main
+          requires:
+              - ci-pipeline
   scheduled_ci_cd_pipeline:
     triggers:
       - schedule:
@@ -27,9 +30,12 @@ workflows:
                 - main
     jobs:
       - ci-pipeline
-      - cd-pipeline:
+      - cd-pipeline-app-deployment:
           requires:
               - ci-pipeline
+      - cd-pipeline-infra:
+          requires:
+              - cd-pipeline-app-deployment
 
 jobs:
   ci-pipeline:
@@ -58,13 +64,18 @@ jobs:
       - run:
           name: "Publish images to Dockerhub"
           command: << pipeline.parameters.ci_script >> push_images
+  cd-pipeline-app-deployment:
+    machine:
+      image: ubuntu-2004:202010-01
+    steps:
+      - checkout
       - run:
           name: "Push variables to ssm paramter store for CD pipeline"
           command: << pipeline.parameters.ci_script >> put_ssm_vars
       - run:
           name: "Deploy newest application image on the live stack ec2 instances"
           command: CFN_STACK_NAME=live << pipeline.parameters.cd_script >> code_deploy
-  cd-pipeline:
+  cd-pipeline-infra:
     machine:
       image: ubuntu-2004:202010-01
     steps:

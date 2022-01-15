@@ -34,7 +34,9 @@ class BaseModelMixin:
     logger = logging.getLogger(__name__)
 
     # pylint: disable=no-self-use
-    def resize_image(self, uploaded_image: ImageFieldFile) -> ImageFieldFile:
+    def resize_image(
+        self, uploaded_image: ImageFieldFile, suffix: str = None
+    ) -> ImageFieldFile:
         """
         Performs the following operation on a given image:
         - Thumbmail: returns an image that fits inside of a given size
@@ -55,10 +57,11 @@ class BaseModelMixin:
         img_temp = img_temp.convert("RGB")
         img_temp.save(output_io_stream := BytesIO(), format="JPEG", quality=90)
         output_io_stream.seek(0)
+        new_filename = f"{uploaded_image.name.split('.')[0]}{suffix}.jpg"
         uploaded_image = InMemoryUploadedFile(
             output_io_stream,
             "ImageField",
-            "%s.jpg" % uploaded_image.name.split(".")[0],
+            new_filename,
             "image/jpeg",
             sys.getsizeof(output_io_stream),
             None,

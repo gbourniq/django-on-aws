@@ -22,6 +22,17 @@ def save_mock_category(monkeypatch, category: Category) -> None:
     mock_resize_image.assert_called_once_with(category.image)
 
 
+def save_mock_item(monkeypatch, item: Item) -> None:
+    """
+    Mock the resize_image() function to prevent the need of creating and
+    processing dummy images when saving Item objects.
+    """
+    mock_resize_image = Mock(return_value=item.image)
+    monkeypatch.setattr(Item, "resize_image", mock_resize_image)
+    item.save()
+    mock_resize_image.assert_called_once_with(item.image, suffix="_resized")
+
+
 ##########################
 #
 #   Category Fixtures
@@ -75,7 +86,7 @@ def load_default_item(monkeypatch) -> Item:
     default_category = MockCategory.default_category()
     save_mock_category(monkeypatch, default_category)
     default_item = MockItem.default_item(parent_category=default_category)
-    default_item.save()
+    save_mock_item(monkeypatch, default_item)
     return mock_default_item
 
 
@@ -96,7 +107,7 @@ def load_default_items(monkeypatch) -> List[Item]:
         items_count=5, parent_category=default_category
     )
     # pylint: disable=expression-not-assigned
-    [itm.save() for itm in default_items]
+    [save_mock_item(monkeypatch, itm) for itm in default_items]
     return default_items
 
 
@@ -118,7 +129,7 @@ def load_default_items_and_cats(
         save_mock_category(monkeypatch, category)
         items = MockItem.default_items(items_count, parent_category=category)
         # pylint: disable=expression-not-assigned
-        [itm.save() for itm in items]
+        [save_mock_item(monkeypatch, itm) for itm in items]
         created_items.append(items)
     return created_categories, created_items
 
