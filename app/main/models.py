@@ -16,7 +16,7 @@ from app.config import AWS_REGION, AWS_S3_CUSTOM_DOMAIN, SES_IDENTITY_ARN
 from .mixins import BaseModelMixin
 
 HTML_TEMPLATE_PATH = Path(__file__).resolve().parent / "item_content_template.html"
-THUMBNAIL_SUFFIX = "_resized"
+THUMBNAIL_SUFFIX = "_thumbnail"
 
 logger = logging.getLogger(__name__)
 
@@ -134,8 +134,8 @@ class Item(models.Model, BaseModelMixin):
                     {
                         "base_url": f"https://{AWS_S3_CUSTOM_DOMAIN}",
                         "item_name": self.item_name,
-                        "item_url_path": f"/items/{self.category_name.category_slug}/{self.item_slug}",
-                        "recette_image_url_path": f"{Path(self.image_thumbnail.url).with_suffix('')}{THUMBNAIL_SUFFIX}.jpg",
+                        "item_page_url": f"https://{AWS_S3_CUSTOM_DOMAIN}/items/{self.category_name.category_slug}/{self.item_slug}",
+                        "item_image_url": self.image_thumbnail.url,
                         "username": user.username.title(),
                         "email": user.email,
                     }
