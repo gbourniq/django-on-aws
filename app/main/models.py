@@ -11,7 +11,7 @@ from django.db import models
 from django.utils import timezone
 from django.utils.text import slugify
 
-from app.config import SES_IDENTITY_ARN
+from app.config import AWS_REGION, AWS_S3_CUSTOM_DOMAIN, SES_IDENTITY_ARN
 
 from .mixins import BaseModelMixin
 
@@ -125,14 +125,14 @@ class Item(models.Model, BaseModelMixin):
         within the AWS Console, because of the limited / sandbox environment.
         For a production use case, raise a ticket with AWS.
         """
-        ses_client = boto3.client("ses")
+        ses_client = boto3.client("ses", region_name=AWS_REGION)
 
         destinations = [
             {
                 "Destination": {"ToAddresses": [user.email],},
                 "ReplacementTemplateData": json.dumps(
                     {
-                        "base_url": "https://tari.kitchen",  # TODO: remove hardcoded base url
+                        "base_url": f"https://{AWS_S3_CUSTOM_DOMAIN}",
                         "item_name": self.item_name,
                         "item_url_path": f"/items/{self.category_name.category_slug}/{self.item_slug}",
                         "recette_image_url_path": f"{Path(self.image_thumbnail.url).with_suffix('')}{THUMBNAIL_SUFFIX}.jpg",
@@ -156,8 +156,10 @@ class Item(models.Model, BaseModelMixin):
                 SourceArn=SES_IDENTITY_ARN,
                 ReplyToAddresses=[],
                 DefaultTags=[],
-                Template="ItemCreatedNotification",  # TODO: remove hardcoded TemplateName
-                DefaultTemplateData='{ "base_url":"https://tari.kitchen" }',  # TODO: remove hardcoded base url
+                Template="ItemCreatedNotification",  # TODO: remove hardcoded TemplateName. Could use TemplateArn from Cfn
+                DefaultTemplateData=json.dumps(
+                    {"base_url": f"https://{AWS_S3_CUSTOM_DOMAIN}"}
+                ),
                 Destinations=destinations,
             )
             logger.info(f"SES notification was successful. response: {response}")
