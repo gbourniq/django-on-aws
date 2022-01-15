@@ -67,6 +67,10 @@ class Item(models.Model, BaseModelMixin):
     image = models.ImageField(
         upload_to=settings.UPLOADS_FOLDER_PATH, verbose_name="Photo"
     )
+    # Resized image used for cards in email notifications
+    image_thumbnail = models.ImageField(
+        upload_to=settings.UPLOADS_FOLDER_PATH, default=""
+    )
     with open(HTML_TEMPLATE_PATH) as f:
         content = models.TextField(default=f.read(), verbose_name="Contenu")
     date_published = models.DateTimeField("date published", default=timezone.now)
@@ -84,7 +88,7 @@ class Item(models.Model, BaseModelMixin):
     # pylint: disable=signature-differs
     def save(self, *args, **kwargs):
         """Any modification on the item attributes before saving the object."""
-        # self.image = self.resize_image(self.image)
+        self.image_thumbnail = self.resize_image(self.image, suffix="resized")
         self.item_slug = slugify(self.item_name)
         super().save(*args, **kwargs)
 
