@@ -37,6 +37,9 @@ class ItemAdmin(admin.ModelAdmin):
         models.TextField: {"widget": TinyMCE()},
     }
 
+    # To have the number of item views from the admin panel
+    readonly_fields = ("views",)
+
     def save_model(
         self, request: HttpRequest, item: Item, form: ModelForm, change: bool
     ):
