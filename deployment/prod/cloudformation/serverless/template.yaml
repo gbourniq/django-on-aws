@@ -108,6 +108,12 @@ Resources:
           Properties:
               Handler: index.handler
               Role: !GetAtt LambdaServiceRole.Arn
+              Runtime: python3.7
+              # Add the below next time stack is created - atm getting Modifying service token is not allowed.
+              # Description: Lambda to create and update AWS SES Template Custom Resource
+              # FunctionName: !Join ['-', [!Ref AWS::StackName, lambda-ses]]
+              # Timeout: 30
+              # MemorySize: 128
               Code:
                   ZipFile: |
                       import boto3
@@ -119,35 +125,28 @@ Resources:
                       def handler(event, context):
                           responseData = {}
                           try:
-                              client = boto3.client('ses')
+                              ses_client = boto3.client('ses')
+                              template = {
+                                  'TemplateName': event['ResourceProperties']['TemplateName'],
+                                  'SubjectPart': event['ResourceProperties']['SubjectPart'],
+                                  'TextPart': event['ResourceProperties']['TextPart'],
+                                  'HtmlPart': event['ResourceProperties']['HtmlPart']
+                              }
                               if event['RequestType'] == "Create":
-                                  pprint.pprint(client.create_template(
-                                      Template={
-                                          'TemplateName': event['ResourceProperties']['TemplateName'],
-                                          'SubjectPart': event['ResourceProperties']['SubjectPart'],
-                                          'TextPart': event['ResourceProperties']['TextPart'],
-                                          'HtmlPart': event['ResourceProperties']['HtmlPart']
-                                      }
-                                  ))
+                                  pprint.pprint(ses_client.create_template(Template=template))
                               elif event['RequestType'] == "Update":
-                                  pprint.pprint(client.update_template(
-                                      Template={
-                                          'TemplateName': event['ResourceProperties']['TemplateName'],
-                                          'SubjectPart': event['ResourceProperties']['SubjectPart'],
-                                          'TextPart': event['ResourceProperties']['TextPart'],
-                                          'HtmlPart': event['ResourceProperties']['HtmlPart']
-                                      }
-                                  ))
+                                try:
+                                  pprint.pprint(ses_client.create_template(Template=template))
+                                except ses_client.exceptions.AlreadyExistsException:
+                                  # Template already exists, update it instead
+                                  pprint.pprint(ses_client.update_template(Template=template))
                               elif event['RequestType'] == "Delete":
-                                  pprint.pprint(client.delete_template(
+                                  pprint.pprint(ses_client.delete_template(
                                       TemplateName=event['ResourceProperties']['TemplateName']
                                   ))
                               cfnresponse.send(event, context, cfnresponse.SUCCESS, responseData, "GenericPhysicalResourceId")
                           except:
                               cfnresponse.send(event, context, cfnresponse.FAILED, responseData, "GenericPhysicalResourceId")
-
-              Runtime: python3.7
-              Timeout: 30
 
   # SNS
   SNSTopic:
