@@ -43,7 +43,6 @@ class ItemAdmin(admin.ModelAdmin):
     def save_model(
         self, request: HttpRequest, item: Item, form: ModelForm, change: bool
     ):
-        print("test")
         super().save_model(request, item, form, change)
         self.notify_registered_users(item, is_modified=change)
 
