@@ -55,6 +55,10 @@ class ItemAdmin(admin.ModelAdmin):
         within the AWS Console, because of the limited / sandbox environment.
         For a production use case, raise a ticket with AWS.
         """
+        if is_modified:
+            logger.info("Item {item} was modified, not created. Skipping SES email")
+            return
+
         ses_client = boto3.client("ses", region_name=AWS_REGION)
 
         destinations = [
@@ -80,9 +84,7 @@ class ItemAdmin(admin.ModelAdmin):
         ]
 
         if not SES_IDENTITY_ARN:
-            logger.info(
-                f"SES_IDENTITY_ARN not set, therefore email notifications are disabled."
-            )
+            logger.info("SES_IDENTITY_ARN not set. Skipping SES email.")
             return
 
         try:
