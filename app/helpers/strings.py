@@ -1,6 +1,6 @@
 """API messages"""
 
-SIGNUP_MSG = "New account created: {account_name}"
+SIGNUP_MSG = "New account created: {account_name}. Please check your emails."
 LOGOUT = "Logged out successfully!"
 LOGIN = "You are now logged in as {username}"
 REDIRECT_AFTER_LOGIN = "Redirecting user back to {secure_page}"

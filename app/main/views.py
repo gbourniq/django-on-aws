@@ -13,7 +13,7 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views import View, generic
 
-from app.config import AWS_REGION
+from app.config import AWS_REGION, SES_IDENTITY_ARN
 from helpers import strings
 from helpers.constants import TemplateNames
 
@@ -22,6 +22,7 @@ from .mixins import RequireLoginMixin
 from .models import Category, Item
 
 logger = logging.getLogger(__name__)
+ses_client = boto3.client("ses", region_name=AWS_REGION)
 
 
 class IndexView(generic.base.TemplateView):
@@ -57,6 +58,17 @@ class SignUpFormView(View):
             messages.success(request, signup_message)
             logger.info(signup_message)
             login(request, user)
+            if SES_IDENTITY_ARN:
+                # Send email to verify the new SES identity
+                try:
+                    response = ses_client.verify_email_identity(
+                        EmailAddress=form.cleaned_data.get("email")
+                    )
+                    logger.info(f"SES verify_email_identity call response: {response}")
+                except Exception as ses_err:
+                    logger.error(
+                        f"Failed to run SES verify_email_identity: {repr(ses_err)}"
+                    )
             return redirect("/")
         for msg in form.error_messages:
             messages.error(request, f"{msg}: {form.error_messages[msg]}")
