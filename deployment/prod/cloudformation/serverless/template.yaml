@@ -223,7 +223,7 @@ Resources:
               - Effect: Allow
                 Action: [cloudwatch:PutMetricData]
                 Resource: ['*']
-        # Policy for Lambda custom resource to manage the SES templates and identities
+        # Policy for Lambda custom resource to manage the SES templates
         - PolicyName: !Join ['-', [!Ref AWS::StackName, LambdaToManageSESTemplatePolicy]]
           PolicyDocument:
             Version: '2012-10-17'
@@ -242,7 +242,6 @@ Resources:
                   - ses:GetTemplate
                   - ses:UpdateTemplate
                   - ses:DeleteTemplate
-                  - ses:VerifyEmailIdentity
                 Resource: ['*']
 
   # Lambda Custom Resource as SES is not supported yet in eu-west-2

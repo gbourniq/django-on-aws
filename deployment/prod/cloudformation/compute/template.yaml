@@ -231,14 +231,14 @@ Resources:
               - Effect: Allow
                 Action: [sns:Publish]
                 Resource: !Ref SNSTopicArn
-        # Policy for EC2 to send emails via SES
+        # Policy for EC2 to reach SES to verify email identities and send emails
         - PolicyName: !Join ['-', [!Ref AWS::StackName, EC2SendEmailsViaSES]]
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
               - Effect: Allow
-                Action: [ses:SendBulkTemplatedEmail]
-                Resource: 'arn:aws:ses:*:*:identity/*'
+                Action: [ses:SendBulkTemplatedEmail, ses:VerifyEmailIdentity]
+                Resource: '*'
         # Policy for EC2 to send an SSM command
         - PolicyName: !Join ['-', [!Ref AWS::StackName, EC2ToRunSSMCommands]]
           PolicyDocument:
